@@ -3,14 +3,11 @@ function trustedSetRequestField(urlSpec, fieldPath, rawValue) {
   // field on the JSON body of OUTBOUND requests whose URL matches
   // `urlSpec`, for both fetch(init.body) and XMLHttpRequest.send(body).
   //
-  // Purpose: YouTube's `/youtubei/v1/player` request. Setting
-  // playbackContext.contentPlaybackContext.isInlinePlaybackNoAd = true on
-  // the request makes InnerTube grant an ad-free stream up front, with no
-  // SABR "backoff" — which is what our response-side ad-strip cannot undo
-  // and what causes the multi-second watch-click stall.
+  // Used for YouTube's `/youtubei/v1/player` request, where one
+  // playbackContext field avoids a multi-second start stall. Runs only
+  // where the user has turned the site's Ads switch on.
   //
-  // Provenance (clean-room): behaviour + field name from public protobuf
-  // reverse-engineering of Google's own API surface
+  // Provenance (clean-room): field name from a public protobuf write-up
   // (https://iter.ca/post/yt-adblock/), NOT from uBO/AdGuard scriptlet
   // code. Our own design: a single dotted path + literal value, no
   // query-path mini-language.

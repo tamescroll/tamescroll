@@ -299,10 +299,10 @@ fn page_load_gaze_script(url: &str, mode: &str) -> Option<String> {
     if blur_css(platform.id).is_empty() {
         return None;
     }
-    // The compulsory NSFW-removal tier (handoff decision #1) means the
-    // Stage B bundle boots in EVERY mode — pipeline-plan.mjs inside the
-    // bundle decides what actually runs. Only blur-all adds the Stage A
-    // sheet on top.
+    // The Stage B bundle boots in EVERY mode (it also carries the page
+    // kind and the Shorts redirect); pipeline-plan.mjs inside the
+    // bundle decides what actually runs, and in off that is nothing.
+    // Only blur-all adds the Stage A sheet on top.
     if mode != "blur" {
         return Some(gaze_script(mode, &url_host(url).unwrap_or_default()));
     }
@@ -400,11 +400,21 @@ fn note_synthetic_served(url: &str) {
 }
 
 fn synthetic_reachable(host: &str) -> bool {
-    SYNTHETIC_HOSTS
-        .lock()
-        .ok()
-        .and_then(|g| g.as_ref().map(|set| set.contains(host)))
-        .unwrap_or(false)
+    host_serves_synthetic_from_start(host, cfg!(target_os = "android"))
+        || SYNTHETIC_HOSTS
+            .lock()
+            .ok()
+            .and_then(|g| g.as_ref().map(|set| set.contains(host)))
+            .unwrap_or(false)
+}
+
+/// m.youtube.com registers no service worker, so on Android our own urls
+/// reach it from the first page load and the worker can fetch the models
+/// itself. Without this, the first YouTube open after a launch inlined
+/// all four models (24MB in Women) because nothing had been served yet.
+/// If the worker's fetch ever failed, images stay covered.
+fn host_serves_synthetic_from_start(host: &str, android: bool) -> bool {
+    android && host == "m.youtube.com"
 }
 
 /// Host of a url, lowercased, without scheme, port or path.
@@ -434,7 +444,23 @@ fn url_host(url: &str) -> Option<String> {
 /// load of such a host.
 fn models_script() -> &'static str {
     static MODELS_JS: std::sync::OnceLock<&'static str> = std::sync::OnceLock::new();
-    MODELS_JS.get_or_init(|| {
+    MODELS_JS.get_or_init(|| build_models_script(&["face", "nsfw", "gender", "person"]))
+}
+
+/// The models a mode actually runs, for the inline delivery: every one of
+/// them is compiled with the page on every load (measured on the old
+/// Redmi 2026-10-28: 24MB, ~300ms of main-thread compile per eval, and
+/// two to four evals per YouTube open). Off and Every picture run no
+/// model (pipeline-plan.mjs); smart needs them all.
+fn models_script_for(mode: &str) -> &'static str {
+    match gaze_mode(mode) {
+        "smart" => models_script(),
+        _ => "",
+    }
+}
+
+fn build_models_script(want: &[&str]) -> &'static str {
+    {
         use base64::Engine as _;
         let b64 = base64::engine::general_purpose::STANDARD;
         // globalThis, not window: a worker importScripts this too.
@@ -445,6 +471,9 @@ fn models_script() -> &'static str {
             ("gender", "faceres.json", "faceres.bin"),
             ("person", "person.json", "person.bin"),
         ] {
+            if !want.contains(&name) {
+                continue;
+            }
             // Both halves come from model_asset, so there is one list of
             // model files and the two deliveries cannot drift.
             let (Some(j), Some(b)) = (model_asset(json), model_asset(bin)) else {
@@ -459,13 +488,17 @@ fn models_script() -> &'static str {
         }
         js.push_str("};");
         Box::leak(js.into_boxed_str())
-    })
+    }
 }
 fn gaze_script(mode: &str, host: &str) -> String {
+    gaze_script_with(mode, synthetic_reachable(host))
+}
+
+fn gaze_script_with(mode: &str, models_reachable: bool) -> String {
     let mode = gaze_mode(mode);
     // The models travel with the bundle only where our own urls do not
     // work; everywhere else the worker fetches them as bytes.
-    let models = if synthetic_reachable(host) { "" } else { models_script() };
+    let models = if models_reachable { "" } else { models_script_for(mode) };
     // Stage B's class styles blur through var(--ts-blur-strong); the
     // launcher's strength choice has to reach the page inline because
     // smart mode ships no stylesheet of its own to carry a :root rule.
@@ -1109,6 +1142,19 @@ pub(crate) fn canonical_link_url(platform: &str, u: tauri::Url) -> tauri::Url {
         }
     }
     out
+}
+
+/// Android goes straight to m.youtube.com. YouTube redirects a phone's
+/// www.youtube.com (or bare youtube.com) request to m.youtube.com anyway;
+/// going there directly saves that redirect round trip. Path and query
+/// are kept, as the redirect keeps them.
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub(crate) fn mobile_youtube_url(mut u: tauri::Url) -> tauri::Url {
+    let host = u.host_str().unwrap_or("").to_ascii_lowercase();
+    if host == "youtube.com" || host == "www.youtube.com" {
+        let _ = u.set_host(Some("m.youtube.com"));
+    }
+    u
 }
 
 #[derive(Serialize, Clone)]
@@ -2121,6 +2167,7 @@ async fn open_address(
         let main = app
             .get_webview_window("main")
             .ok_or_else(|| "no main webview".to_string())?;
+        let url = mobile_youtube_url(url);
         #[cfg(target_os = "ios")]
         set_ios_page_script(&app, url.as_str());
         return main.navigate(url).map_err(|e| e.to_string());
@@ -2222,6 +2269,7 @@ async fn open_platform(
         let main = app
             .get_webview_window("main")
             .ok_or_else(|| "no main webview".to_string())?;
+        let url = mobile_youtube_url(url);
         #[cfg(target_os = "ios")]
         set_ios_page_script(&app, url.as_str());
         let nav = main.navigate(url);
@@ -2492,6 +2540,39 @@ mod tests {
         // No other platform accepts links yet; the manifest claims none.
         assert!(!link_host_belongs("reddit", "www.reddit.com"));
         assert!(!link_host_belongs("nope", "youtube.com"));
+    }
+
+    /// Android opens m.youtube.com directly instead of taking YouTube's
+    /// www-to-m redirect; anything that is not a www or bare youtube.com
+    /// url passes through unchanged.
+    #[test]
+    fn android_opens_youtube_on_the_mobile_host() {
+        let u = |s: &str| tauri::Url::parse(s).unwrap();
+        for (from, to) in [
+            ("https://www.youtube.com/", "https://m.youtube.com/"),
+            ("https://youtube.com/results?search_query=x", "https://m.youtube.com/results?search_query=x"),
+            ("https://WWW.YouTube.com/watch?v=abc&t=4", "https://m.youtube.com/watch?v=abc&t=4"),
+            ("https://m.youtube.com/watch?v=x", "https://m.youtube.com/watch?v=x"),
+            ("https://music.youtube.com/", "https://music.youtube.com/"),
+            ("https://www.reddit.com/", "https://www.reddit.com/"),
+            ("https://notyoutube.com/", "https://notyoutube.com/"),
+        ] {
+            assert_eq!(mobile_youtube_url(u(from)).as_str(), to, "{from}");
+        }
+    }
+
+    /// On Android the first Women (smart) script for m.youtube.com carries
+    /// no inlined models; www.youtube.com and desktop still do.
+    #[test]
+    fn android_m_youtube_gets_no_inlined_models_from_the_first_load() {
+        fn inlined(js: &str) -> bool {
+            js.contains("globalThis.__TS_GAZE_MODELS={")
+        }
+        let android_m = host_serves_synthetic_from_start("m.youtube.com", true);
+        assert!(!inlined(&gaze_script_with("smart", android_m)));
+        assert!(!host_serves_synthetic_from_start("www.youtube.com", true));
+        assert!(!host_serves_synthetic_from_start("m.youtube.com", false));
+        assert!(inlined(&gaze_script_with("smart", false)), "unproven hosts still inline");
     }
 
     /// 1107: a youtu.be short link becomes the mobile watch page BEFORE
@@ -3161,14 +3242,15 @@ mod tests {
             assert!(page_load_gaze_script(host, "smart").is_some(), "{host} smart");
         }
 
-        // Off still boots Stage B for the compulsory NSFW-removal tier
-        // (handoff decision #1) — mode "off" baked in, no Stage A sheet.
+        // Off still loads the bundle (page kind and the Shorts redirect
+        // live there) with mode "off" baked in, which runs no models
+        // (pipeline-plan.mjs), and ships no Stage A sheet.
         let js = page_load_gaze_script("https://m.youtube.com/", "off").expect("off script");
-        assert!(js.contains("__TS_GAZE_MODE = \"off\""), "off must boot the compulsory tier");
+        assert!(js.contains("__TS_GAZE_MODE = \"off\""), "off must bake mode off");
         assert!(!js.contains("ts-gaze-blur"), "off must not ship the Stage A sheet");
 
         // Blur mode injects the guarded style AND the Stage B boot (the
-        // bundle only runs NSFW removal in blur mode); the mobile host
+        // bundle runs no model in blur mode); the mobile host
         // maps to the same platform as the desktop one.
         for url in ["https://www.youtube.com/", "https://m.youtube.com/"] {
             let js = page_load_gaze_script(url, "blur").expect("blur script for youtube");
@@ -3376,6 +3458,23 @@ mod tests {
             !blur_css("youtube").contains("#movie_player video"),
             "the YouTube blur css must never target #movie_player video — \
              the video the user is watching must never blur"
+        );
+
+        // Every picture means every picture: channel pictures, Shorts
+        // lockups and channel-page art were left sharp until 2026-10-28.
+        let yt = blur_css("youtube");
+        for sel in [
+            "ytm-profile-icon img",
+            "ytm-shorts-lockup-view-model img",
+            "yt-image-banner-view-model img",
+            "yt-decorated-avatar-view-model img",
+            "ytm-compact-thumbnail img",
+        ] {
+            assert!(yt.contains(sel), "YouTube blur css must cover {sel}");
+        }
+        assert!(
+            !yt.contains("player-container"),
+            "the YouTube blur css must never target the player container"
         );
 
         // Owner call 2026-08-19: TikTok blurs EVERYTHING — all img +
@@ -3616,6 +3715,27 @@ mod tests {
         // Same url the client adopts from, and the model-free artifact.
         assert!(js.contains("/__tamescroll/gaze-page.js"));
         assert!(js.contains("__TS_GAZE_PREWORKER"));
+    }
+
+    /// INLINE MODELS FOLLOW THE MODE: only women/men run a model, so off
+    /// and Every picture compile none of the 24MB.
+    #[test]
+    fn inline_models_are_only_the_ones_the_mode_runs() {
+        // The inlined map alone: the bundle's own code mentions these names.
+        fn inlined(js: &str) -> &str {
+            let Some(start) = js.find("globalThis.__TS_GAZE_MODELS={") else { return "" };
+            let rest = &js[start..];
+            &rest[..rest.find("};").map_or(rest.len(), |e| e + 2)]
+        }
+        let off = gaze_script("off", "mode-unproven.example");
+        assert_eq!(inlined(&off), "", "off must not inline any model");
+        let blur = gaze_script("blur", "mode-unproven.example");
+        assert_eq!(inlined(&blur), "", "Every picture runs no model");
+        let smart = gaze_script("smart", "mode-unproven.example");
+        for name in ["face:[", "nsfw:[", "gender:[", "person:["] {
+            assert!(inlined(&smart).contains(name), "smart needs {name}");
+        }
+        assert!(blur.len() < smart.len());
     }
 
     /// A HOST HAS TO EARN THE MODEL-FREE BUNDLE.

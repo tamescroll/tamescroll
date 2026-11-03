@@ -33,10 +33,10 @@ so the store build should not go up without them.
   surfaces for that platform only.
 - [x] No platform logo or brand colour in the store build, #24 (Play
   Impersonation, Apple 5.2.1). The in-app tiles already use muted letter
-  glyphs. The `play` build type overrides the home-screen shortcut icons
-  (`src/play/res/drawable-nodpi/shortcut_*.png`) with plain cream letters
-  on our ink; the sideloaded build keeps the red play tile ZV chose for
-  it on 2026-09-10.
+  glyphs. Every build's home-screen shortcut icons
+  (`src/main/res/drawable-nodpi/shortcut_*.png`) are plain cream letters
+  on our ink. The sideloaded build's red play tile was retired on
+  2026-10-28 on ZV's word.
 - [x] A release signing config for the `play` build type that reads the
   upload key from outside the repo (`keystore.properties`, gitignored).
 

@@ -10,8 +10,8 @@ map of calls is artifact e198a03e.
 **WHAT THE APP IS NOW (1113-1120, all on his phone `e3d369ee`):**
 tile tap dims at once (1113); all three models on GPU on his Adreno --
 the crash breadcrumb now needs 3 strikes (1114); a link or shortcut
-never paints the launcher first (1115); the YouTube shortcut is our red
-play tile and the links "Set up" step reports what the launcher did
+never paints the launcher first (1115); the YouTube shortcut is a plain
+cream "Y" on our ink (red tile retired 2026-10-28) and the links "Set up" step reports what the launcher did
 (1116/1117); onboarding's last step offers the home icon (1118);
 **YouTube opens on its BLANK home -- the Subscriptions landing shipped in
 1118 and was REVERTED in 1119 on his word, do not bring it back**;

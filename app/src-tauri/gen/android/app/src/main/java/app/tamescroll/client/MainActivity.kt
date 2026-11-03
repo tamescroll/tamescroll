@@ -37,6 +37,7 @@ import android.webkit.ValueCallback
 import android.webkit.WebViewClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
+import android.webkit.WebBackForwardList
 import android.webkit.WebResourceError
 import android.graphics.Bitmap
 import java.io.ByteArrayInputStream
@@ -80,7 +81,11 @@ class MainActivity : TauriActivity() {
     private const val LINKS_PROBED = "probed"
     // Height of the top bar above every site (installTopBar).
     private const val TOP_BAR_DP = 52
+    private const val TOP_STRIP_DP = 24
     private const val STATS_PREFS = "tamescroll.stats"
+    private const val LOOK_PREFS = "tamescroll.look"
+    private const val NIGHT_BG = 0xFF141414.toInt()
+    private const val PAPER_BG = 0xFFF7F5F0.toInt()
   }
 
   // Platform requested by a home-screen shortcut before the webview
@@ -170,7 +175,8 @@ class MainActivity : TauriActivity() {
     // phone's status bar — the template's edge-to-edge ships no inset
     // handling. Pad the content view by the system bars and paint the
     // exposed strips launcher-dark so every page sits below the clock.
-    window.decorView.setBackgroundColor(0xFF141414.toInt())
+    paperLook = getSharedPreferences(LOOK_PREFS, MODE_PRIVATE).getBoolean("paper", false)
+    window.decorView.setBackgroundColor(if (paperLook) PAPER_BG else NIGHT_BG)
     val content = findViewById<ViewGroup>(android.R.id.content)
     ViewCompat.setOnApplyWindowInsetsListener(content) { v, insets ->
       // ime() included: with edge-to-edge enforced (targetSdk 35+) the
@@ -239,6 +245,39 @@ class MainActivity : TauriActivity() {
       // url for a link. main.ts splits on the newline.
       return if (p == null) "" else if (u == null) p else p + "\n" + u
     }
+  }
+
+  // THE LOOK (his 2026-10-28): Night or Paper on the launcher. The strips
+  // behind the clock and the nav bar belong to the window, not the page,
+  // so the launcher tells us which look it wears and we paint them to
+  // match. Sites keep the dark strips and the dark top bar either way.
+  // Visible to every page like any interface; it only takes one of two
+  // words and only acts while the launcher is showing.
+  @Volatile
+  private var paperLook = false
+
+  inner class LookBridge {
+    @JavascriptInterface
+    fun set(look: String?) {
+      val paper = look == "paper"
+      runOnUiThread {
+        val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+        if (!here.startsWith("http://tauri.localhost/")) return@runOnUiThread
+        paperLook = paper
+        getSharedPreferences(LOOK_PREFS, MODE_PRIVATE).edit().putBoolean("paper", paper).apply()
+        applyStrips(here)
+      }
+    }
+  }
+
+  private fun applyStrips(url: String) {
+    val light = paperLook && url.startsWith("http://tauri.localhost/")
+    val bg = if (light) PAPER_BG else NIGHT_BG
+    window.decorView.setBackgroundColor(bg)
+    if (this::webView.isInitialized) webView.setBackgroundColor(bg)
+    val controller = WindowInsetsControllerCompat(window, window.decorView)
+    controller.isAppearanceLightStatusBars = light
+    controller.isAppearanceLightNavigationBars = light
   }
 
   // THE ONE SCREEN THE APP HAS TO WALK THE USER TO (1107). Without
@@ -633,7 +672,7 @@ class MainActivity : TauriActivity() {
   }
 
   override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-    if (fullscreenView != null) scaleDetector.onTouchEvent(ev)
+    if (fullscreenView != null) scaleDetector.onTouchEvent(ev) else foldBarOnDrag(ev)
     return super.dispatchTouchEvent(ev)
   }
 
@@ -862,6 +901,7 @@ class MainActivity : TauriActivity() {
   // under Chrome's toolbar, so nothing the gaze page measures moves
   // inside it. Video fullscreen sits on the decor view and covers it.
   private var topBar: View? = null
+  private var topStrip: TextView? = null
   private var topBarAddress: TextView? = null
   private var topBarHost: View? = null
   private var topBarUrl = ""
@@ -915,8 +955,23 @@ class MainActivity : TauriActivity() {
     bar.addView(icon(R.drawable.ic_bar_home, "Home") { webView.loadUrl(launcherUrl(null)) })
     bar.addView(address)
     bar.addView(icon(R.drawable.ic_bar_shield, "What was tamed on this page") { showShieldSheet() })
+    // The folded bar: a slim strip with the site's name, under the full
+    // bar so the bar covers it when out. Tapping it brings the bar back.
+    val strip = TextView(this).apply {
+      setTextColor(0xFFA8A49D.toInt())
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+      maxLines = 1
+      ellipsize = TextUtils.TruncateAt.END
+      gravity = Gravity.CENTER
+      setBackgroundColor(0xFF141414.toInt())
+      contentDescription = "Show the address bar"
+      visibility = View.GONE
+      setOnClickListener { foldBar(true) }
+    }
+    content.addView(strip, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(TOP_STRIP_DP), Gravity.TOP))
     content.addView(bar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(TOP_BAR_DP), Gravity.TOP))
     topBar = bar
+    topStrip = strip
     topBarAddress = address
     topBarHost = host
     updateTopBar(webView.url)
@@ -1030,22 +1085,123 @@ class MainActivity : TauriActivity() {
     sheet.show()
   }
 
+  // THE BAR FOLDS AWAY (his 2026-10-28: "like Safari"). Dragging the
+  // page up folds it to a slim strip with the site's name, and a YouTube
+  // watch page opens folded so the video sits near the top. Only a tap on
+  // the strip (or a new page) brings it back: it used to return on any
+  // drag down, and he found it popping in and out while reading
+  // annoying (2026-10-28, on the 1124 test build). Driven by the
+  // finger, not by WebView scroll events: m.youtube scrolls inside the
+  // page, where onScrollChanged never fires. The touch is only watched,
+  // never consumed. Folding shrinks the WebView's top margin with the
+  // bar, the way Chrome's toolbar gives its height back to the page.
+  private var barFraction = 1f
+  private var barAnimator: android.animation.ValueAnimator? = null
+  private var barPageKey = ""
+  private var dragLastX = 0f
+  private var dragLastY = 0f
+  private var dragTravel = 0f
+
+  private fun applyBarFraction(f: Float) {
+    val bar = topBar ?: return
+    val host = topBarHost ?: return
+    barFraction = f
+    val density = resources.displayMetrics.density
+    val h = TOP_BAR_DP * density
+    val strip = TOP_STRIP_DP * density
+    bar.translationY = -(1f - f) * h
+    topStrip?.let {
+      it.alpha = 1f - f
+      it.visibility = if (bar.visibility == View.VISIBLE && f < 1f) View.VISIBLE else View.GONE
+    }
+    val lp = host.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+    val margin = (strip + f * (h - strip)).toInt()
+    if (lp.topMargin == margin) return
+    lp.topMargin = margin
+    host.layoutParams = lp
+  }
+
+  private fun foldBar(show: Boolean) {
+    if (topBar?.visibility != View.VISIBLE) return
+    val target = if (show) 1f else 0f
+    if (barFraction == target && barAnimator == null) return
+    barAnimator?.cancel()
+    barAnimator = android.animation.ValueAnimator.ofFloat(barFraction, target).apply {
+      duration = 180
+      addUpdateListener { applyBarFraction(it.animatedValue as Float) }
+      addListener(object : android.animation.AnimatorListenerAdapter() {
+        override fun onAnimationEnd(animation: android.animation.Animator) {
+          if (barAnimator === animation) barAnimator = null
+        }
+      })
+      start()
+    }
+  }
+
+  private fun foldBarOnDrag(ev: MotionEvent) {
+    if (topBar?.visibility != View.VISIBLE) return
+    when (ev.actionMasked) {
+      MotionEvent.ACTION_DOWN -> {
+        dragLastX = ev.rawX
+        dragLastY = ev.rawY
+        dragTravel = 0f
+      }
+      MotionEvent.ACTION_MOVE -> {
+        val dx = ev.rawX - dragLastX
+        val dy = ev.rawY - dragLastY
+        dragLastX = ev.rawX
+        dragLastY = ev.rawY
+        // Sideways swipes (carousels, the seek bar) never move the bar.
+        if (Math.abs(dy) <= Math.abs(dx)) return
+        if ((dy > 0) != (dragTravel > 0)) dragTravel = 0f
+        dragTravel += dy
+        val threshold = 24 * resources.displayMetrics.density
+        if (dragTravel < -threshold) foldBar(false)
+      }
+    }
+  }
+
+  private fun isWatchPage(u: Uri): Boolean {
+    val host = u.host ?: return false
+    return (host == "youtube.com" || host.endsWith(".youtube.com")) &&
+      (u.path ?: "").startsWith("/watch")
+  }
+
   /** Shows the bar on a web page and hides it on the launcher. UI thread. */
   private fun updateTopBar(url: String?) {
     val bar = topBar ?: return
-    val host = topBarHost ?: return
     val u = url ?: ""
     val onSite = (u.startsWith("https://") || u.startsWith("http://")) && !u.contains("tauri.localhost")
-    if (onSite) {
-      topBarUrl = u
-      topBarAddress?.text = (Uri.parse(u).host ?: u).removePrefix("www.").removePrefix("m.")
+    if (!onSite) {
+      if (bar.visibility == View.GONE) return
+      barAnimator?.cancel()
+      barAnimator = null
+      bar.visibility = View.GONE
+      applyBarFraction(0f)
+      // Off a site the page gets the whole screen back, strip included.
+      (topBarHost?.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+        it.topMargin = 0
+        topBarHost?.layoutParams = it
+      }
+      bar.translationY = 0f
+      barPageKey = ""
+      return
     }
-    val want = if (onSite) View.VISIBLE else View.GONE
-    if (bar.visibility == want) return
-    bar.visibility = want
-    val lp = host.layoutParams as? ViewGroup.MarginLayoutParams ?: return
-    lp.topMargin = if (onSite) (TOP_BAR_DP * resources.displayMetrics.density).toInt() else 0
-    host.layoutParams = lp
+    topBarUrl = u
+    val uri = Uri.parse(u)
+    topBarAddress?.text = (uri.host ?: u).removePrefix("www.").removePrefix("m.")
+    topStrip?.text = topBarAddress?.text
+    if (bar.visibility != View.VISIBLE) {
+      bar.visibility = View.VISIBLE
+      applyBarFraction(1f)
+    }
+    // Each new page decides once (an SPA reports the same url several
+    // times): a watch page opens folded, anything else with the bar out.
+    // After that the finger decides.
+    val key = u.substringBefore('#')
+    if (key == barPageKey) return
+    barPageKey = key
+    foldBar(!isWatchPage(uri))
   }
 
   /// Same shape as installFullscreenClient: wry's RustWebViewClient is
@@ -1125,6 +1281,7 @@ class MainActivity : TauriActivity() {
       override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
         pageUrlForBlocking = url
         updateTopBar(url)
+        applyStrips(url)
         // The port is PULLED by the document-start stash (TsNativePort.
         // requestPort), never pushed from here: a WebMessage posted at
         // onPageStarted can be delivered before the document's start
@@ -1627,7 +1784,9 @@ class MainActivity : TauriActivity() {
     // A WebView paints WHITE until its first document draws, which on a
     // cold start is the frame between the dark window and the launcher.
     // Launcher --bg instead; every platform page paints its own body.
-    webView.setBackgroundColor(0xFF141414.toInt())
+    paperLook = getSharedPreferences(LOOK_PREFS, MODE_PRIVATE).getBoolean("paper", false)
+    webView.setBackgroundColor(if (paperLook) PAPER_BG else NIGHT_BG)
+    webView.addJavascriptInterface(LookBridge(), "TsLook")
     webView.addJavascriptInterface(ShortcutBridge(), "TsShortcuts")
     webView.addJavascriptInterface(LinksBridge(), "TsLinks")
     // Updater bridge: only ever reachable from the launcher's About
@@ -1701,8 +1860,16 @@ class MainActivity : TauriActivity() {
           // spikes/logcat-probe6.log: two tauri.localhost targets, the
           // visible one attached:false). A fresh loadUrl creates one
           // live document instead.
-          webView.canGoBack() && !backEntryIsLauncher() -> webView.goBack()
-          else -> webView.loadUrl("http://tauri.localhost/")
+          else -> {
+            val list = webView.copyBackForwardList()
+            val target = backTarget(list)
+            val url = if (target >= 0) list.getItemAtIndex(target).url else null
+            if (url == null || url.contains("tauri.localhost")) {
+              webView.loadUrl("http://tauri.localhost/")
+            } else {
+              webView.goBackOrForward(target - list.currentIndex)
+            }
+          }
         }
       }
     }
@@ -1711,10 +1878,20 @@ class MainActivity : TauriActivity() {
     super.onWebViewCreate(webView)
   }
 
-  private fun backEntryIsLauncher(): Boolean {
-    val list = webView.copyBackForwardList()
-    if (list.currentIndex <= 0) return false
-    val prev = list.getItemAtIndex(list.currentIndex - 1).url ?: return false
-    return prev.contains("tauri.localhost")
+  /// The history index Back should land on, or -1 for none. It steps
+  /// past entries that would only restore as a blank page: the offline
+  /// screen keeps the failed url as its history url, so after a
+  /// successful Try again the entry behind the real page has the SAME
+  /// url, and going back to it showed an empty dark page with no bar
+  /// (1124 on the old Redmi, 2026-10-28).
+  private fun backTarget(list: WebBackForwardList): Int {
+    val current = list.currentItem?.url
+    var i = list.currentIndex - 1
+    while (i >= 0) {
+      val url = list.getItemAtIndex(i).url
+      if (url != null && url != current && !url.startsWith("about:") && !url.startsWith("data:")) break
+      i--
+    }
+    return i
   }
 }

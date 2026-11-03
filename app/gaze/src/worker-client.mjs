@@ -237,7 +237,13 @@ export function createWorkerClient(opts) {
         // The bitmap is TRANSFERRED: no copy, and the main thread stops
         // owning the pixels the moment it hands them over.
         worker.postMessage(
-          { type: 'image', id: id, bitmap: bitmap, noNsfw: !!(opts && opts.noNsfw) },
+          {
+            type: 'image',
+            id: id,
+            bitmap: bitmap,
+            noNsfw: !!(opts && opts.noNsfw),
+            skipNsfwFor: opts && typeof opts.skipNsfwFor === 'string' ? opts.skipNsfwFor : null,
+          },
           [bitmap]
         );
       } catch (err) {
@@ -306,6 +312,17 @@ export function createWorkerClient(opts) {
     }
   }
 
+  function askGender() {
+    if (state.up && !state.dead && !state.gender && !state.genderAsked) {
+      state.genderAsked = true;
+      try {
+        worker.postMessage({ type: 'gender' });
+      } catch (e) {
+        /* asked again by the first face instead */
+      }
+    }
+  }
+
   function api() {
     return {
       // Ready to be ASKED (the script is alive). Model readiness is
@@ -314,8 +331,15 @@ export function createWorkerClient(opts) {
       ready: function () {
         return state.up && !state.dead;
       },
+      // Images can be judged once face and NSFW are in. The gender model
+      // loads lazily, on the first face that needs it (worker-entry.js);
+      // until then such an image comes back `genderPending` and stays
+      // covered.
       settled: function () {
-        return state.face && state.gender && state.nsfw;
+        return state.face && state.nsfw;
+      },
+      genderLoaded: function () {
+        return !!state.gender;
       },
       // Cumulative ms this page has spent awaiting worker replies. A
       // caller takes a delta across its own work and subtracts it from
@@ -328,8 +352,12 @@ export function createWorkerClient(opts) {
       // two, and a second of a fully blurred video is a second the owner
       // called "low quality".
       genderReady: function () {
+        askGender();
         return state.up && !state.dead && state.face && state.gender;
       },
+      // The image path's ask, ahead of its first face (Women or Men mode
+      // on YouTube). Same one-shot message as the player's.
+      askGender: askGender,
       dead: function () {
         return state.dead;
       },

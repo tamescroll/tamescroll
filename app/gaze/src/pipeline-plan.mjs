@@ -1,6 +1,12 @@
-// What the gaze pipeline runs in each launcher mode. The compulsory
-// tier (handoff decision #1) makes the pipeline boot in EVERY mode so
-// NSFW media can be removed outright; everything else stays mode-gated.
+// What the gaze pipeline runs in each launcher mode. Off runs nothing:
+// the compulsory tier (handoff decision #1) that booted it there was
+// dropped on his word 2026-10-28 ("if anyways we arent doing blur then
+// no point of keeping it on"). With blur off every thumbnail flashed
+// blurred while the NSFW model loaded and checked it, and "Nothing"
+// promised no blur. Every picture runs nothing either (his 2026-10-28,
+// "blur is enough"): its sheet already covers every image, and the NSFW
+// check on top of it cost the old Redmi 41% janky scroll frames against
+// 26% with no model. NSFW removal now runs only in the women/men modes.
 // Pure data so the policy is unit-testable away from the DOM.
 
 /**
@@ -17,30 +23,6 @@ export function planForMode(mode) {
       faceGender: true,
       nsfw: true,
       revealClears: true,
-    };
-  }
-  if (mode === 'off') {
-    // Off = no gender blur, but the compulsory tier still runs:
-    // blur-first while the NSFW check decides reveal vs remove.
-    return {
-      boot: true,
-      preBlur: true,
-      textFilter: true,
-      faceGender: false,
-      nsfw: true,
-      revealClears: true,
-    };
-  }
-  if (mode === 'blur') {
-    // The Stage A sheet already blankets every image; the pipeline only
-    // adds NSFW removal and must never clear (the sheet owns blur).
-    return {
-      boot: true,
-      preBlur: false,
-      textFilter: false,
-      faceGender: false,
-      nsfw: true,
-      revealClears: false,
     };
   }
   return {

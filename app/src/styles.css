@@ -23,6 +23,43 @@
   --r-sm: 10px; --r: 14px; --r-lg: 20px;
   --t-xs: 11px; --t-sm: 12.5px; --t-md: 14px; --t-base: 15px; --t-lg: 17px; --t-xl: 22px; --t-2xl: 28px;
   --ring: rgba(201, 164, 94, 0.5);
+  --tile-bg: linear-gradient(150deg, #262624, #151514);
+  --page-bg: #0d0d0d;
+  --skel: #333;
+  --btn-hover: #fff;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+/* LOOKS (his 2026-10-28): Night is the default; Paper is the light one,
+   warm white with bigger type, for older eyes and bright rooms. Every
+   colour below the tokens reads a token, so a look is only this block.
+   index.html sets data-look before the first paint. */
+:root[data-look="paper"] {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --elev: #ffffff;
+  --hairline: rgba(40, 32, 20, 0.10);
+  --line: #d9d4ca;
+  --ink: #1d1c19;
+  --muted: #57534c;
+  --faint: #857f74;
+  --gold: #a8801f;
+  --gold-ink: #fff8e6;
+  --green: #4f8a66;
+  --ring: rgba(168, 128, 31, 0.45);
+  --tile-bg: #ffffff;
+  --page-bg: #ffffff;
+  --skel: #e5e1d8;
+  --btn-hover: #000;
+  --shadow: 0 1px 2px rgba(40, 32, 20, 0.06), 0 4px 12px -6px rgba(40, 32, 20, 0.14);
+  --t-base: 16px; --t-md: 15px; --t-sm: 13.5px; --t-2xl: 30px;
+  color-scheme: light;
+}
+
+/* Larger text, either look. */
+:root[data-text="large"] {
+  --t-xs: 12.5px; --t-sm: 14.5px; --t-md: 16px; --t-base: 17.5px; --t-lg: 19px; --t-xl: 25px; --t-2xl: 32px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -46,6 +83,7 @@
 html, body { height: 100%; overscroll-behavior: none; }
 body {
   background: var(--bg); color: var(--ink);
+  transition: background-color 0.25s ease, color 0.25s ease;
   font-family: var(--font-ui); font-size: var(--t-base); line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -81,7 +119,10 @@ b { font-weight: 600; }
   display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
   min-height: 44px; padding: var(--s1) 0;
 }
-.bar .wordmark { height: 26px; width: auto; }
+.bar .wordmark { height: 26px; width: auto; color: var(--ink); }
+.wordmark .mark, .ob-wordmark .mark { stroke: currentColor; }
+.ob-wordmark { color: var(--ink); }
+.ob-wordmark .mark { stroke: var(--gold); }
 .bar-title { font-weight: 600; font-size: var(--t-base); }
 .bar-spacer { min-width: 44px; }
 .link-btn { color: var(--muted); font-size: var(--t-md); padding: var(--s2) 0; min-width: 44px; text-align: left; }
@@ -113,7 +154,7 @@ b { font-weight: 600; }
 .tile .dot {
   position: relative; display: flex; align-items: center; justify-content: center;
   width: 58px; height: 58px; border-radius: 18px; border: 1px solid var(--hairline);
-  background: linear-gradient(150deg, #262624, #151514);
+  background: var(--tile-bg); box-shadow: var(--shadow);
   font-family: var(--font-display); font-size: 25px; color: var(--tint, var(--ink));
 }
 .tile:hover:not(:disabled) .dot { border-color: var(--line); }
@@ -151,7 +192,7 @@ b { font-weight: 600; }
   width: 32px; height: 32px; border-radius: 8px; font-size: 16px;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display); border: 1px solid var(--hairline);
-  background: linear-gradient(150deg, #242424, #131313);
+  background: var(--tile-bg);
 }
 .match-row .grow { flex: 1; text-align: left; }
 .match-row .dim { color: var(--faint); }
@@ -159,7 +200,7 @@ b { font-weight: 600; }
 
 /* ---------- card, row, toggle, buttons ---------- */
 .card {
-  background: var(--elev); border: 1px solid var(--hairline);
+  background: var(--elev); border: 1px solid var(--hairline); box-shadow: var(--shadow);
   border-radius: var(--r); padding: var(--s4); margin-bottom: var(--s3);
 }
 .card-title { font-weight: 600; font-size: var(--t-base); margin-bottom: 2px; }
@@ -193,7 +234,7 @@ b { font-weight: 600; }
   font-size: var(--t-md); font-weight: 600; white-space: nowrap;
 }
 .btn-solid { background: var(--ink); color: var(--bg); }
-.btn-solid:hover { background: #fff; }
+.btn-solid:hover { background: var(--btn-hover); }
 .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 500; }
 .btn-ghost:hover { color: var(--ink); border-color: var(--ink); }
 .btn-solid.small, .btn-ghost.small { min-height: 36px; padding: 0 var(--s4); font-size: 13px; }
@@ -319,7 +360,7 @@ b { font-weight: 600; }
 .ob-cards.col { flex-direction: column; }
 .ob-card {
   flex: 1; min-height: 56px; padding: var(--s4) var(--s5);
-  background: var(--elev); border: 1px solid var(--hairline);
+  background: var(--elev); border: 1px solid var(--hairline); box-shadow: var(--shadow);
   border-radius: var(--r); font-weight: 600; font-size: var(--t-base);
   transition: border-color 0.15s ease;
 }
@@ -328,12 +369,20 @@ b { font-weight: 600; }
 .ob-card.wide { text-align: left; display: block; }
 .ob-card.wide b { display: block; margin-bottom: 2px; }
 .ob-card.wide span { color: var(--muted); font-weight: 400; font-size: var(--t-md); }
+/* The blur question, shown (his 2026-10-28: "I need a visual thing"):
+   three little pictures per answer, blurred exactly where it blurs. */
+.ob-card.pick { display: flex; align-items: center; gap: var(--s3); }
+.ob-card.pick .pick-txt { min-width: 0; }
+.pv { display: flex; gap: 4px; flex: none; }
+.pv .pv-tile { width: 36px; height: 46px; border-radius: 6px; background: var(--line); display: grid; place-items: center; overflow: hidden; }
+.pv svg { width: 30px; height: 30px; fill: var(--muted); }
+.pv .pv-tile.bl svg { filter: blur(4px); }
 .ob-glyphs { display: flex; gap: var(--s2); justify-content: center; margin: var(--s2) 0 var(--s3); }
 .ob-glyphs .dot {
   width: 44px; height: 44px; border-radius: var(--r-sm);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display); font-size: 19px;
-  border: 1px solid var(--hairline); background: linear-gradient(150deg, #242424, #131313);
+  border: 1px solid var(--hairline); background: var(--tile-bg);
 }
 
 /* ---------- open a link ---------- */
@@ -353,14 +402,14 @@ b { font-weight: 600; }
 .link-btn.center { text-align: center; }
 .demo {
   position: relative; height: 300px; margin: var(--s4) 0 var(--s3); overflow: hidden; text-align: left;
-  background: #0d0d0d; border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--page-bg); border: 1px solid var(--line); border-radius: var(--r);
 }
 .demo-bar { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); background: var(--surface); color: var(--faint); font-size: var(--t-sm); }
 .demo-bar svg { width: 16px; height: 16px; color: var(--gold); }
 .demo-feed { padding: var(--s3); }
 .demo-row { display: flex; gap: var(--s3); align-items: center; margin-bottom: var(--s3); }
 .demo-lines { flex: 1; display: grid; gap: 6px; }
-.demo-lines i { display: block; height: 7px; border-radius: 4px; background: #333; }
+.demo-lines i { display: block; height: 7px; border-radius: 4px; background: var(--skel); }
 .demo-lines i.short { width: 55%; }
 .demo-thumb { flex: none; position: relative; width: 104px; height: 58px; border-radius: 8px; }
 .t1 { background: linear-gradient(135deg, #6d5a3f, #2f3f4c 60%, #4c3a3a); }
@@ -393,8 +442,44 @@ b { font-weight: 600; }
 /* ---------- today (2026-10-27) ---------- */
 .today {
   margin-top: var(--s4); padding: var(--s4); border-radius: var(--r);
-  background: var(--elev); border: 1px solid var(--hairline);
+  background: var(--elev); border: 1px solid var(--hairline); box-shadow: var(--shadow);
 }
 .today-line { color: var(--muted); font-size: var(--t-md); }
 .today-num { font-family: var(--font-display); font-size: var(--t-2xl); color: var(--ink); font-variant-numeric: tabular-nums; margin-right: 4px; }
 .today-sub { color: var(--faint); font-size: var(--t-sm); margin-top: 2px; }
+
+/* ---------- greeting (2026-10-28) ---------- */
+.greet { color: var(--faint); font-size: var(--t-md); margin: var(--s5) 0 0; }
+.greet + .home-q { margin-top: 2px; }
+
+/* ---------- look picker (2026-10-28) ----------
+   Each choice is a small drawing of home in that look, so the pick is
+   made by eye. The minis carry their own colours on purpose: they show
+   the other look while this one is on. */
+.looks { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.look {
+  display: grid; gap: var(--s2); padding: var(--s2); text-align: left;
+  border: 1.5px solid var(--hairline); border-radius: var(--r); background: var(--elev); box-shadow: var(--shadow);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.look:active { transform: scale(0.98); }
+.look.active { border-color: var(--ink); }
+.look b { display: flex; align-items: center; gap: 6px; font-size: var(--t-base); padding: 0 var(--s1); }
+.look .look-sub { color: var(--muted); font-size: var(--t-sm); padding: 0 var(--s1) var(--s1); }
+.look.active b::after {
+  content: ""; width: 16px; height: 16px; border-radius: 50%; margin-left: auto;
+  background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23141414' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
+}
+:root[data-look="paper"] .look.active b::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23f7f5f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.mini {
+  display: grid; gap: 6px; padding: 10px; border-radius: 10px; aspect-ratio: 4 / 3; align-content: start;
+  background: var(--m-bg); border: 1px solid var(--m-line);
+}
+.mini i { display: block; border-radius: 999px; height: 8px; background: var(--m-field); border: 1px solid var(--m-line); }
+.mini .m-h { height: 7px; width: 70%; border: 0; background: var(--m-ink); opacity: 0.85; }
+.mini .m-s { height: 14px; }
+.mini .m-t { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 2px; }
+.mini .m-t span { aspect-ratio: 1; border-radius: 5px; background: var(--m-tile); border: 1px solid var(--m-line); }
+.mini.night { --m-bg: #141414; --m-line: #2c2b28; --m-field: #1e1d1b; --m-ink: #e7e5e1; --m-tile: #232321; }
+.mini.paper { --m-bg: #f7f5f0; --m-line: #e1dcd2; --m-field: #ffffff; --m-ink: #1d1c19; --m-tile: #ffffff; }
+.ob-looks { margin: var(--s4) 0 var(--s2); }

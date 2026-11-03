@@ -1,8 +1,7 @@
 // Clean-room request-editor scriptlet test. Loads the scriptlet body into
 // a fake DOM (stub window.fetch + XMLHttpRequest), runs it, then drives a
-// /player request and asserts the outbound JSON body gained the field —
-// the isInlinePlaybackNoAd:true trick (public source: iter.ca protobuf RE,
-// NOT uBO/AdGuard code).
+// /player request and asserts the outbound JSON body gained the field
+// (field name from a public write-up at iter.ca, NOT uBO/AdGuard code).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

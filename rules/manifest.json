@@ -14,13 +14,13 @@
       "sha256": "15484d53d0d29762afe2c409545fee535dac2574f3eaa4c6c2a9e07b3ddf7d21"
     },
     "scriptlets.txt": {
-      "sha256": "ed8b551ba2554d52b822c08475cb1ddbdb385251669a27a1d68e89aa3fe98def"
+      "sha256": "e81524a60b99aef425d9a17adac8af9e6d4a325c5787c854076e32f415be6b9e"
     },
     "tuning.json": {
       "sha256": "98d7372f11ef61c7794166e374f103cd1c56ba406583519073a46877244282e0"
     },
     "blur/youtube.css": {
-      "sha256": "02d9461505403f83ac62037a3cd7478bbe95059326dcfd0ebc0b457c901dabf1"
+      "sha256": "c211dc82f347f1bbc162f9247baecae5ecdc29da505892ae3db7740d00b44d79"
     },
     "blur/reddit.css": {
       "sha256": "3279bd1b167a40f0dc800b96afa0ea271e0bfc1f32acad513bc015b32a9834f3"

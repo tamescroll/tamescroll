@@ -168,15 +168,11 @@ strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) 
   btn.addEventListener("click", () => setStrength(Number(btn.dataset.value)));
 });
 
-// No blur on iPhone yet (the iOS port, #16: its model bundle cannot load
-// in WKWebView until the blur phase). Controls that do nothing would
-// promise protection the app does not give, so the Blur pane is hidden
-// and the first run skips its blur question.
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 if (IOS) {
+  // No blur on iPhone yet: no Blur pane, and the demo must not promise it.
   document.querySelector<HTMLElement>('.nav-item[data-pane="blur"]')!.hidden = true;
-  // No blur on iPhone yet, so the demo must not promise it.
   document.querySelectorAll(".demo-thumb.blur-in").forEach((t) => t.classList.remove("blur-in"));
   const toast = document.querySelector<HTMLElement>(".demo-toast");
   if (toast) toast.innerHTML = "<b>Tamed.</b> Feed gone · nothing fighting for your attention";
@@ -1162,9 +1158,68 @@ document.querySelector<HTMLButtonElement>("#links-card-btn")!.addEventListener("
   });
 });
 
+// ---------- look and text size (his 2026-10-28) ----------
+// Night (default) or Paper. index.html applies the stored values before
+// the first paint; these keep the page, the pickers and the phone's own
+// bars in step after a tap.
+
+const LOOK_KEY = "tamescroll.look";
+const TEXT_KEY = "tamescroll.text";
+type Look = "night" | "paper";
+
+function readLook(): Look {
+  return localStorage.getItem(LOOK_KEY) === "paper" ? "paper" : "night";
+}
+
+function applyLook(look: Look) {
+  localStorage.setItem(LOOK_KEY, look);
+  if (look === "paper") document.documentElement.dataset.look = "paper";
+  else delete document.documentElement.dataset.look;
+  document.querySelectorAll<HTMLButtonElement>(".look").forEach((btn) => {
+    const on = btn.dataset.look === look;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-checked", String(on));
+  });
+  // The strips behind the clock and the nav bar are the phone's, not the
+  // page's: tell MainActivity so they match. Absent on desktop.
+  try {
+    (window as unknown as { TsLook?: { set(look: string): void } }).TsLook?.set(look);
+  } catch {
+    // An old shell without the bridge keeps its dark strips.
+  }
+}
+
+function applyText(size: "normal" | "large") {
+  localStorage.setItem(TEXT_KEY, size);
+  if (size === "large") document.documentElement.dataset.text = "large";
+  else delete document.documentElement.dataset.text;
+  document.querySelectorAll<HTMLButtonElement>("#text-toggle .toggle-opt").forEach((btn) => {
+    const on = btn.dataset.value === size;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-checked", String(on));
+  });
+}
+
+document.querySelectorAll<HTMLButtonElement>(".look").forEach((btn) => {
+  btn.addEventListener("click", () => applyLook(btn.dataset.look as Look));
+});
+document.querySelectorAll<HTMLButtonElement>("#text-toggle .toggle-opt").forEach((btn) => {
+  btn.addEventListener("click", () => applyText(btn.dataset.value === "large" ? "large" : "normal"));
+});
+applyLook(readLook());
+applyText(localStorage.getItem(TEXT_KEY) === "large" ? "large" : "normal");
+
+// A small hello above the question, by the phone's clock.
+function renderGreeting() {
+  const h = new Date().getHours();
+  const line =
+    h < 5 ? "Up late?" : h < 12 ? "Good morning." : h < 17 ? "Good afternoon." : h < 22 ? "Good evening." : "Up late?";
+  document.querySelector<HTMLElement>("#greet")!.textContent = line;
+}
+
 // ---------- settings view ----------
 
-const PANES = ["bringback", "blur", "filters", "about"] as const;
+const PANES = ["bringback", "blur", "filters", "look", "about"] as const;
 
 function showPane(name: (typeof PANES)[number]) {
   PANES.forEach((p) => {
@@ -1190,7 +1245,7 @@ document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("c
 });
 
 // ---------- onboarding (his 2026-10-27, #35: three steps) ----------
-// Welcome, the demo (skippable), what to blur, done. The blur step asks what to blur (his
+// Welcome, the demo (skippable), what to blur, the look, done. The blur step asks what to blur (his
 // 2026-10-27), never the user's own gender: no fourth step. No
 // platform picker: the home screen's "Add a site" is where sites come in,
 // so the first thing the app teaches is the browser, not one platform.
@@ -1229,6 +1284,7 @@ function runOnboarding(done: () => void) {
     goto("demo");
     playDemo();
   });
+  // iPhone has no blur yet, so it skips the blur question.
   const afterDemo = () => (IOS ? finish("none") : goto("blur"));
   document.querySelector<HTMLButtonElement>("#ob-skip-demo")!.addEventListener("click", afterDemo);
   document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", afterDemo);
@@ -1239,12 +1295,13 @@ function runOnboarding(done: () => void) {
   function finish(choice: BlurChoice) {
     writeChosen(readChosen() ?? []);
     setChoice(choice);
-    goto("done");
+    goto("look");
   }
 
   document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
     btn.addEventListener("click", () => finish(btn.dataset.choice as BlurChoice));
   });
+  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () => goto("done"));
 
   document.querySelector<HTMLButtonElement>("#ob-open")!.addEventListener("click", () => done());
 
@@ -1310,6 +1367,7 @@ function renderToday(chosen: string[]) {
 
 function refreshAll() {
   const chosen = readChosen() ?? [];
+  renderGreeting();
   renderTiles(allPlatforms, chosen);
   renderToday(chosen);
   renderManage(allPlatforms);

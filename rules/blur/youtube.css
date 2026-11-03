@@ -98,3 +98,17 @@ ytm-backstage-image-renderer img {
 ytm-autonav-endscreen-video-renderer img {
   filter: blur(var(--ts-blur, 16px));
 }
+
+/* m.youtube.com: the rest of the pictures on results and channel pages.
+ * Mapped live on the arm64 smoke device 2026-10-28: the results page had
+ * 36 of 56 images sharp (19 channel pictures, 16 in Shorts lockups) and
+ * a channel page had 29 of 29 sharp. "Every picture" has to mean every
+ * picture. None of these sit inside the player, so the mini player
+ * stays sharp, same red line as above. */
+ytm-profile-icon img,
+ytm-shorts-lockup-view-model img,
+yt-image-banner-view-model img,
+yt-decorated-avatar-view-model img,
+ytm-compact-thumbnail img {
+  filter: blur(var(--ts-blur, 16px));
+}

@@ -1,7 +1,7 @@
 {
-  "versionCode": 1121,
-  "versionName": "0.1.121",
-  "apkUrl": "https://github.com/anaskhumawala-creator/tamescroll/releases/download/app-v0.1.121/tamescroll-1121.apk",
-  "sha256": "8bbc20386d71f1fd7c5ea7104bd4d2b98903ff70f50b509ac4497f95122f997f",
-  "notes": "Opens straight to your home screen. Video blur on phones is now Beta: videos start unblurred, tap Blur on the player to turn it on, and it stays as you set it through fullscreen and ads."
+  "versionCode": 1137,
+  "versionName": "0.1.137",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.137/tamescroll-1137.apk",
+  "sha256": "21dae21ad6bfe90761ce749ad4b36740e0750603fee3759b26060233a53142df",
+  "notes": "Women mode: thumbnails on the first screen are judged much sooner."
 }

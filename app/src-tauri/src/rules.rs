@@ -167,9 +167,8 @@ const SCRIPTLETS: &[(&str, &[&str], &str)] = &[
     ),
     (
         // Our own request-editor (not a uBO name): sets one dotted field on
-        // outbound JSON request bodies. Drives the isInlinePlaybackNoAd
-        // ad-free-stream trick on YouTube's /player request — see
-        // docs/scriptlet-gap.md. Clean-room from public protobuf RE.
+        // outbound JSON request bodies. Used on YouTube's /player request
+        // (rules/scriptlets.txt). Clean-room from a public write-up.
         "trusted-set-request-field.js",
         &[],
         include_str!("../scriptlets/trusted-set-request-field.js"),
