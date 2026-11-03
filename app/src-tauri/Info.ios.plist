@@ -7,6 +7,16 @@
 	     each build to ask about encryption export rules. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Sites can ask for these (voice search, video calls, "near me"
+	     results, a photo upload). WebKit asks the person first, and the
+	     app itself never uses them; without these strings such a request
+	     would close the app. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>A site you open can ask to use the microphone, for example for voice search. You decide each time.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>A site you open can ask to use the camera, for example to take a photo to upload. You decide each time.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>A site you open can ask for your location, for example to show results near you. You decide each time.</string>
 	<!-- tamescroll://open/<platform>[?url=<link>]: how links, the
 	     Shortcuts app and the quick actions below reach the launcher
 	     (launcher_query_for_open in lib.rs). -->
