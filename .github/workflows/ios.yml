@@ -179,7 +179,7 @@ jobs:
             /usr/libexec/PlistBuddy -c 'Print' "$W" || true
             ls -la "$APP/PlugIns/TameScrollWidget.appex" || true
             echo "--- widget extensions the simulator knows"
-            xcrun simctl spawn "$DEVICE" pluginkit -mAvvv -p com.apple.widgetkit-extension 2>&1 | head -40 || true
+            xcrun simctl spawn "$DEVICE" pluginkit -mAvvv -p com.apple.widgetkit-extension 2>&1 | grep -i -A10 "tamescroll" || echo "Tame Scroll widget NOT registered"
           } | tee ../ios-proof/info-plist.txt
 
           # App Store screenshot: a site with the top bar, on the 6.9-inch

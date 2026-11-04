@@ -139,6 +139,21 @@ jobs:
           --export-method app-store-connect
           --build-number ${{ github.run_number }}
 
+      # What the phone gets: the widget inside the signed .ipa, its plist,
+      # signature and entitlements (the widget did not show on ZV's
+      # iPhone from build 39).
+      - name: Widget in the signed build
+        run: |
+          IPA=$(find src-tauri/gen/apple/build -name '*.ipa' | head -1)
+          D=$(mktemp -d); unzip -q "$IPA" -d "$D"
+          W=$(find "$D" -name 'TameScrollWidget.appex' -type d | head -1)
+          [ -n "$W" ] || { echo "no widget in the .ipa"; find "$D" -maxdepth 4; exit 1; }
+          /usr/libexec/PlistBuddy -c Print "$W/Info.plist"
+          codesign -dvv "$W" 2>&1 | grep -v "^CDHash\|^Hash" || true
+          codesign -d --entitlements - "$W" 2>&1 || true
+          security cms -D -i "$W/embedded.mobileprovision" 2>/dev/null | grep -A1 -E "<key>(Name|application-identifier|ExpirationDate)</key>" || echo "no embedded profile in the widget"
+          codesign --verify --deep --strict "$(dirname "$(dirname "$W")")" && echo "signature verifies"
+
       - name: Upload to TestFlight
         run: |
           IPA=$(find src-tauri/gen/apple/build -name '*.ipa' | head -1)
