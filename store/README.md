@@ -128,8 +128,20 @@ upload goes through Play Console by hand.
   12 testers for 14 days (ZV chose to do this; he sends the tester
   emails). Closed testing is not sent for review until the tester list
   is in. Production only on ZV's OK after the 14 days.
-- **1137:** uploaded to the internal track with the same upload key;
-  store listing filled from `play/en-US`. Screenshots still needed.
+- **1137 live on internal testing** (2026-11-05 00:52 IST), release
+  "1137 (0.1.137)", notes "Women mode: thumbnails on the first screen
+  are judged much sooner." The file Play received hashes the same as
+  `release-out/tamescroll-1137.aab` (825E02A0...). One warning: no
+  native debug symbols (does not block). Device count 9,021. The
+  `DUMP` entry in the bundle is the guard on androidx
+  `ProfileInstallReceiver`, not a permission the app requests; Play
+  asked for no declaration. Not yet checked: installing it from the
+  opt-in link on a phone.
+- **Store listing** saved as a draft: the short and full descriptions
+  were an old pre-#34 copy and now match `play/en-US`; title, icon and
+  feature graphic were already there. **Still needed: 2 to 8 phone
+  screenshots** (4+ at 1080px or larger for promotion), ZV to supply.
+  Once they are in, the closed track can be set up.
 
 ## Roadblocks we already hit, and what stops them now
 
