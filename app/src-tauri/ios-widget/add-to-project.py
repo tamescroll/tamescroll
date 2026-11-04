@@ -40,6 +40,14 @@ if not dep:
     sys.exit(f"project.yml: {app} has no dependencies list")
 text = text[: dep.end()] + f"      - target: {NAME}\n" + text[dep.end():]
 
+# iPhone only. Tauri's template never sets TARGETED_DEVICE_FAMILY, so
+# XcodeGen's default (1,2: iPhone and iPad) reached the app (CI proof,
+# 2026-11-04), and an iPad build needs its own App Store screenshots.
+base = re.search(rf"^  {re.escape(app)}:\n(?:^(?:    .*|\s*)\n)*?^    settings:\n      base:\n", text, re.M)
+if not base:
+    sys.exit(f"project.yml: {app} has no settings.base")
+text = text[: base.end()] + '        TARGETED_DEVICE_FAMILY: "1"\n' + text[base.end():]
+
 # The extension's version must equal the app's or App Store Connect
 # refuses the upload. Tauri writes the app's CFBundleVersion (with the
 # build number) into <app>/Info.plist just before it archives, so the
