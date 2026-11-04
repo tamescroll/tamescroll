@@ -306,28 +306,40 @@ class TsWebkitPlugin: Plugin {
   }
 
   /// Home-screen quick actions (Info.ios.plist UIApplicationShortcutItems).
-  /// The app's scene delegate belongs to tao and has no handler for them,
-  /// so one is added at runtime. It re-opens the app through its own
-  /// tamescroll:// address, which keeps a single, validated way in
-  /// (launcher_query_for_open in lib.rs).
+  /// tao's delegates have no handler for them, so one is added at
+  /// runtime. It re-opens the app through its own tamescroll:// address,
+  /// which keeps a single, validated way in (launcher_query_for_open in
+  /// lib.rs); the home-screen widgets use that same address.
   ///
-  /// Known gap: a quick action that LAUNCHES the app (rather than
-  /// returning to it) arrives in the scene's connection options before
-  /// this plugin loads, so that one opens the launcher instead.
+  /// tao runs without scenes unless Info.plist declares a scene manifest
+  /// (ours does not), so the app delegate is the one UIKit asks. It asks
+  /// after didFinishLaunching returns, and this plugin loads while that
+  /// runs (the web view is made there), so a quick action that launches
+  /// the app should land too. The scene
+  /// delegate gets the handler as well in case a manifest appears.
   func installQuickActions() {
-    guard let cls: AnyClass = NSClassFromString("TaoSceneDelegate") else { return }
-    let sel = NSSelectorFromString("windowScene:performActionForShortcutItem:completionHandler:")
-    let handler: @convention(block) (AnyObject, UIWindowScene, UIApplicationShortcutItem, @escaping (Bool) -> Void) -> Void = {
-      _, _, item, done in
+    func open(_ item: UIApplicationShortcutItem) -> Bool {
       let id = item.type.hasPrefix("open.") ? String(item.type.dropFirst(5)) : ""
-      guard !id.isEmpty, let url = URL(string: "tamescroll://open/\(id)") else {
-        done(false)
-        return
-      }
+      guard !id.isEmpty, let url = URL(string: "tamescroll://open/\(id)") else { return false }
       UIApplication.shared.open(url)
-      done(true)
+      return true
     }
-    class_addMethod(cls, sel, imp_implementationWithBlock(handler), "v@:@@@?")
+    if let cls: AnyClass = NSClassFromString("TaoSceneDelegate") {
+      let sel = NSSelectorFromString("windowScene:performActionForShortcutItem:completionHandler:")
+      let handler: @convention(block) (AnyObject, UIWindowScene, UIApplicationShortcutItem, @escaping (Bool) -> Void) -> Void = {
+        _, _, item, done in done(open(item))
+      }
+      class_addMethod(cls, sel, imp_implementationWithBlock(handler), "v@:@@@?")
+    }
+    if let delegate = UIApplication.shared.delegate {
+      let sel = NSSelectorFromString("application:performActionForShortcutItem:completionHandler:")
+      let handler: @convention(block) (AnyObject, UIApplication, UIApplicationShortcutItem, @escaping (Bool) -> Void) -> Void = {
+        _, _, item, done in done(open(item))
+      }
+      if let cls = object_getClass(delegate) {
+        class_addMethod(cls, sel, imp_implementationWithBlock(handler), "v@:@@@?")
+      }
+    }
   }
 
   @objc public func setPageScript(_ invoke: Invoke) throws {

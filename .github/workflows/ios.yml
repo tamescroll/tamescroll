@@ -95,6 +95,16 @@ jobs:
           grep -rh "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | sort | uniq -c
           ! grep -rq 'TARGETED_DEVICE_FAMILY.*1,2' --include=project.yml --include=project.pbxproj .
 
+      # Home-screen widgets (our glyphs, added only by the person). The
+      # extension is not in Tauri's project template, so it is appended to
+      # project.yml and the project regenerated.
+      - name: Home-screen widgets
+        run: |
+          cd src-tauri/gen/apple
+          python3 ../../ios-widget/add-to-project.py
+          xcodegen generate
+          grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
+
       - name: Build for the simulator
         run: pnpm tauri ios build --debug --target aarch64-sim --ci
 
@@ -157,6 +167,14 @@ jobs:
             /usr/libexec/PlistBuddy -c 'Print UIApplicationShortcutItems' "$APP/Info.plist" || true
             echo "--- UIDeviceFamily (1 iPhone, 2 iPad)"
             /usr/libexec/PlistBuddy -c 'Print UIDeviceFamily' "$APP/Info.plist" || true
+            echo "--- scene manifest (none means tao's app-delegate mode)"
+            /usr/libexec/PlistBuddy -c 'Print UIApplicationSceneManifest' "$APP/Info.plist" || true
+            echo "--- widget extension"
+            ls "$APP/PlugIns" || echo "no PlugIns folder"
+            W="$APP/PlugIns/TameScrollWidget.appex/Info.plist"
+            for k in CFBundleIdentifier CFBundleVersion CFBundleShortVersionString; do
+              echo "$k app=$(/usr/libexec/PlistBuddy -c "Print $k" "$APP/Info.plist") widget=$(/usr/libexec/PlistBuddy -c "Print $k" "$W" 2>&1)"
+            done
           } | tee ../ios-proof/info-plist.txt
 
           # App Store screenshot: a site with the top bar, on the 6.9-inch

@@ -117,6 +117,16 @@ jobs:
           grep -rh "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | sort | uniq -c
           ! grep -rq 'TARGETED_DEVICE_FAMILY.*1,2' --include=project.yml --include=project.pbxproj .
 
+      # Home-screen widgets (our glyphs, added only by the person). The
+      # extension is not in Tauri's project template, so it is appended to
+      # project.yml and the project regenerated.
+      - name: Home-screen widgets
+        run: |
+          cd src-tauri/gen/apple
+          python3 ../../ios-widget/add-to-project.py
+          xcodegen generate
+          grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
+
       # The build number must rise with every upload; the run number does.
       - name: Build the signed app
         run: >
