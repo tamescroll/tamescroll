@@ -91,6 +91,11 @@ jobs:
           printf '%s' "${{ secrets.APPLE_API_KEY_P8 }}" > "$KEY"
           echo "APPLE_API_KEY_PATH=$KEY" >> "$GITHUB_ENV"
 
+      # Export can sign a new bundle ID but not register one, so the
+      # widget's ID is registered through the API first (no-op once it exists).
+      - name: Widget bundle ID registered
+        run: python3 ../.github/scripts/asc-bundle-id.py app.tamescroll.client.widgets "Tame Scroll Widgets"
+
       - name: Generate the Xcode project
         run: pnpm tauri ios init --ci
 
