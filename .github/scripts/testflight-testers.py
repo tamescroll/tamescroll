@@ -12,7 +12,11 @@ build (2026-11-03), so after each upload CI:
 
 `--status` only prints what Apple has, changing nothing.
 
-Usage: testflight-testers.py <bundle id> [--status] [--wait-minutes N]
+Usage: testflight-testers.py <bundle id> [--status] [--wait-minutes N] [--build N]
+
+--build N waits for the build whose number ends in .N (the run number):
+right after an upload Apple does not list the new build yet, so without
+it the previous build would be taken as the newest (run 42, 2026-11-04).
 """
 import sys
 import time
@@ -22,6 +26,7 @@ from asc import ApiError, call
 
 bundle = sys.argv[1]
 status_only = "--status" in sys.argv
+want = sys.argv[sys.argv.index("--build") + 1] if "--build" in sys.argv else None
 wait = int(sys.argv[sys.argv.index("--wait-minutes") + 1]) if "--wait-minutes" in sys.argv else 30
 
 apps = call("GET", "/v1/apps?" + urllib.parse.urlencode({"filter[bundleId]": bundle}))["data"]
@@ -61,7 +66,18 @@ if status_only:
 
 deadline = time.time() + wait * 60
 while True:
-    newest = builds()[0]
+    listed = builds()
+    if want:
+        match = [b for b in listed if b["attributes"]["version"].split(".")[-1] == want]
+        if not match:
+            if time.time() > deadline:
+                sys.exit(f"build {want} not listed at Apple after {wait} min; run again later")
+            print(f"build {want} not listed yet; waiting")
+            time.sleep(60)
+            continue
+        newest = match[0]
+    else:
+        newest = listed[0]
     state = newest["attributes"]["processingState"]
     if state == "VALID":
         break

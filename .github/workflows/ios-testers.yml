@@ -8,6 +8,11 @@ name: iOS TestFlight testers
 
 on:
   workflow_call:
+    inputs:
+      build:
+        description: Build number to wait for (the TestFlight run number)
+        type: string
+        default: ''
   workflow_dispatch:
   push:
     branches: ['**']
@@ -34,7 +39,9 @@ jobs:
           echo "APPLE_API_KEY_PATH=$KEY" >> "$GITHUB_ENV"
 
       - name: Add to tester groups and submit for review
-        run: python3 .github/scripts/testflight-testers.py app.tamescroll.client --wait-minutes 35
+        run: python3 .github/scripts/testflight-testers.py app.tamescroll.client --wait-minutes 35 ${BUILD:+--build "$BUILD"}
+        env:
+          BUILD: ${{ inputs.build }}
 
       - name: What Apple has now
         if: always()

@@ -170,4 +170,6 @@ jobs:
     name: Testers
     needs: testflight
     uses: ./.github/workflows/ios-testers.yml
+    with:
+      build: ${{ github.run_number }}
     secrets: inherit
