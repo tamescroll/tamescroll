@@ -7,8 +7,9 @@
 #   - the APK's mtime is checked, never gradlew's exit code
 #   - the asset is uploaded from a file named after the release
 #   - the served APK is re-downloaded and hashed, and isDraft is read
-# It must run on HIS PC: the APK is signed with that machine's debug key,
-# and an APK signed anywhere else will not install over his app.
+# It must run on HIS PC: the APK is a release build signed with the key
+# keystore.properties names (store/README.md), and an APK signed with any
+# other key will not install over the app.
 #
 # Version: if the version in appupdate.rs has no GitHub release yet, that
 # version is released (a bump left in the tree is used, not doubled);
@@ -32,6 +33,8 @@ fi
 [ -n "${ANDROID_HOME:-}" ] || die "ANDROID_HOME is not set."
 command -v gh >/dev/null || die "the GitHub CLI (gh) is not installed."
 gh auth status >/dev/null 2>&1 || die "gh is not signed in: run 'gh auth login' once."
+KP=app/src-tauri/gen/android/keystore.properties
+[ -f "$KP" ] || die "$KP is missing: the release APK cannot be signed (store/README.md)."
 ls app/src-tauri/gen/android/app/src/main/assets/models/*.tflite >/dev/null 2>&1 \
   || die "assets/models/*.tflite are missing: run spikes/native/convert.py first."
 
@@ -81,10 +84,11 @@ mkdir -p "$JNI"
 "$STRIP" --strip-unneeded -o "$JNI/libapp_lib.so" "$SO"
 
 say "Packaging the APK"
-APK=app/src-tauri/gen/android/app/build/outputs/apk/arm64/debug/app-arm64-debug.apk
-( cd app/src-tauri/gen/android && ./gradlew :app:clean :app:assembleArm64Debug -x :app:rustBuildArm64Debug >>"$LOG" 2>&1 ) || true
+APK=app/src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk
+( cd app/src-tauri/gen/android && ./gradlew :app:clean :app:assembleArm64Release -x :app:rustBuildArm64Release >>"$LOG" 2>&1 ) || true
 # gradlew exits 0 on a failed task: the mtime is the truth.
 [ -f "$APK" ] && [ "$(stat -c %Y "$APK")" -ge "$STAMP" ] || die "gradle did not produce a new APK (release.log)."
+"$JAVA_HOME/bin/jarsigner" -verify "$APK" >>"$LOG" 2>&1 || die "the APK is not signed: check keystore.properties."
 SIZE=$(stat -c %s "$APK")
 [ "$SIZE" -lt 120000000 ] || die "APK is $((SIZE / 1000000))MB: the .so was not stripped or a duplicate was packaged."
 
