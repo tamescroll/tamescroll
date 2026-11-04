@@ -150,3 +150,9 @@ jobs:
       - name: Remove the key
         if: always()
         run: rm -rf ~/.appstoreconnect/private_keys
+
+  testers:
+    name: Testers
+    needs: testflight
+    uses: ./.github/workflows/ios-testers.yml
+    secrets: inherit
