@@ -241,7 +241,26 @@ class TsWebkitPlugin: Plugin {
       dragStart = y
       return
     }
-    if y - start > 24 { setBarShown(false, animated: true) }
+    if y - start > 24 { foldWhenStill(sv) }
+  }
+
+  /// Fold only once the page has stopped moving. Resizing the web view
+  /// in the middle of a drag left YouTube's bottom bar floating partway
+  /// up the screen with the feed showing beneath it (his iPhone,
+  /// 2026-11-04): WebKit placed the page's fixed bars for the old size.
+  var foldPending = false
+  func foldWhenStill(_ sv: UIScrollView) {
+    if foldPending { return }
+    foldPending = true
+    func check() {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self, weak sv] in
+        guard let self = self, let sv = sv else { return }
+        if sv.isTracking || sv.isDecelerating || sv.isDragging { check(); return }
+        self.foldPending = false
+        self.setBarShown(false, animated: true)
+      }
+    }
+    check()
   }
 
   @objc func barUnfold() { setBarShown(true, animated: true) }
@@ -257,12 +276,19 @@ class TsWebkitPlugin: Plugin {
     }
     guard animated, let parent = topBar?.superview else {
       swap()
+      pageResized()
       return
     }
-    UIView.animate(withDuration: 0.2) {
+    UIView.animate(withDuration: 0.2, animations: {
       swap()
       parent.layoutIfNeeded()
-    }
+    }, completion: { _ in self.pageResized() })
+  }
+
+  /// Tell the page its window changed size, so bars it pins to the
+  /// bottom of the screen move to the new bottom.
+  func pageResized() {
+    webview?.evaluateJavaScript("window.dispatchEvent(new Event('resize'))", completionHandler: nil)
   }
 
   static func bareHost(_ host: String) -> String {
