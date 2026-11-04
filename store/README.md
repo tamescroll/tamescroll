@@ -93,6 +93,44 @@ so the store build should not go up without them.
 3. Then **Closed testing** with the 12 testers for 14 days, then
    **Production**.
 
+## Play setup log (what was done, for reference)
+
+**2026-11-04, release 1137 (0.1.137)**, done from ZV's PC in his
+signed-in Chrome, Hijri First developer account. No Play API path
+exists (no service account, fastlane or gradle-play-publisher), so the
+upload goes through Play Console by hand.
+
+- **Bundle:** `Z:\Apps\Disconnect\release-out\tamescroll-1137.aab`
+  (the repo clone on the PC is the folder `Z:\Apps\Disconnect`), built
+  2026-10-29 by `play-build.bat`. The GitHub release has the APK only.
+- **Signing, as found on 2026-11-04.** Play App Signing has been on
+  since 2026-10-27 with a **Google-managed app signing key**, SHA-256
+  `B7:C1:CA:57:03:EF:CA:A0:04:CA:36:3E:69:2B:9C:6C:DE:39:DF:CC:10:1D:1E:F0:FE:D4:70:39:43:2D:C7:9D`.
+  The **upload key** is `Z:\Dropbox\Tamescroll\keys\tamescroll-upload.jks`,
+  alias `upload` (CN=tamescroll, O=Hijri First), SHA-256
+  `72:2A:C3:C9:62:28:0F:A3:27:5E:A1:99:66:D9:77:8D:CE:36:6B:97:93:D7:A2:61:88:2D:2C:3E:E3:B5:D2:C8`.
+  Its password lives only in the gitignored `keystore.properties`.
+  Because Play re-signs with the Google key, a Play install and a
+  GitHub APK cannot update each other. Making them match means Play's
+  permanent "Change key" upgrade (PEPK export of our key), which fully
+  helps Android 13+ only. That is ZV's call and is NOT done.
+- **Already in Play before this session:** internal track had 1136
+  (0.1.136) live since 2026-10-29; opt-in link
+  https://play.google.com/apps/internaltest/4701111485791840483 .
+  10 of 11 setup tasks done (privacy policy, sign-in details, ads,
+  content rating, target audience, data safety, government, financial,
+  health, category/contact); the store listing was the one left.
+  Tester lists: "Owner" (1 email, on the internal track) and
+  "Internal - owner devices" (3 emails).
+- **Account:** personal, ID 8587074952236915719, so the 12 testers for
+  14 days closed test is required before production.
+- **Tracks:** Internal testing first. Then Closed testing with the
+  12 testers for 14 days (ZV chose to do this; he sends the tester
+  emails). Closed testing is not sent for review until the tester list
+  is in. Production only on ZV's OK after the 14 days.
+- **1137:** uploaded to the internal track with the same upload key;
+  store listing filled from `play/en-US`. Screenshots still needed.
+
 ## Roadblocks we already hit, and what stops them now
 
 | Hit before | What happened | Now |
