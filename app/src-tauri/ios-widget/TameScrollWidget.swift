@@ -71,7 +71,11 @@ func siteWidget(_ site: Site) -> some WidgetConfiguration {
     SiteTile(site: site)
   }
   .configurationDisplayName(site.name)
-  .description("Opens \(site.name) in Tame Scroll.")
+  // A plain String, never an interpolated literal: a literal with \(...)
+  // becomes a LocalizedStringKey with arguments, and WidgetKit stopped the
+  // extension on it (assertion, EXC_BREAKPOINT at this line), so the
+  // gallery never listed the widget (ZV's iPhone, builds 39-44).
+  .description(String("Opens \(site.name) in Tame Scroll."))
   .supportedFamilies([.systemSmall])
 }
 
@@ -101,8 +105,8 @@ struct AllSites: View {
 struct AllSitesWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: "sites", provider: StillProvider()) { _ in AllSites() }
-      .configurationDisplayName("Your sites")
-      .description("YouTube, Reddit and X, opened in Tame Scroll.")
+      .configurationDisplayName(String("Your sites"))
+      .description(String("YouTube, Reddit and X, opened in Tame Scroll."))
       .supportedFamilies([.systemMedium])
   }
 }
