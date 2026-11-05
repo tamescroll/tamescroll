@@ -86,12 +86,74 @@ so the store build should not go up without them.
    gaze bundle, the Rust library and the signed `.aab`, checks it, and
    prints the file to upload (`release-out/tamescroll-play-<code>.aab`).
    It publishes nothing.
+   **Upload from the command line** (since 2026-11-05): the service
+   account `play-upload@hijri-first-501917.iam.gserviceaccount.com` can
+   release to testing tracks only (no production, no admin). Its JSON key
+   goes in `secrets/play-service-account.json` (gitignored, never commit).
+   `node scripts/play-upload.mjs --check` proves access without changing
+   anything; `node scripts/play-upload.mjs release-out/tamescroll-<code>.aab
+   --notes "..."` uploads to internal as a **draft** (ZV's default); add
+   `--track alpha` for the closed test, `--status completed` only on his
+   word. This is not an Expo app, so there is no `eas.json`/`eas submit`.
 2. Play Console → Testing → **Internal testing** first: no review wait,
    up to 100 testers, and it is the first time the minified (R8) build
    runs on a phone. Check the launcher, a tile, the blur, the search box
    and the Ads switch on it before anything else.
 3. Then **Closed testing** with the 12 testers for 14 days, then
    **Production**.
+
+## Play setup log (what was done, for reference)
+
+**2026-11-04, release 1137 (0.1.137)**, done from ZV's PC in his
+signed-in Chrome, Hijri First developer account. No Play API path
+exists (no service account, fastlane or gradle-play-publisher), so the
+upload goes through Play Console by hand.
+
+- **Bundle:** `Z:\Apps\Disconnect\release-out\tamescroll-1137.aab`
+  (the repo clone on the PC is the folder `Z:\Apps\Disconnect`), built
+  2026-10-29 by `play-build.bat`. The GitHub release has the APK only.
+- **Signing, as found on 2026-11-04.** Play App Signing has been on
+  since 2026-10-27 with a **Google-managed app signing key**, SHA-256
+  `B7:C1:CA:57:03:EF:CA:A0:04:CA:36:3E:69:2B:9C:6C:DE:39:DF:CC:10:1D:1E:F0:FE:D4:70:39:43:2D:C7:9D`.
+  The **upload key** is `Z:\Dropbox\Tamescroll\keys\tamescroll-upload.jks`,
+  alias `upload` (CN=tamescroll, O=Hijri First), SHA-256
+  `72:2A:C3:C9:62:28:0F:A3:27:5E:A1:99:66:D9:77:8D:CE:36:6B:97:93:D7:A2:61:88:2D:2C:3E:E3:B5:D2:C8`.
+  Its password lives only in the gitignored `keystore.properties`.
+  Because Play re-signs with the Google key, a Play install and a
+  GitHub APK cannot update each other. Making them match means Play's
+  permanent "Change key" upgrade (PEPK export of our key), which fully
+  helps Android 13+ only. **ZV decided 2026-11-05: leave it** (Google's
+  key stays). Moving between the APK and Play always means one
+  uninstall. The GitHub APK can sign with any release key.
+- **Already in Play before this session:** internal track had 1136
+  (0.1.136) live since 2026-10-29; opt-in link
+  https://play.google.com/apps/internaltest/4701111485791840483 .
+  10 of 11 setup tasks done (privacy policy, sign-in details, ads,
+  content rating, target audience, data safety, government, financial,
+  health, category/contact); the store listing was the one left.
+  Tester lists: "Owner" (ZV, on the internal track) and
+  "Internal - owner devices" (5 unique testers on 2026-11-05, ZV
+  included; 12 needed). Addresses stay in Play, not here.
+- **Account:** personal, ID 8587074952236915719, so the 12 testers for
+  14 days closed test is required before production.
+- **Tracks:** Internal testing first. Then Closed testing with the
+  12 testers for 14 days (ZV chose to do this; he sends the tester
+  emails). Closed testing is not sent for review until the tester list
+  is in. Production only on ZV's OK after the 14 days.
+- **1137 live on internal testing** (2026-11-05 00:52 IST), release
+  "1137 (0.1.137)", notes "Women mode: thumbnails on the first screen
+  are judged much sooner." The file Play received hashes the same as
+  `release-out/tamescroll-1137.aab` (825E02A0...). One warning: no
+  native debug symbols (does not block). Device count 9,021. The
+  `DUMP` entry in the bundle is the guard on androidx
+  `ProfileInstallReceiver`, not a permission the app requests; Play
+  asked for no declaration. Not yet checked: installing it from the
+  opt-in link on a phone.
+- **Store listing** saved as a draft: the short and full descriptions
+  were an old pre-#34 copy and now match `play/en-US`; title, icon and
+  feature graphic were already there. **Still needed: 2 to 8 phone
+  screenshots** (4+ at 1080px or larger for promotion), ZV to supply.
+  Once they are in, the closed track can be set up.
 
 ## Roadblocks we already hit, and what stops them now
 
