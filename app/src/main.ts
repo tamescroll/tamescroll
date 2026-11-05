@@ -168,6 +168,16 @@ strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) 
   btn.addEventListener("click", () => setStrength(Number(btn.dataset.value)));
 });
 
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+if (IOS) {
+  // No blur on iPhone yet: no Blur pane, and the demo must not promise it.
+  document.querySelector<HTMLElement>('.nav-item[data-pane="blur"]')!.hidden = true;
+  document.querySelectorAll(".demo-thumb.blur-in").forEach((t) => t.classList.remove("blur-in"));
+  const toast = document.querySelector<HTMLElement>(".demo-toast");
+  if (toast) toast.innerHTML = "<b>Tamed.</b> Feed gone · nothing fighting for your attention";
+}
+
 renderBlurToggle();
 // Sync stored state into Rust at startup too, not just on change —
 // otherwise a relaunch would leave Rust at defaults until first touch.
@@ -1234,67 +1244,253 @@ document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("c
   showView("launcher");
 });
 
-// ---------- onboarding (his 2026-10-27, #35: three steps) ----------
-// Welcome, the demo (skippable), what to blur, the look, done. The blur step asks what to blur (his
-// 2026-10-27), never the user's own gender: no fourth step. No
-// platform picker: the home screen's "Add a site" is where sites come in,
-// so the first thing the app teaches is the browser, not one platform.
-// The YouTube links and home-icon offers live in Settings -> Sites.
+// ---------- onboarding (his 2026-10-27, #35; the tour 2026-11-05) ----------
+// Welcome, the demo, the tour, what to blur, the look, done. The blur
+// step asks what to blur (his 2026-10-27), never the user's own gender.
+// No platform picker: the home screen's "Add a site" is where sites come
+// in, so the first thing the app teaches is the browser, not one
+// platform. The YouTube links and home-icon offers live in Settings ->
+// Sites. The tour (his 2026-11-05: "a much better tutorial ... user
+// intuitive") teaches the three controls by having them tapped: the box,
+// the shield and its folding bar, home.
+//
+// Listeners are bound ONCE; Settings -> About -> "Show the tour again"
+// reruns the same steps with the current answers already marked.
+
+// The progress dots count the steps that ask something of you. iPhone
+// has no blur yet (the IOS block above), so it has one dot fewer.
+const OB_FLOW = IOS ? ["demo", "tour", "look"] : ["demo", "tour", "blur", "look"];
+let obDone: () => void = () => {};
+let obBound = false;
+
+// Copy for each stop of the tour. `hot` is where the live spot sits.
+type TourStop = { scene: string; hot: string; label: string; title: string; text: string };
+const TOUR: TourStop[] = [
+  {
+    scene: "home", hot: "search", label: "Tap the search box",
+    title: "Start from the box",
+    text: "Search privately, or type any site, like wikipedia.org. It opens calm.",
+  },
+  {
+    scene: "site", hot: "shield", label: "Tap the shield",
+    title: "The shield shows what was tamed",
+    text: "On every site. Tap it to see what was stopped there, and to change what's hidden.",
+  },
+  {
+    scene: "folded", hot: "strip", label: "Tap the thin strip",
+    title: "The bar folds away",
+    text: "Scroll and it tucks into a thin strip, so the page gets the room. Tap the strip to bring it back.",
+  },
+  {
+    scene: "site", hot: "home", label: "Tap the house",
+    title: "Home is one tap",
+    text: IOS
+      ? "The house takes you back to your sites. Swiping in from the left edge goes back a page."
+      : "The house takes you back to your sites. Your phone's Back button goes back a page.",
+  },
+  {
+    scene: "home-added", hot: "add", label: "Tap Add a site",
+    title: "Keep your sites close",
+    text: "Add the sites you use as tiles, so they're one tap away. A green dot means we tame that site.",
+  },
+];
+
+const BLUR_SUMMARY: Record<BlurChoice, string> = {
+  all: "Every picture", women: "Women", men: "Men", none: "Nothing",
+};
 
 function runOnboarding(done: () => void) {
+  obDone = done;
   showView("onboard");
+  bindOnboarding();
+  obGoto("welcome", false);
+}
+
+const obTrail: string[] = [];
+let tourAt = 0;
+let tourTimer = 0;
+
+function obGoto(step: string, remember = true) {
   const steps = document.querySelectorAll<HTMLElement>(".ob-step");
+  const current = [...steps].find((el) => !el.hidden)?.dataset.step;
+  if (remember && current && current !== step) obTrail.push(current);
+  if (!remember && step === "welcome") obTrail.length = 0;
+  steps.forEach((el) => {
+    el.hidden = el.dataset.step !== step;
+  });
+  document.querySelector<HTMLButtonElement>("#ob-back")!.hidden = step === "welcome" || step === "done";
+  renderObDots(step);
+  if (step === "tour") tourShow(0);
+  // A first run marks nothing, so no answer is suggested; a replay, or
+  // Back after answering, shows the current one.
+  if (step === "blur") markBlurChoice(readChosen() === null ? null : getChoice());
+  if (step === "done") renderObSummary();
+  window.scrollTo(0, 0);
+}
 
-  const count = document.querySelector<HTMLElement>("#ob-count")!;
-  const back = document.querySelector<HTMLButtonElement>("#ob-back")!;
-  const trail: string[] = [];
+function renderObDots(step: string) {
+  const dots = document.querySelector<HTMLElement>("#ob-dots")!;
+  const at = OB_FLOW.indexOf(step);
+  dots.textContent = "";
+  dots.hidden = at < 0;
+  if (at < 0) return;
+  dots.setAttribute("aria-label", `Step ${at + 1} of ${OB_FLOW.length}`);
+  OB_FLOW.forEach((_, i) => {
+    const d = document.createElement("i");
+    if (i < at) d.className = "past";
+    if (i === at) d.className = "now";
+    dots.append(d);
+  });
+}
 
-  function goto(step: string, remember = true) {
-    const current = [...steps].find((el) => !el.hidden)?.dataset.step;
-    if (remember && current) trail.push(current);
-    steps.forEach((el) => {
-      el.hidden = el.dataset.step !== step;
-    });
-    count.textContent = "";
-    back.hidden = step === "welcome" || step === "done";
+function markBlurChoice(choice: BlurChoice | null) {
+  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
+    const on = btn.dataset.choice === choice;
+    btn.classList.toggle("chosen", on);
+    btn.setAttribute("aria-pressed", String(on));
+  });
+}
+
+function renderObSummary() {
+  const choice = getChoice();
+  const blurRow = document.querySelector<HTMLElement>('#ob-summary [data-row="blur"]')!;
+  blurRow.hidden = IOS;
+  document.querySelector<HTMLElement>("#ob-sum-blur")!.textContent = choice ? BLUR_SUMMARY[choice] : "Every face";
+  document.querySelector<HTMLElement>("#ob-sum-look")!.textContent = readLook() === "paper" ? "Paper" : "Night";
+}
+
+// ---- the tour ----
+
+function tourShow(i: number) {
+  window.clearTimeout(tourTimer);
+  tourAt = i;
+  const stop = TOUR[i];
+  const phone = document.querySelector<HTMLElement>("#tour-phone")!;
+  const hot = document.querySelector<HTMLButtonElement>("#tour-hot")!;
+  phone.dataset.scene = stop.scene;
+  phone.dataset.hot = stop.hot;
+  phone.classList.remove("sheet-open", "typing", "unfold");
+  document.querySelector<HTMLElement>("#tour-typed")!.textContent = "Search or type a site";
+  hot.setAttribute("aria-label", stop.label);
+  hot.disabled = false;
+  document.querySelector<HTMLElement>("#tour-n")!.textContent = `Quick tour · ${i + 1} of ${TOUR.length}`;
+  document.querySelector<HTMLElement>("#tour-title")!.textContent = stop.title;
+  document.querySelector<HTMLElement>("#tour-text")!.textContent = stop.text;
+  document.querySelector<HTMLElement>("#tour-hint")!.textContent = `${stop.label}, or press Next`;
+  document.querySelector<HTMLElement>("#tour-next")!.textContent = i === TOUR.length - 1 ? "Continue" : "Next";
+}
+
+function tourAdvance() {
+  if (tourAt >= TOUR.length - 1) {
+    obGoto(IOS ? "look" : "blur");
+    return;
+  }
+  tourShow(tourAt + 1);
+}
+
+// The spot does what the real control does, then the tour moves on.
+function tourTap() {
+  const phone = document.querySelector<HTMLElement>("#tour-phone")!;
+  const hot = document.querySelector<HTMLButtonElement>("#tour-hot")!;
+  const typed = document.querySelector<HTMLElement>("#tour-typed")!;
+  const stop = TOUR[tourAt];
+  hot.disabled = true;
+  const later = (ms: number, fn: () => void) => {
+    tourTimer = window.setTimeout(fn, REDUCED_MOTION ? 0 : ms);
+  };
+  if (stop.hot === "search") {
+    // Types the address, then "opens" it.
+    phone.classList.add("typing");
+    const word = "wikipedia.org";
+    let n = 0;
+    typed.textContent = "";
+    const step = () => {
+      n += 1;
+      typed.textContent = word.slice(0, n);
+      if (n < word.length) later(55, step);
+      else later(350, tourAdvance);
+    };
+    later(120, step);
+  } else if (stop.hot === "shield") {
+    phone.classList.add("sheet-open");
+    later(2200, tourAdvance);
+  } else if (stop.hot === "strip") {
+    phone.classList.add("unfold");
+    later(500, tourAdvance);
+  } else if (stop.hot === "home") {
+    later(150, tourAdvance);
+  } else {
+    later(150, tourAdvance);
+  }
+}
+
+const REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+function bindOnboarding() {
+  if (obBound) return;
+  obBound = true;
+
+  if (IOS) {
+    // No blur on iPhone yet: the demo's line about pictures goes with it.
+    document.querySelector<HTMLElement>(".demo-says li:nth-child(2)")?.remove();
   }
 
-  back.addEventListener("click", () => {
-    const prev = trail.pop();
-    if (prev) goto(prev, false);
+  document.querySelector<HTMLButtonElement>("#ob-back")!.addEventListener("click", () => {
+    const prev = obTrail.pop();
+    if (prev) obGoto(prev, false);
   });
   // The demo replays from its busy state each time it is shown.
   const demo = document.querySelector<HTMLElement>("#ob-demo")!;
+  const says = document.querySelector<HTMLElement>(".demo-says")!;
   function playDemo() {
     demo.classList.remove("play");
+    says.classList.remove("play");
     void demo.offsetWidth;
     demo.classList.add("play");
+    says.classList.add("play");
   }
   document.querySelector<HTMLButtonElement>("#ob-start")!.addEventListener("click", () => {
-    goto("demo");
+    obGoto("demo");
     playDemo();
   });
-  document.querySelector<HTMLButtonElement>("#ob-skip-demo")!.addEventListener("click", () => goto("blur"));
-  document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", () => goto("blur"));
+  // Skipping goes straight to the questions: they must be answered.
+  document.querySelector<HTMLButtonElement>("#ob-skip-demo")!.addEventListener("click", () => obGoto(IOS ? "look" : "blur"));
+  document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", () => obGoto("tour"));
   document.querySelector<HTMLButtonElement>("#ob-demo-replay")!.addEventListener("click", playDemo);
 
-  // COMMIT ON REACHING "done", not on its button, so a reload there
-  // (an Android link arrival navigates the webview) does not start over.
-  function finish(choice: BlurChoice) {
-    writeChosen(readChosen() ?? []);
-    setChoice(choice);
-    goto("look");
-  }
+  document.querySelector<HTMLButtonElement>("#tour-hot")!.addEventListener("click", tourTap);
+  document.querySelector<HTMLButtonElement>("#tour-next")!.addEventListener("click", tourAdvance);
+  document.querySelector<HTMLButtonElement>("#tour-skip")!.addEventListener("click", () => obGoto(IOS ? "look" : "blur"));
 
+  // The answer is stored the moment it is tapped (Settings shows it at
+  // once), marked so the tap is seen, then the step moves on.
   document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
-    btn.addEventListener("click", () => finish(btn.dataset.choice as BlurChoice));
+    btn.addEventListener("click", () => {
+      const choice = btn.dataset.choice as BlurChoice;
+      writeChosen(readChosen() ?? []);
+      setChoice(choice);
+      markBlurChoice(choice);
+      window.setTimeout(() => obGoto("look"), REDUCED_MOTION ? 0 : 280);
+    });
   });
-  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () => goto("done"));
+  // COMMIT ON LEAVING THE QUESTIONS, not on the last button, so a reload
+  // on "done" (an Android link arrival navigates the webview) does not
+  // start over.
+  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () => {
+    if (IOS && getChoice() === null) setChoice("none");
+    writeChosen(readChosen() ?? []);
+    obGoto("done");
+  });
 
-  document.querySelector<HTMLButtonElement>("#ob-open")!.addEventListener("click", () => done());
-
-  goto("welcome", false);
+  document.querySelector<HTMLButtonElement>("#ob-open")!.addEventListener("click", () => obDone());
 }
+
+document.querySelector<HTMLButtonElement>("#replay-tour")!.addEventListener("click", () => {
+  runOnboarding(() => {
+    showView("launcher");
+    refreshAll();
+  });
+});
 
 // ---------- startup ----------
 
