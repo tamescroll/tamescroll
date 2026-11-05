@@ -197,7 +197,9 @@ jobs:
               --predicate 'eventMessage CONTAINS[c] "tamescroll" OR process == "TameScrollWidget" OR (process == "chronod" AND eventMessage CONTAINS[c] "error")' 2>&1 | tail -80
             echo "--- crash reports"
             ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "tamescroll|widget" || echo "none"
-            for f in $(ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i TameScrollWidget | head -2); do head -60 ~/Library/Logs/DiagnosticReports/$f; done
+            for f in $(ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i TameScrollWidget | head -1); do
+              python3 ../.github/scripts/ips-summary.py ~/Library/Logs/DiagnosticReports/$f
+            done
           } > ../ios-proof/widget-log.txt 2>&1 || true
           head -c 6000 ../ios-proof/widget-log.txt || true
 
