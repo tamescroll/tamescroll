@@ -24,9 +24,13 @@
         <!-- density|fontScale added to configChanges: any config change NOT
              listed there recreates the Activity under the live Rust process,
              which renders permanently blank (Tauri cannot attach a fresh
-             Activity — see MainActivity Back-handling comment). -->
+             Activity — see MainActivity Back-handling comment).
+             The second half (layoutDirection onwards) closes the rest of the
+             list: switching the phone to an RTL language, turning on Bold
+             text, a SIM swap or a plugged-in keyboard each recreated the
+             Activity and left a blank screen until the app was killed. -->
         <activity
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|density|fontScale"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|density|fontScale|layoutDirection|mcc|mnc|navigation|touchscreen|colorMode|fontWeightAdjustment|grammaticalGender"
             android:launchMode="singleTask"
             android:label="@string/main_activity_title"
             android:name=".MainActivity"

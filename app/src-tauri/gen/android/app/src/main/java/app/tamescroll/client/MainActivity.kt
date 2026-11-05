@@ -559,7 +559,12 @@ class MainActivity : TauriActivity() {
             return@Thread
           }
           report("Downloading update…")
-          val apk = File(externalCacheDir, "tamescroll-update.apk")
+          // externalCacheDir is null while shared storage is unavailable,
+          // and File(null, name) then points at the process's working
+          // directory, where the write fails and the user was told the
+          // update server could not be reached. The app's own cache is
+          // always there, and file_paths.xml shares it too.
+          val apk = File(externalCacheDir ?: cacheDir, "tamescroll-update.apk")
           val got = download(apkUrl, apk)
           if (got != sha256) {
             apk.delete()
@@ -814,7 +819,10 @@ class MainActivity : TauriActivity() {
   private val syntheticFiles = java.util.concurrent.ConcurrentHashMap<String, java.io.File>()
   private var syntheticDir: java.io.File? = null
 
-  private fun syntheticCacheDir(): java.io.File {
+  // Synchronized: shouldInterceptRequest runs on several WebView threads
+  // at once, and two first requests racing here could each empty the
+  // directory, deleting the file the other had just written.
+  @Synchronized private fun syntheticCacheDir(): java.io.File {
     syntheticDir?.let { return it }
     val dir = java.io.File(cacheDir, "tamescroll-synthetic")
     if (dir.exists()) dir.deleteRecursively()
@@ -836,8 +844,17 @@ class MainActivity : TauriActivity() {
         return syntheticStream(path, java.io.FileInputStream(cached))
       }
       val bytes = nativeSyntheticResource(url) ?: return null
-      val out = java.io.File(syntheticCacheDir(), key)
-      out.writeBytes(bytes)
+      val dir = syntheticCacheDir()
+      val out = java.io.File(dir, key)
+      // Written aside and renamed into place, so a second request for the
+      // same url can never truncate the file while a first is still
+      // streaming it to the page (a cut-short model reads as corrupt).
+      val tmp = java.io.File(dir, "$key.${Thread.currentThread().id}.part")
+      tmp.writeBytes(bytes)
+      if (!tmp.renameTo(out)) {
+        tmp.delete()
+        if (!out.exists()) return null
+      }
       syntheticFiles[key] = out
       return syntheticStream(path, java.io.FileInputStream(out))
     } catch (e: Throwable) {
@@ -982,6 +999,8 @@ class MainActivity : TauriActivity() {
   // stopped since this page's main-frame load, and the way into this
   // site's switches. Over the page, so looking costs nothing.
   private val blockedOnPage = java.util.concurrent.atomic.AtomicInteger(0)
+  // The page the shield's count belongs to (UI thread only).
+  private var shieldPageKey = ""
 
   // Today's total for the launcher's "today" line. Kept on this phone
   // only, saved at each page load, and reset when the date changes.
@@ -1301,6 +1320,16 @@ class MainActivity : TauriActivity() {
       // native-inference port is NOT re-bound here: an SPA nav keeps the
       // document, and the document keeps its port.)
       override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
+        // The shield counts "on this page", but m.youtube never loads a
+        // new document between videos, so the count only reset on a hard
+        // load and kept climbing across every video watched. A new address
+        // (fragments aside: m.youtube opens its menus as #menu) is a new
+        // page to the person looking at it.
+        val pageKey = url.substringBefore('#')
+        if (pageKey != shieldPageKey) {
+          if (shieldPageKey.isNotEmpty() && !isReload) blockedOnPage.set(0)
+          shieldPageKey = pageKey
+        }
         pageUrlForBlocking = url
         updateTopBar(url)
         wry.doUpdateVisitedHistory(view, url, isReload)
