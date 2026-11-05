@@ -84,10 +84,21 @@ class TsWebkitPlugin: Plugin {
           self?.followScroll(sv)
         },
       ]
+      // paintBand pins the web view to the phone's light or dark setting,
+      // so a switch made while the app was open (Control Center, or the
+      // automatic sunset change) left sites in the old mode until the
+      // page's colour happened to change. Coming back to the app, which
+      // closing Control Center also does, repaints with the current one.
+      self.activeObserver = NotificationCenter.default.addObserver(
+        forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+      ) { [weak self, weak webview] _ in
+        if let webview = webview { self?.paintBand(webview) }
+      }
     }
   }
 
   var bandObservers: [NSKeyValueObservation] = []
+  var activeObserver: NSObjectProtocol?
 
   /// The band takes the page's theme colour, else its background, and the
   /// clock turns light or dark to stay readable on it. Only the window's
@@ -215,8 +226,13 @@ class TsWebkitPlugin: Plugin {
       // Each new page opens with the whole bar, except a video page,
       // which opens folded to the strip so the video sits near the top.
       let video = (u.host ?? "").hasSuffix("youtube.com") && u.path.hasPrefix("/watch")
-      if u.absoluteString != collapsedFor {
-        collapsedFor = u.absoluteString
+      // The address without its #fragment: m.youtube opens its menus and
+      // search as #menu or #searching, and counting those as new pages
+      // threw the folded bar back out (or folded it again on a video)
+      // every time a menu opened. Android keys the same way.
+      let page = u.absoluteString.components(separatedBy: "#")[0]
+      if page != collapsedFor {
+        collapsedFor = page
         setBarShown(!video, animated: !bar.isHidden)
       }
     }
