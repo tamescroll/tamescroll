@@ -182,6 +182,25 @@ jobs:
             xcrun simctl spawn "$DEVICE" pluginkit -mAvvv -p com.apple.widgetkit-extension 2>&1 | grep -i -A10 "tamescroll" || echo "Tame Scroll widget NOT registered"
           } | tee ../ios-proof/info-plist.txt
 
+          # Does the widget actually run? iOS's widget service (chronod)
+          # asks every installed widget for its list after install; a
+          # widget that crashes there is silently left out of the gallery
+          # (ZV's iPhone, builds 39-44).
+          {
+            echo "--- widget binary"
+            WB="$APP/PlugIns/TameScrollWidget.appex/TameScrollWidget"
+            file "$WB"; otool -L "$WB" | head -20
+            echo "--- run it directly for 5 s"
+            ( xcrun simctl spawn "$DEVICE" "$WB" & P=$!; sleep 5; kill $P 2>/dev/null; wait $P; echo "exit $?" ) 2>&1 | tail -20
+            echo "--- system log about the widget"
+            xcrun simctl spawn "$DEVICE" log show --last 15m --style compact \
+              --predicate 'eventMessage CONTAINS[c] "tamescroll" OR process == "TameScrollWidget" OR (process == "chronod" AND eventMessage CONTAINS[c] "error")' 2>&1 | tail -80
+            echo "--- crash reports"
+            ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "tamescroll|widget" || echo "none"
+            for f in $(ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i TameScrollWidget | head -2); do head -60 ~/Library/Logs/DiagnosticReports/$f; done
+          } > ../ios-proof/widget-log.txt 2>&1 || true
+          head -c 6000 ../ios-proof/widget-log.txt || true
+
           # App Store screenshot: a site with the top bar, on the 6.9-inch
           # iPhone Apple requires (1320 x 2868), clock at 9:41. Kept full
           # size in appstore/, which the resize below does not touch.
