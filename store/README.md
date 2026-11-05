@@ -113,15 +113,18 @@ upload goes through Play Console by hand.
   Because Play re-signs with the Google key, a Play install and a
   GitHub APK cannot update each other. Making them match means Play's
   permanent "Change key" upgrade (PEPK export of our key), which fully
-  helps Android 13+ only. That is ZV's call and is NOT done.
+  helps Android 13+ only. **ZV decided 2026-11-05: leave it** (Google's
+  key stays). Moving between the APK and Play always means one
+  uninstall. The GitHub APK can sign with any release key.
 - **Already in Play before this session:** internal track had 1136
   (0.1.136) live since 2026-10-29; opt-in link
   https://play.google.com/apps/internaltest/4701111485791840483 .
   10 of 11 setup tasks done (privacy policy, sign-in details, ads,
   content rating, target audience, data safety, government, financial,
   health, category/contact); the store listing was the one left.
-  Tester lists: "Owner" (1 email, on the internal track) and
-  "Internal - owner devices" (3 emails).
+  Tester lists: "Owner" (ZV, on the internal track) and
+  "Internal - owner devices" (5 unique testers on 2026-11-05, ZV
+  included; 12 needed). Addresses stay in Play, not here.
 - **Account:** personal, ID 8587074952236915719, so the 12 testers for
   14 days closed test is required before production.
 - **Tracks:** Internal testing first. Then Closed testing with the
