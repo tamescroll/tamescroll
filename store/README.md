@@ -86,6 +86,15 @@ so the store build should not go up without them.
    gaze bundle, the Rust library and the signed `.aab`, checks it, and
    prints the file to upload (`release-out/tamescroll-play-<code>.aab`).
    It publishes nothing.
+   **Upload from the command line** (since 2026-11-05): the service
+   account `play-upload@hijri-first-501917.iam.gserviceaccount.com` can
+   release to testing tracks only (no production, no admin). Its JSON key
+   goes in `secrets/play-service-account.json` (gitignored, never commit).
+   `node scripts/play-upload.mjs --check` proves access without changing
+   anything; `node scripts/play-upload.mjs release-out/tamescroll-<code>.aab
+   --notes "..."` uploads to internal as a **draft** (ZV's default); add
+   `--track alpha` for the closed test, `--status completed` only on his
+   word. This is not an Expo app, so there is no `eas.json`/`eas submit`.
 2. Play Console → Testing → **Internal testing** first: no review wait,
    up to 100 testers, and it is the first time the minified (R8) build
    runs on a phone. Check the launcher, a tile, the blur, the search box
