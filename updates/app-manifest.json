@@ -1,7 +1,7 @@
 {
-  "versionCode": 1137,
-  "versionName": "0.1.137",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.137/tamescroll-1137.apk",
-  "sha256": "21dae21ad6bfe90761ce749ad4b36740e0750603fee3759b26060233a53142df",
-  "notes": "Women mode: thumbnails on the first screen are judged much sooner."
+  "versionCode": 1138,
+  "versionName": "0.1.138",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.138/tamescroll-1138.apk",
+  "sha256": "92bc65890fc751455c37009cbf6d368cc4cc87030970787be535fd70660ee220",
+  "notes": "One-time reinstall: uninstall Tame Scroll, then install this version. Settings reset once; updates work normally after."
 }
