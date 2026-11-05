@@ -2,6 +2,6 @@
   "versionCode": 1138,
   "versionName": "0.1.138",
   "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.138/tamescroll-1138.apk",
-  "sha256": "92bc65890fc751455c37009cbf6d368cc4cc87030970787be535fd70660ee220",
+  "sha256": "8e0ef340f58c64b7795b469fe754e94528aedea0a7745366ae76c1435207259c",
   "notes": "One-time reinstall: uninstall Tame Scroll, then install this version. Settings reset once; updates work normally after."
 }
