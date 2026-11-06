@@ -271,6 +271,15 @@ class MainActivity : TauriActivity() {
   @Volatile
   private var pageLocked = false
 
+  // KEY Back in fullscreen got past the lock (emulator verify 2026-11-06):
+  // the fullscreen view handles the key before the Back dispatcher, so the
+  // child landed back in portrait with the lock still on. The key is
+  // swallowed here, ahead of every view, while the page is locked.
+  override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+    if (pageLocked && event.keyCode == android.view.KeyEvent.KEYCODE_BACK) return true
+    return super.dispatchKeyEvent(event)
+  }
+
   inner class LockBridge {
     @JavascriptInterface
     fun set(locked: Boolean) {

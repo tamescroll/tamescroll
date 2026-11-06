@@ -121,10 +121,31 @@
   var hintTimer = null;
 
   // Our own padlock, open and closed. Never YouTube's iconography.
-  var OPEN =
-    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
-  var SHUT =
-    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+  // BUILT AS NODES, NEVER A STRING: m.youtube enforces Trusted Types, so
+  // `innerHTML = "<svg..."` throws ("requires 'TrustedHTML' assignment"),
+  // and on the emulator that throw killed paint() -- an empty circle that
+  // never locked (verify run 2026-11-06).
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function icon(shut) {
+    var svg = document.createElementNS(SVG_NS, "svg");
+    var attrs = {
+      viewBox: "0 0 24 24", width: "18", height: "18", fill: "none",
+      stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round",
+      "stroke-linejoin": "round", "aria-hidden": "true"
+    };
+    for (var k in attrs) svg.setAttribute(k, attrs[k]);
+    var body = document.createElementNS(SVG_NS, "rect");
+    body.setAttribute("x", "5");
+    body.setAttribute("y", "11");
+    body.setAttribute("width", "14");
+    body.setAttribute("height", "10");
+    body.setAttribute("rx", "2");
+    var shackle = document.createElementNS(SVG_NS, "path");
+    shackle.setAttribute("d", shut ? "M8 11V7a4 4 0 0 1 8 0v4" : "M8 11V7a4 4 0 0 1 7.5-2");
+    svg.appendChild(body);
+    svg.appendChild(shackle);
+    return svg;
+  }
 
   function remember(v) {
     try {
@@ -197,7 +218,8 @@
 
   function paint() {
     if (!btn) return;
-    btn.innerHTML = locked ? SHUT : OPEN;
+    while (btn.firstChild) btn.removeChild(btn.firstChild);
+    btn.appendChild(icon(locked));
     btn.setAttribute("aria-label", locked ? "Child lock on. Hold to unlock" : "Turn on child lock");
     btn.setAttribute("aria-pressed", locked ? "true" : "false");
     btn.style.opacity = locked ? "1" : ".55";
