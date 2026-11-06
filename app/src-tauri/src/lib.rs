@@ -2603,6 +2603,22 @@ mod tests {
             assert!(!s.default_shown, "{id} starts Hidden");
         }
         assert_eq!(yt.last().map(|s| s.id.as_str()), Some(ADS_SURFACE), "ads stays last");
+        // The two that ARE rules (#50) start Hidden too, and their CSS ships
+        // by default: Next/Previous, and the search dropdown.
+        for id in ["player_skip", "search_suggestions"] {
+            let s = yt.iter().find(|s| s.id == id).unwrap_or_else(|| panic!("{id} offered"));
+            assert!(!s.default_shown, "{id} starts Hidden");
+        }
+        let css = surfaces_css("youtube", &[]);
+        for needle in [
+            ".player-middle-controls-prev-next-button",
+            ".ytSearchboxComponentSuggestionsContainer",
+            ".ytFullscreenVideoRecommendationsHost",
+        ] {
+            assert!(css.contains(needle), "{needle} hidden by default");
+        }
+        // Fullscreen recommendations follow the Recommendations switch.
+        assert!(!surfaces_css("youtube", &["watch_recs".to_string()]).contains(".ytFullscreenVideoRecommendationsHost"));
         assert!(surfaces("reddit".to_string()).iter().all(|s| s.id != SWIPE_SURFACE && s.id != CHILD_LOCK_SURFACE));
 
         // Install defaults: swiping blocked, no padlock.

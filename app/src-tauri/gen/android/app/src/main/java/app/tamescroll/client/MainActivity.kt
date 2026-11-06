@@ -84,6 +84,7 @@ class MainActivity : TauriActivity() {
     private const val TOP_STRIP_DP = 24
     private const val STATS_PREFS = "tamescroll.stats"
     private const val LOOK_PREFS = "tamescroll.look"
+    private const val SETTINGS_PREFS = "tamescroll.settings"
     private const val NIGHT_BG = 0xFF141414.toInt()
     private const val PAPER_BG = 0xFFF7F5F0.toInt()
   }
@@ -274,6 +275,42 @@ class MainActivity : TauriActivity() {
     @JavascriptInterface
     fun set(locked: Boolean) {
       pageLocked = locked
+    }
+  }
+
+  // ---- launcher settings mirror (#50). MEASURED 2026-11-06 on the
+  // emulator: flip a YouTube setting, swipe the app away at once, and the
+  // old setting comes back -- WebView localStorage reaches disk lazily and
+  // a force-stop loses the write; after a 20s wait it stuck. That is one
+  // of the ways his Recommendations were "hidden, then not hidden". The
+  // launcher now writes the bring-back map here too, synchronously, and
+  // reads it back first.
+  //
+  // Launcher-only, both ways: a platform page can neither read nor
+  // rewrite the user's settings through this.
+  inner class PrefsBridge {
+    private fun onLauncher(): Boolean {
+      val task = java.util.concurrent.FutureTask<Boolean> {
+        val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+        here.startsWith("http://tauri.localhost/")
+      }
+      runOnUiThread(task)
+      return try { task.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
+    }
+
+    @JavascriptInterface
+    fun get(key: String?): String? {
+      if (key != "shown" || !onLauncher()) return null
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).getString(key, null)
+    }
+
+    @JavascriptInterface
+    fun set(key: String?, value: String?): Boolean {
+      if (key != "shown" || value == null || value.length > 64 * 1024 || !onLauncher()) return false
+      // commit(), not apply(): the whole point is that it is on disk
+      // before the app can be swiped away. This runs on the JS bridge
+      // thread, never the UI thread.
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).edit().putString(key, value).commit()
     }
   }
 
@@ -1838,6 +1875,7 @@ class MainActivity : TauriActivity() {
     webView.setBackgroundColor(if (paperLook) PAPER_BG else NIGHT_BG)
     webView.addJavascriptInterface(LookBridge(), "TsLook")
     webView.addJavascriptInterface(LockBridge(), "TsLock")
+    webView.addJavascriptInterface(PrefsBridge(), "TsPrefs")
     webView.addJavascriptInterface(ShortcutBridge(), "TsShortcuts")
     webView.addJavascriptInterface(LinksBridge(), "TsLinks")
     // Updater bridge: only ever reachable from the launcher's About

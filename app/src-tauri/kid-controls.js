@@ -3,10 +3,15 @@
 // A toddler using the app swiped from one YouTube video to the next. Two
 // page-side controls answer that, each behind its own YouTube setting:
 //
-//   swipeOff  -- "Swiping between videos" is Hidden: a swipe that starts
-//                on the player is swallowed before YouTube sees it, so it
-//                cannot change the video. Taps still reach the player, so
-//                play, pause, seek and fullscreen all keep working.
+//   swipeOff  -- "Swiping between videos" is Hidden: in fullscreen, a
+//                swipe that starts on the player is swallowed before
+//                YouTube sees it. MEASURED 2026-11-06 (emulator, 1138): a
+//                swipe UP there opens a strip of 12 other videos, and that
+//                is how she went video to video. Taps still reach the
+//                player, so play, pause, seek and leaving fullscreen keep
+//                working. Out of fullscreen YouTube's swipes do nothing
+//                (same probe), so the page and our own drag-to-mini
+//                gesture are left alone there.
 //   lock      -- "Child lock button" is Shown: a padlock sits beside the
 //                home pill. One tap locks: a clear layer covers the page
 //                and swallows every touch while the video keeps playing.
@@ -36,6 +41,10 @@
     "ytm-reel-video-renderer, ytm-shorts-lockup-view-model, .reel-player";
   var SWIPE_PX = 12;
 
+  function fullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
   function inPlayer(t) {
     try {
       return !!(t && t.closest && t.closest(PLAYER));
@@ -53,7 +62,7 @@
       "touchstart",
       function (e) {
         var t = e.touches && e.touches[0];
-        start = t && inPlayer(e.target) ? { x: t.clientX, y: t.clientY, moved: false } : null;
+        start = t && fullscreen() && inPlayer(e.target) ? { x: t.clientX, y: t.clientY, moved: false } : null;
       },
       { capture: true, passive: true }
     );

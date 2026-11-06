@@ -427,12 +427,43 @@ type SurfaceInfo = { id: string; label: string; default_shown: boolean };
 
 const SHOWN_KEY = "tamescroll.shown";
 
-function readShownMap(): Record<string, string[]> {
+// THE MAP IS MIRRORED NATIVELY (#50). WebView localStorage reaches disk
+// lazily: measured on the emulator, a setting flipped and the app swiped
+// away at once came back with its OLD value. MainActivity's TsPrefs writes
+// synchronously, so it is read first and written on every change; desktop
+// has no bridge and keeps localStorage alone.
+type PrefsBridge = { get(key: string): string | null; set(key: string, value: string): boolean };
+function prefsBridge(): PrefsBridge | null {
+  return ((window as unknown as { TsPrefs?: PrefsBridge }).TsPrefs) ?? null;
+}
+
+function parseShownMap(raw: string | null | undefined): Record<string, string[]> | null {
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(localStorage.getItem(SHOWN_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
   } catch {
-    return {};
+    return null;
+  }
+}
+
+function readShownMap(): Record<string, string[]> {
+  let native: string | null = null;
+  try {
+    native = prefsBridge()?.get("shown") ?? null;
+  } catch {
+    native = null;
+  }
+  return parseShownMap(native) ?? parseShownMap(localStorage.getItem(SHOWN_KEY)) ?? {};
+}
+
+function writeShownMap(map: Record<string, string[]>) {
+  const json = JSON.stringify(map);
+  localStorage.setItem(SHOWN_KEY, json);
+  try {
+    prefsBridge()?.set("shown", json);
+  } catch {
+    // localStorage still has it; the mirror is a backstop, not the store.
   }
 }
 
@@ -471,7 +502,7 @@ async function seedDefaultShown(platformIds: string[]) {
       const defaults = list.filter((s) => s.default_shown).map((s) => s.id);
       if (defaults.length) map[id] = defaults;
     }
-    localStorage.setItem(SHOWN_KEY, JSON.stringify(map));
+    writeShownMap(map);
     localStorage.setItem(SEEDED_KEY, "1");
   } catch (error) {
     // A failed seed must not stop the launcher rendering: the user simply
@@ -483,7 +514,7 @@ async function seedDefaultShown(platformIds: string[]) {
 function setShown(platformId: string, shown: string[]) {
   const map = readShownMap();
   map[platformId] = shown;
-  localStorage.setItem(SHOWN_KEY, JSON.stringify(map));
+  writeShownMap(map);
 }
 
 function surfaceRow(platformId: string, surface: SurfaceInfo): HTMLElement {
