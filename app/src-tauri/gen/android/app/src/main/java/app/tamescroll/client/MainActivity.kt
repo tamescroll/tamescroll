@@ -256,6 +256,27 @@ class MainActivity : TauriActivity() {
   @Volatile
   private var paperLook = false
 
+  // ---- child lock (ZV ask 2026-11-06, #50): a toddler swiped from video
+  // to video. The lock itself is page-side -- an injected layer over the
+  // page that swallows every touch until a parent holds the lock button
+  // (kid_controls_script in lib.rs). What the page cannot stop is Back,
+  // so the page tells us it is locked and Back does nothing until it is
+  // unlocked.
+  //
+  // Untrusted like every bridge: any page can call it. The worst a hostile
+  // page can do is make Back a no-op while it is open, which the Home
+  // gesture still escapes, and the flag clears the moment the launcher
+  // loads (see onBack below), so it can never outlive the page.
+  @Volatile
+  private var pageLocked = false
+
+  inner class LockBridge {
+    @JavascriptInterface
+    fun set(locked: Boolean) {
+      pageLocked = locked
+    }
+  }
+
   inner class LookBridge {
     @JavascriptInterface
     fun set(look: String?) {
@@ -1816,6 +1837,7 @@ class MainActivity : TauriActivity() {
     paperLook = getSharedPreferences(LOOK_PREFS, MODE_PRIVATE).getBoolean("paper", false)
     webView.setBackgroundColor(if (paperLook) PAPER_BG else NIGHT_BG)
     webView.addJavascriptInterface(LookBridge(), "TsLook")
+    webView.addJavascriptInterface(LockBridge(), "TsLock")
     webView.addJavascriptInterface(ShortcutBridge(), "TsShortcuts")
     webView.addJavascriptInterface(LinksBridge(), "TsLinks")
     // Updater bridge: only ever reachable from the launcher's About
@@ -1872,7 +1894,12 @@ class MainActivity : TauriActivity() {
         // back into a feed from home would turn Back into a toggle
         // (observed on the emulator 2026-08-18, press-2 anomaly).
         val onLauncher = webView.url?.contains("tauri.localhost") == true
+        if (onLauncher) pageLocked = false
         when {
+          // Child lock on: Back is one of the ways a child leaves the
+          // video, so it does nothing -- not even leave fullscreen --
+          // until a parent unlocks on the page.
+          pageLocked -> {}
           // Fullscreen video first: Back exits fullscreen, not the page —
           // the same contract every browser honors.
           fullscreenView != null -> exitFullscreen()

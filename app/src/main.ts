@@ -436,6 +436,16 @@ function readShownMap(): Record<string, string[]> {
   }
 }
 
+// The whole map for Rust, cleaned: one malformed entry would fail the
+// invoke's deserialisation and with it the tap, so only string lists go.
+function shownMapForRust(): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [id, list] of Object.entries(readShownMap())) {
+    if (Array.isArray(list)) out[id] = list.filter((v) => typeof v === "string");
+  }
+  return out;
+}
+
 function getShown(platformId: string): string[] {
   const shown = readShownMap()[platformId];
   return Array.isArray(shown) ? shown : [];
@@ -751,6 +761,9 @@ async function open(platform: Platform, url?: string, tile?: HTMLElement) {
       shown: getShown(platform.id),
       // The page a link asked for (1107); Rust re-checks the host.
       url: url ?? null,
+      // Every platform's list, so a page reached from ANOTHER platform (a
+      // YouTube link inside Reddit) wears its own prefs, not this tile's.
+      shownMap: shownMapForRust(),
     });
     // Android navigates this very document away: restoring here would
     // paint the un-dimmed tile as the LAST frame before teardown (measured,
@@ -819,6 +832,7 @@ async function openAddress(raw: string) {
       mode: getMode(),
       strength: getStrength(),
       gender: getGender(),
+      shownMap: shownMapForRust(),
     });
     if (!isAndroid) status.textContent = restingStatus;
   } catch (error) {
