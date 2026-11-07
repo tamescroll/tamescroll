@@ -27,7 +27,7 @@ fn manifest_url() -> String {
 /// This build's Android versionCode. Kept in lockstep with
 /// gen/android tauri.properties `tauri.android.versionCode` by the
 /// release flow; the check compares the manifest against this.
-pub const CURRENT_VERSION_CODE: u64 = 1137;
+pub const CURRENT_VERSION_CODE: u64 = 1139;
 
 #[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct UpdateStatus {

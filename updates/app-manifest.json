@@ -1,7 +1,7 @@
 {
-  "versionCode": 1137,
-  "versionName": "0.1.137",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.137/tamescroll-1137.apk",
-  "sha256": "21dae21ad6bfe90761ce749ad4b36740e0750603fee3759b26060233a53142df",
-  "notes": "Women mode: thumbnails on the first screen are judged much sooner."
+  "versionCode": 1139,
+  "versionName": "0.1.139",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.139/tamescroll-1139.apk",
+  "sha256": "5dd6d87dd82308a9409b6ae6f5d436f7a6a678eca7782a8160af3f1ef9621c39",
+  "notes": "Kid controls for YouTube: a child lock, no swiping to other videos in fullscreen, Next/Previous and search suggestions can be hidden. Recommendations no longer switch on and off by themselves."
 }
