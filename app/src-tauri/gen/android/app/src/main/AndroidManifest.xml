@@ -81,8 +81,8 @@
              requests, so the pinned shortcut never existed there and
              "the yt of tamescroll" was nowhere in All apps. This alias
              is a second launcher entry onto the same activity. It ships
-             DISABLED so nobody gets two icons unasked; TsLinks.pinShortcut
-             turns it on when the launcher won't take a pinned shortcut.
+             DISABLED so nobody gets two icons unasked; the Set up step's
+             Add button (TsLinks.pin) turns it on, on every launcher.
              MainActivity reads the alias name and opens YouTube, exactly
              like a shortcut tap. Our own glyph and a label that names us,
              never YouTube's logo or YouTube's name (his ruling 2026-11-07). -->

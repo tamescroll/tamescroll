@@ -459,6 +459,11 @@ class MainActivity : TauriActivity() {
       val ok = try { onLauncher.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
       if (!ok) return "refused"
       if (Build.VERSION.SDK_INT < 26) return "unavailable"
+      // Every launcher gets the app-list entry (his ask 2026-11-07: "for
+      // normal people, not dependent on olauncher"). A pinned shortcut
+      // only ever lands on the HOME SCREEN, never in All apps, so the
+      // alias is what puts it in the app list on Pixel, Samsung, MIUI.
+      if (id == "youtube") listInstead(id)
       return try {
         val sm = getSystemService(android.content.pm.ShortcutManager::class.java) ?: return "unavailable"
         if (sm.pinnedShortcuts.any { it.id == id || it.id == "${id}_named" }) return "pinned"
