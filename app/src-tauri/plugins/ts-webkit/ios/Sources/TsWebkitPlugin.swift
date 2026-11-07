@@ -38,6 +38,7 @@ class TsWebkitPlugin: Plugin {
     // iPhone has no Back button. The edge swipe is how people expect to
     // go back, including from a platform to the launcher.
     webview.allowsBackForwardNavigationGestures = true
+    installTouchLockBridge(webview)
     installQuickActions()
     keepBelowStatusBar(webview)
   }
@@ -479,6 +480,45 @@ extension TsWebkitPlugin {
     if blockingOn {
       controller.add(blocker)
     }
+  }
+}
+
+/// The touch lock (kid-controls.js) tells the app when it locks and
+/// unlocks through `window.TsLock.set(bool)`, the same call Android
+/// answers. While locked, the back swipe is off, so a swipe from the edge
+/// cannot leave the video. Every page starts unlocked; the lock script
+/// says "locked" again on the next load if it still is.
+extension TsWebkitPlugin {
+  func installTouchLockBridge(_ webview: WKWebView) {
+    let controller = webview.configuration.userContentController
+    controller.add(TouchLockHandler(owner: self), name: "tsLock")
+    let shim = """
+      (function () {
+        var h = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tsLock;
+        if (!h) return;
+        window.TsLock = { set: function (v) { try { h.postMessage(!!v); } catch (e) {} } };
+        window.TsLock.set(false);
+      })();
+      """
+    controller.addUserScript(
+      WKUserScript(source: shim, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+  }
+
+  func setTouchLocked(_ locked: Bool) {
+    webview?.allowsBackForwardNavigationGestures = !locked
+  }
+}
+
+/// Holds the plugin weakly: WebKit keeps its message handlers alive.
+final class TouchLockHandler: NSObject, WKScriptMessageHandler {
+  weak var owner: TsWebkitPlugin?
+  init(owner: TsWebkitPlugin) { self.owner = owner }
+  func userContentController(
+    _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
+  ) {
+    guard message.frameInfo.isMainFrame else { return }
+    let locked = (message.body as? Bool) ?? ((message.body as? NSNumber)?.boolValue ?? false)
+    DispatchQueue.main.async { self.owner?.setTouchLocked(locked) }
   }
 }
 

@@ -21,6 +21,7 @@ desktop.ini
 *.pem
 *.p12
 *.mobileprovision
+secrets/
 
 # logs / scratch
 *.log

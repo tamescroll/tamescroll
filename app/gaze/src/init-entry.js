@@ -461,6 +461,17 @@ if (
   function scrolling(now) {
     return now - lastScrollAt < SCROLL_QUIET_MS;
   }
+  // The drain held for a scroll asks again once it has been quiet. A scroll
+  // still going when this fires defers again and re-arms it.
+  var scrollSettleTimer = null;
+  function armScrollSettle() {
+    if (scrollSettleTimer) return;
+    var wait = Math.max(16, SCROLL_QUIET_MS - (performance.now() - lastScrollAt));
+    scrollSettleTimer = setTimeout(function () {
+      scrollSettleTimer = null;
+      if (typeof imageQueue !== 'undefined' && imageQueue.length) drainImages();
+    }, wait);
+  }
 
   // One real macrotask. scheduler.yield() is the purpose-built API and
   // returns to the event loop at user-visible priority where it exists.
@@ -1601,6 +1612,14 @@ if (
       //     instead of one burst, so the worst task is one image rather
       //     than four.
       var nowMs = performance.now();
+      // Mid-flick: start nothing, pick the queue up once the page is still
+      // (image-budget.mjs). Every scroll event lands here too, so ONE
+      // timer, not one per event.
+      if (imageBudget.deferForScroll(scrolling(nowMs))) {
+        release();
+        armScrollSettle();
+        return;
+      }
       if (overBudget(nowMs, imageBudgetFrac(nowMs))) {
         release();
         if (imageQueue.length) setTimeout(drainImages, SCROLL_QUIET_MS);

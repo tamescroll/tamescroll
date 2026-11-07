@@ -84,6 +84,7 @@ class MainActivity : TauriActivity() {
     private const val TOP_STRIP_DP = 24
     private const val STATS_PREFS = "tamescroll.stats"
     private const val LOOK_PREFS = "tamescroll.look"
+    private const val SETTINGS_PREFS = "tamescroll.settings"
     private const val NIGHT_BG = 0xFF141414.toInt()
     private const val PAPER_BG = 0xFFF7F5F0.toInt()
   }
@@ -255,6 +256,72 @@ class MainActivity : TauriActivity() {
   // words and only acts while the launcher is showing.
   @Volatile
   private var paperLook = false
+
+  // ---- child lock (ZV ask 2026-11-06, #50): a toddler swiped from video
+  // to video. The lock itself is page-side -- an injected layer over the
+  // page that swallows every touch until a parent holds the lock button
+  // (kid_controls_script in lib.rs). What the page cannot stop is Back,
+  // so the page tells us it is locked and Back does nothing until it is
+  // unlocked.
+  //
+  // Untrusted like every bridge: any page can call it. The worst a hostile
+  // page can do is make Back a no-op while it is open, which the Home
+  // gesture still escapes, and the flag clears the moment the launcher
+  // loads (see onBack below), so it can never outlive the page.
+  @Volatile
+  private var pageLocked = false
+
+  // KEY Back in fullscreen got past the lock (emulator verify 2026-11-06):
+  // the fullscreen view handles the key before the Back dispatcher, so the
+  // child landed back in portrait with the lock still on. The key is
+  // swallowed here, ahead of every view, while the page is locked.
+  override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+    if (pageLocked && event.keyCode == android.view.KeyEvent.KEYCODE_BACK) return true
+    return super.dispatchKeyEvent(event)
+  }
+
+  inner class LockBridge {
+    @JavascriptInterface
+    fun set(locked: Boolean) {
+      pageLocked = locked
+    }
+  }
+
+  // ---- launcher settings mirror (#50). MEASURED 2026-11-06 on the
+  // emulator: flip a YouTube setting, swipe the app away at once, and the
+  // old setting comes back -- WebView localStorage reaches disk lazily and
+  // a force-stop loses the write; after a 20s wait it stuck. That is one
+  // of the ways his Recommendations were "hidden, then not hidden". The
+  // launcher now writes the bring-back map here too, synchronously, and
+  // reads it back first.
+  //
+  // Launcher-only, both ways: a platform page can neither read nor
+  // rewrite the user's settings through this.
+  inner class PrefsBridge {
+    private fun onLauncher(): Boolean {
+      val task = java.util.concurrent.FutureTask<Boolean> {
+        val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+        here.startsWith("http://tauri.localhost/")
+      }
+      runOnUiThread(task)
+      return try { task.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
+    }
+
+    @JavascriptInterface
+    fun get(key: String?): String? {
+      if (key != "shown" || !onLauncher()) return null
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).getString(key, null)
+    }
+
+    @JavascriptInterface
+    fun set(key: String?, value: String?): Boolean {
+      if (key != "shown" || value == null || value.length > 64 * 1024 || !onLauncher()) return false
+      // commit(), not apply(): the whole point is that it is on disk
+      // before the app can be swiped away. This runs on the JS bridge
+      // thread, never the UI thread.
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).edit().putString(key, value).commit()
+    }
+  }
 
   inner class LookBridge {
     @JavascriptInterface
@@ -559,7 +626,12 @@ class MainActivity : TauriActivity() {
             return@Thread
           }
           report("Downloading update…")
-          val apk = File(externalCacheDir, "tamescroll-update.apk")
+          // externalCacheDir is null while shared storage is unavailable,
+          // and File(null, name) then points at the process's working
+          // directory, where the write fails and the user was told the
+          // update server could not be reached. The app's own cache is
+          // always there, and file_paths.xml shares it too.
+          val apk = File(externalCacheDir ?: cacheDir, "tamescroll-update.apk")
           val got = download(apkUrl, apk)
           if (got != sha256) {
             apk.delete()
@@ -814,7 +886,10 @@ class MainActivity : TauriActivity() {
   private val syntheticFiles = java.util.concurrent.ConcurrentHashMap<String, java.io.File>()
   private var syntheticDir: java.io.File? = null
 
-  private fun syntheticCacheDir(): java.io.File {
+  // Synchronized: shouldInterceptRequest runs on several WebView threads
+  // at once, and two first requests racing here could each empty the
+  // directory, deleting the file the other had just written.
+  @Synchronized private fun syntheticCacheDir(): java.io.File {
     syntheticDir?.let { return it }
     val dir = java.io.File(cacheDir, "tamescroll-synthetic")
     if (dir.exists()) dir.deleteRecursively()
@@ -836,8 +911,17 @@ class MainActivity : TauriActivity() {
         return syntheticStream(path, java.io.FileInputStream(cached))
       }
       val bytes = nativeSyntheticResource(url) ?: return null
-      val out = java.io.File(syntheticCacheDir(), key)
-      out.writeBytes(bytes)
+      val dir = syntheticCacheDir()
+      val out = java.io.File(dir, key)
+      // Written aside and renamed into place, so a second request for the
+      // same url can never truncate the file while a first is still
+      // streaming it to the page (a cut-short model reads as corrupt).
+      val tmp = java.io.File(dir, "$key.${Thread.currentThread().id}.part")
+      tmp.writeBytes(bytes)
+      if (!tmp.renameTo(out)) {
+        tmp.delete()
+        if (!out.exists()) return null
+      }
       syntheticFiles[key] = out
       return syntheticStream(path, java.io.FileInputStream(out))
     } catch (e: Throwable) {
@@ -982,6 +1066,8 @@ class MainActivity : TauriActivity() {
   // stopped since this page's main-frame load, and the way into this
   // site's switches. Over the page, so looking costs nothing.
   private val blockedOnPage = java.util.concurrent.atomic.AtomicInteger(0)
+  // The page the shield's count belongs to (UI thread only).
+  private var shieldPageKey = ""
 
   // Today's total for the launcher's "today" line. Kept on this phone
   // only, saved at each page load, and reset when the date changes.
@@ -1301,6 +1387,16 @@ class MainActivity : TauriActivity() {
       // native-inference port is NOT re-bound here: an SPA nav keeps the
       // document, and the document keeps its port.)
       override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
+        // The shield counts "on this page", but m.youtube never loads a
+        // new document between videos, so the count only reset on a hard
+        // load and kept climbing across every video watched. A new address
+        // (fragments aside: m.youtube opens its menus as #menu) is a new
+        // page to the person looking at it.
+        val pageKey = url.substringBefore('#')
+        if (pageKey != shieldPageKey) {
+          if (shieldPageKey.isNotEmpty() && !isReload) blockedOnPage.set(0)
+          shieldPageKey = pageKey
+        }
         pageUrlForBlocking = url
         updateTopBar(url)
         wry.doUpdateVisitedHistory(view, url, isReload)
@@ -1787,6 +1883,8 @@ class MainActivity : TauriActivity() {
     paperLook = getSharedPreferences(LOOK_PREFS, MODE_PRIVATE).getBoolean("paper", false)
     webView.setBackgroundColor(if (paperLook) PAPER_BG else NIGHT_BG)
     webView.addJavascriptInterface(LookBridge(), "TsLook")
+    webView.addJavascriptInterface(LockBridge(), "TsLock")
+    webView.addJavascriptInterface(PrefsBridge(), "TsPrefs")
     webView.addJavascriptInterface(ShortcutBridge(), "TsShortcuts")
     webView.addJavascriptInterface(LinksBridge(), "TsLinks")
     // Updater bridge: only ever reachable from the launcher's About
@@ -1843,7 +1941,12 @@ class MainActivity : TauriActivity() {
         // back into a feed from home would turn Back into a toggle
         // (observed on the emulator 2026-08-18, press-2 anomaly).
         val onLauncher = webView.url?.contains("tauri.localhost") == true
+        if (onLauncher) pageLocked = false
         when {
+          // Child lock on: Back is one of the ways a child leaves the
+          // video, so it does nothing -- not even leave fullscreen --
+          // until a parent unlocks on the page.
+          pageLocked -> {}
           // Fullscreen video first: Back exits fullscreen, not the page —
           // the same contract every browser honors.
           fullscreenView != null -> exitFullscreen()
