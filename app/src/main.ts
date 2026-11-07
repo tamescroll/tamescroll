@@ -1027,6 +1027,7 @@ type LinksBridge = {
   openAppInfo(pkg: string): void;
   probe(): void;
   pinShortcut(id: string): string;
+  pinNamed?(id: string, name: string): string;
   pinState?(id: string): string;
   state(): string;
 };
@@ -1123,7 +1124,7 @@ function renderLinksView() {
 const PIN_WORDS: Record<string, string> = {
   pinned: "Already on your home screen.",
   requested: "Confirm on the dialog that just opened.",
-  listed: "Added to your app list as \"tamescroll video\".",
+  listed: "Added to your app list as \"tamescroll video\". To call it something else, rename it in your launcher (on olauncher: start typing its name in the app list, then tap Rename).",
   unsupported: "Your launcher doesn't take shortcuts from apps. Long-press the tamescroll icon and drag YouTube out, or pick another launcher.",
   unavailable: "This phone can't add shortcuts.",
   refused: "That didn't work. Try from the home screen instead.",
@@ -1137,12 +1138,16 @@ function renderPinStep() {
   li.classList.toggle("done", st.pinned === true || st.listed === true);
   const body = li.querySelector<HTMLElement>(".step-body")!;
   const btn = li.querySelector<HTMLButtonElement>("button")!;
+  const nameBox = li.querySelector<HTMLInputElement>("#pin-name");
+  // The name box only matters where the launcher takes a shortcut: an
+  // app-list entry's name is fixed, and the launcher renames it.
+  if (nameBox) nameBox.hidden = !!(st.pinned || st.listed || st.supported === false);
   if (st.pinned) {
     body.textContent = "On your home screen.";
     btn.hidden = true;
   } else if (st.listed) {
     // A launcher that won't pin (olauncher) gets the app-list entry.
-    body.textContent = "In your app list as \"tamescroll video\".";
+    body.textContent = "In your app list as \"tamescroll video\". Rename it in your launcher if you like.";
     btn.hidden = true;
   } else if (st.supported === false) {
     // The button still helps here: it switches on the app-list entry.
@@ -1169,7 +1174,10 @@ document.querySelectorAll<HTMLButtonElement>("#view-links [data-act]").forEach((
         case "ours-on": linksBridge.openDefaultApps(null); break;
         case "probe": linksBridge.probe(); break;
         case "pin": {
-          const r = String(linksBridge.pinShortcut("youtube"));
+          const name = (document.querySelector<HTMLInputElement>("#pin-name")?.value ?? "").trim();
+          const r = String(linksBridge.pinNamed
+            ? linksBridge.pinNamed("youtube", name)
+            : linksBridge.pinShortcut("youtube"));
           const note = document.querySelector<HTMLElement>("#links-note")!;
           note.textContent = PIN_WORDS[r] ?? "";
           renderPinStep();

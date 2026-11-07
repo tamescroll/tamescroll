@@ -441,7 +441,16 @@ class MainActivity : TauriActivity() {
      * "listed" (1140): the launcher won't take a pinned shortcut, so the
      * YouTube entry was switched on in the app list instead. */
     @JavascriptInterface
-    fun pinShortcut(id: String?): String {
+    fun pinShortcut(id: String?): String = pin(id, null)
+
+    /** 1140: pin with a name THE PERSON typed, the way Chrome's Add to
+     * home screen lets them name it. Blank means "tamescroll". We never
+     * suggest a name: a pre-filled platform name would be our naming.
+     * The app-list fallback keeps its fixed label; launchers rename it. */
+    @JavascriptInterface
+    fun pinNamed(id: String?, name: String?): String = pin(id, name)
+
+    private fun pin(id: String?, name: String?): String {
       if (id == null || id !in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) return "refused"
       // JavascriptInterface runs off the UI thread and WebView.getUrl()
       // throws there (measured 1117 first cut: "Java exception was raised").
@@ -452,10 +461,24 @@ class MainActivity : TauriActivity() {
       if (Build.VERSION.SDK_INT < 26) return "unavailable"
       return try {
         val sm = getSystemService(android.content.pm.ShortcutManager::class.java) ?: return "unavailable"
-        if (sm.pinnedShortcuts.any { it.id == id }) return "pinned"
+        if (sm.pinnedShortcuts.any { it.id == id || it.id == "${id}_named" }) return "pinned"
         if (!sm.isRequestPinShortcutSupported) return listInstead(id)
         val existing = sm.manifestShortcuts.firstOrNull { it.id == id } ?: return "unavailable"
-        if (sm.requestPinShortcut(existing, null)) "requested" else listInstead(id)
+        val label = name?.filter { !it.isISOControl() }?.trim()?.take(24)
+        val info = if (label == null) existing else {
+          android.content.pm.ShortcutInfo.Builder(this@MainActivity, "${id}_named")
+            .setShortLabel(label.ifEmpty { getString(R.string.app_name) })
+            .setLongLabel(label.ifEmpty { getString(R.string.app_name) })
+            .setIcon(android.graphics.drawable.Icon.createWithResource(
+              this@MainActivity,
+              resources.getIdentifier("shortcut_$id", "drawable", packageName)
+                .takeIf { it != 0 } ?: R.mipmap.ic_launcher))
+            .setIntent(Intent(Intent.ACTION_VIEW)
+              .setClassName(packageName, "$packageName.MainActivity")
+              .putExtra("ts_platform", id))
+            .build()
+        }
+        if (sm.requestPinShortcut(info, null)) "requested" else listInstead(id)
       } catch (e: Throwable) {
         Log.w("TsLinks", "pin($id) failed: " + e.message)
         "refused"
@@ -498,7 +521,7 @@ class MainActivity : TauriActivity() {
           val sm = getSystemService(android.content.pm.ShortcutManager::class.java)
           if (sm != null) {
             o.put("supported", sm.isRequestPinShortcutSupported)
-            o.put("pinned", sm.pinnedShortcuts.any { it.id == id })
+            o.put("pinned", sm.pinnedShortcuts.any { it.id == id || it.id == "${id}_named" })
           }
         }
       } catch (_: Throwable) {}
