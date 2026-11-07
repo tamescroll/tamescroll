@@ -1,0 +1,128 @@
+--- widget binary
+src-tauri/gen/apple/build/arm64-sim/tamescroll.app/PlugIns/TameScrollWidget.appex/TameScrollWidget: Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64:Mach-O 64-bit executable arm64]
+src-tauri/gen/apple/build/arm64-sim/tamescroll.app/PlugIns/TameScrollWidget.appex/TameScrollWidget (for architecture x86_64):	Mach-O 64-bit executable x86_64
+src-tauri/gen/apple/build/arm64-sim/tamescroll.app/PlugIns/TameScrollWidget.appex/TameScrollWidget (for architecture arm64):	Mach-O 64-bit executable arm64
+src-tauri/gen/apple/build/arm64-sim/tamescroll.app/PlugIns/TameScrollWidget.appex/TameScrollWidget (architecture x86_64):
+	/System/Library/Frameworks/WidgetKit.framework/WidgetKit (compatibility version 1.0.0, current version 664.2.7)
+	/System/Library/Frameworks/SwiftUI.framework/SwiftUI (compatibility version 1.0.0, current version 7.2.5)
+	/System/Library/Frameworks/Foundation.framework/Foundation (compatibility version 300.0.0, current version 4201.0.0)
+	/usr/lib/libobjc.A.dylib (compatibility version 1.0.0, current version 228.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)
+	/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2000.67.0)
+	/usr/lib/swift/libswiftCore.dylib (compatibility version 0.0.0, current version 0.0.0)
+	/usr/lib/swift/libswiftCoreFoundation.dylib (compatibility version 1.0.0, current version 120.100.0, weak)
+	/usr/lib/swift/libswiftCoreImage.dylib (compatibility version 1.0.0, current version 2.2.0, weak)
+	/usr/lib/swift/libswiftCoreLocation.dylib (compatibility version 1.0.0, current version 53.0.0, weak)
+	/usr/lib/swift/libswiftDarwin.dylib (compatibility version 1.0.0, current version 347.40.2, weak)
+	/usr/lib/swift/libswiftDispatch.dylib (compatibility version 1.0.0, current version 56.0.0, weak)
+	/usr/lib/swift/libswiftIntents.dylib (compatibility version 1.0.0, current version 12.0.0, weak)
+	/usr/lib/swift/libswiftMetal.dylib (compatibility version 1.0.0, current version 370.64.2, weak)
+	/usr/lib/swift/libswiftOSLog.dylib (compatibility version 1.0.0, current version 10.0.0, weak)
+	/usr/lib/swift/libswiftObjectiveC.dylib (compatibility version 1.0.0, current version 951.1.0, weak)
+	/usr/lib/swift/libswiftQuartzCore.dylib (compatibility version 1.0.0, current version 5.0.0, weak)
+	/usr/lib/swift/libswiftSpatial.dylib (compatibility version 1.0.0, current version 1.0.0, weak)
+	/usr/lib/swift/libswiftUniformTypeIdentifiers.dylib (compatibility version 1.0.0, current version 879.2.4, weak)
+--- run it directly for 5 s
+Child process terminated with signal 5: Trace/BPT trap
+exit 133
+--- system log about the widget
+	]>
+2026-11-07 17:41:26.480 Df runningboardd[15647:f450] [com.apple.runningboard:ttl] Assertion 15647-21788-880 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) will be created as inactive as start-time-defining assertions exist
+2026-11-07 17:41:27.119 Df com.apple.WebKit.Networking[21788:fddf] [com.apple.network:connection] [C12 DC007992-64EA-4573-B0AE-5D9FF8FC5098 Hostname#02bc17f3:443 quic-connection, bundle id: app.tamescroll.client, url hash: 3981dc96, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{1E354274-1AA1-4EFE-8E08-57448F2FE48E}{(null)}{Y}{3}{0x1e638ea78} (sensitive), proc: 677B7FDC-265F-3C56-89A2-769C4FA09B25, third party web content, attribution context: #c1039afb] start
+2026-11-07 17:41:27.241 Df com.apple.WebKit.Networking[21788:fddf] [com.apple.network:connection] [C13 E4DBFB5E-D75B-456B-B52C-A055EEA3616D Hostname#07d2b825:443 quic-connection, bundle id: app.tamescroll.client, url hash: aa379acc, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{1E354274-1AA1-4EFE-8E08-57448F2FE48E}{(null)}{Y}{3}{0x1e638ea78} (sensitive), proc: 677B7FDC-265F-3C56-89A2-769C4FA09B25, third party web content, attribution context: #c1039afb] start
+2026-11-07 17:41:27.261 Df com.apple.WebKit.Networking[21788:fddf] [com.apple.network:connection] [C14 6D57AA39-DE0A-4C36-8914-A1EFA594D50B IPv4#1d08bdd7:443 quic-connection, bundle id: app.tamescroll.client, url hash: aa379acc, tls, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{1E354274-1AA1-4EFE-8E08-57448F2FE48E}{(null)}{Y}{3}{0x1e638ea78} (sensitive), proc: 677B7FDC-265F-3C56-89A2-769C4FA09B25, no transport, third party web content, attribution context: #c1039afb] start
+2026-11-07 17:41:27.564 Df runningboardd[15647:f450] [com.apple.runningboard:ttl] Acquiring assertion targeting [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788] from originator [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788] with description <RBSAssertionDescriptor| "com.apple.CFNetwork.StorageDB" ID:15647-21788-881 target:21788 attributes:[
+	<RBSDomainAttribute| domain:"com.apple.common" name:"FinishTaskUninterruptable" sourceEnvironment:"(null)">,
+	<RBSAcquisitionCompletionAttribute| policy:AfterApplication>
+	]>
+2026-11-07 17:41:27.565 Df runningboardd[15647:f450] [com.apple.runningboard:ttl] Assertion 15647-21788-881 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) will be created as inactive as start-time-defining assertions exist
+2026-11-07 17:41:28.691 Df runningboardd[15647:be6d] [com.apple.runningboard:ttl] Invalidating assertion 15647-21788-881 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) from originator [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]
+2026-11-07 17:41:30.765 Df runningboardd[15647:be6d] [com.apple.runningboard:ttl] Acquiring assertion targeting [xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]:21779] from originator [app<app.tamescroll.client((null))>:21776] with description <RBSAssertionDescriptor| "Browser Engine helper assertion targeting pid 21779" ID:15647-21776-883 target:21779 attributes:[
+	<RBSDomainAttribute| domain:"com.apple.browserenginekit" name:"Suspended" sourceEnvironment:"(null)">
+	]>
+2026-11-07 17:41:30.765 Df runningboardd[15647:be6d] [com.apple.runningboard:ttl] Assertion 15647-21776-883 (target:[xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]:21779]) will be created as active
+2026-11-07 17:41:30.765 Df runningboardd[15647:f44e] [com.apple.runningboard:monitor] Calculated state for xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]: running-active (role: Background) (endowments: (null))
+2026-11-07 17:41:30.766 Df runningboardd[15647:fdc1] [com.apple.runningboard:ttl] Invalidating assertion 15647-21776-883 (target:[xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]:21779]) from originator [app<app.tamescroll.client((null))>:21776]
+2026-11-07 17:41:30.768 Df SpringBoard[15644:bd59] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-active-NotVisible
+2026-11-07 17:41:30.779 Df mediaremoted[15651:c7f3] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-active-NotVisible
+2026-11-07 17:41:30.779 Df locationd[15668:e7c5] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-active-NotVisible
+2026-11-07 17:41:30.876 Df runningboardd[15647:fe1a] [com.apple.runningboard:assertion] Removed last relative-start-date-defining assertion for process xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]
+2026-11-07 17:41:30.877 Df runningboardd[15647:fe1a] [com.apple.runningboard:monitor] Calculated state for xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]: running-active (role: Background) (endowments: (null))
+2026-11-07 17:41:30.879 Df SpringBoard[15644:bd59] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-active-NotVisible
+2026-11-07 17:41:30.885 Df mediaremoted[15651:f452] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-active-NotVisible
+2026-11-07 17:41:30.885 Df locationd[15668:e7c5] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-active-NotVisible
+2026-11-07 17:41:31.766 Df runningboardd[15647:f44e] [com.apple.runningboard:ttl] Invalidating assertion 15647-21776-871 (target:[xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]:21779]) from originator [app<app.tamescroll.client((null))>:21776]
+2026-11-07 17:41:31.876 Df runningboardd[15647:fdc1] [com.apple.runningboard:monitor] Calculated state for xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]: running-suspended (role: None) (endowments: (null))
+2026-11-07 17:41:31.876 Df runningboardd[15647:be6d] [com.apple.runningboard:ttl] [xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]:21779] Suspending task.
+2026-11-07 17:41:31.876 Df SpringBoard[15644:b116] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-suspended-NotVisible
+2026-11-07 17:41:31.882 Df mediaremoted[15651:c7f3] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-suspended-NotVisible
+2026-11-07 17:41:31.882 Df locationd[15668:b12d] [com.apple.runningboard:monitor] Received state update for 21779 (xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3], running-suspended-NotVisible
+2026-11-07 17:41:31.889 E  runningboardd[15647:be6d] [com.apple.runningboard:process] [xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]:21779] pid_suspend() failed with error 1: Operation not permitted
+2026-11-07 17:41:31.889 Df runningboardd[15647:be6d] [com.apple.runningboard:ttl] [xpcservice<com.apple.WebKit.WebContent([app<app.tamescroll.client((null))>:21776])>{vt hash: 71395982}[uuid:089D7E0E-3565-4ECB-BDF8-F18515749CA3]:21779] Set darwin role to: None
+2026-11-07 17:41:37.073 Df runningboardd[15647:be6d] [com.apple.runningboard:ttl] Invalidating assertion 15647-21788-880 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) from originator [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]
+2026-11-07 17:42:12.156 Df runningboardd[15647:fe1b] [com.apple.runningboard:ttl] Acquiring assertion targeting [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788] from originator [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788] with description <RBSAssertionDescriptor| "Network Process is holding locked files" ID:15647-21788-884 target:21788 attributes:[
+	<RBSDomainAttribute| domain:"com.apple.common" name:"FinishTaskCanSleep" sourceEnvironment:"(null)">
+	]>
+2026-11-07 17:42:12.156 Df runningboardd[15647:fe1b] [com.apple.runningboard:ttl] Assertion 15647-21788-884 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) will be created as inactive as start-time-defining assertions exist
+2026-11-07 17:42:12.248 Df runningboardd[15647:fe1b] [com.apple.runningboard:ttl] Acquiring assertion targeting [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788] from originator [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788] with description <RBSAssertionDescriptor| "com.apple.CFNetwork.StorageDB" ID:15647-21788-885 target:21788 attributes:[
+	<RBSDomainAttribute| domain:"com.apple.common" name:"FinishTaskUninterruptable" sourceEnvironment:"(null)">,
+	<RBSAcquisitionCompletionAttribute| policy:AfterApplication>
+	]>
+2026-11-07 17:42:12.249 Df runningboardd[15647:fe1b] [com.apple.runningboard:ttl] Assertion 15647-21788-885 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) will be created as inactive as start-time-defining assertions exist
+2026-11-07 17:42:13.243 Df runningboardd[15647:11757] [com.apple.runningboard:ttl] Invalidating assertion 15647-21788-884 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) from originator [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]
+2026-11-07 17:42:13.293 Df runningboardd[15647:fe1b] [com.apple.runningboard:ttl] Invalidating assertion 15647-21788-885 (target:[xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]) from originator [xpcservice<com.apple.WebKit.Networking([app<app.tamescroll.client((null))>:21776])>{vt hash: 114736818}[uuid:D9383A83-28CA-4EB9-9837-785317A1264E]:21788]
+2026-11-07 17:42:32.988 Df launchd_sim[15439:11d52] [user/501/com.apple.xpc.launchd.oneshot.0x10000003.TameScrollWidget [26491]:] Successfully spawned TameScrollWidget[26491] because one-shot
+2026-11-07 17:42:33.344 Df TameScrollWidget[26491:122a1] [com.apple.extensionkit:default] Extension `src-tauri/gen/apple/build/arm64-sim/tamescroll.app/PlugIns/TameScrollWidget.appex/TameScrollWidget` of type: `(null)` launched.
+2026-11-07 17:42:33.346 Df TameScrollWidget[26491:122a1] [com.apple.PlugInKit:lifecycle] Hello, I'm launching as euid = 501, uid = 501, (persona not available)
+2026-11-07 17:42:33.349 Df TameScrollWidget[26491:122a1] [com.apple.xpc:connection] [0x102604690] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-11-07 17:42:33.354 E  TameScrollWidget[26491:0] [com.apple.os_debug_log:] assertion failed: 24H232 22F77: libxpc.dylib + 72720 [021C0BF8-EDD4-395A-B281-2CC7A26F742F]: 0x7d
+2026-11-07 17:42:33.354 E  TameScrollWidget[26491:0] [com.apple.os_debug_log:] assertion failed: 24H232 22F77: libxpc.dylib + 72720 [021C0BF8-EDD4-395A-B281-2CC7A26F742F]: 0x7d
+2026-11-07 17:42:33.355 Df TameScrollWidget[26491:122a1] [com.apple.xpc:connection] [0x600003d00000] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-11-07 17:42:33.359 Df TameScrollWidget[26491:122a1] [com.apple.runningboard:connection] Initializing connection
+2026-11-07 17:42:33.359 Df TameScrollWidget[26491:122a1] [com.apple.runningboard:process] Removing all cached process handles
+2026-11-07 17:42:33.360 Df TameScrollWidget[26491:122a6] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-11-07 17:42:33.360 Df TameScrollWidget[26491:122a6] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-11-07 17:42:33.360 Df TameScrollWidget[26491:122a6] [com.apple.xpc:connection] [0x600003d08000] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-11-07 17:42:33.362 Df runningboardd[15647:fe1b] [com.apple.runningboard:process] com.apple.xpc.launchd.oneshot.0x10000003.TameScrollWidget: RunningBoard doesn't recognize submitted process - treating as a anonymous process
+2026-11-07 17:42:33.362 Df runningboardd[15647:fe1b] [com.apple.runningboard:process] Resolved pid 26491 to [anon<TameScrollWidget>:26491]
+2026-11-07 17:42:33.363 Df runningboardd[15647:fe1b] [com.apple.runningboard:general] Full encoding handle [anon<TameScrollWidget>:26491], with data 5d8126bc0000677b, and pid 26491
+2026-11-07 17:42:33.363 Df runningboardd[15647:fe1b] [com.apple.runningboard:process] [anon<TameScrollWidget>:26491] is not RunningBoard jetsam managed.
+2026-11-07 17:42:33.364 Df runningboardd[15647:fe1b] [com.apple.runningboard:process] [anon<TameScrollWidget>:26491] This process will not be managed.
+2026-11-07 17:42:33.364 Df runningboardd[15647:fe1b] [com.apple.runningboard:ttl] Now tracking process: [anon<TameScrollWidget>:26491]
+2026-11-07 17:42:33.368 Df runningboardd[15647:122a8] [com.apple.runningboard:general] [anon<TameScrollWidget>:26491] reported to RB as running
+2026-11-07 17:42:33.369 Df SpringBoard[15644:b116] [com.apple.runningboard:process] Hit the server for a process handle 1d8126bc0000677b that resolved to: [anon<TameScrollWidget>:26491]
+2026-11-07 17:42:33.370 Df runningboardd[15647:fe1b] [com.apple.runningboard:connection] Setting client for [anon<TameScrollWidget>:26491] as ready
+2026-11-07 17:42:33.371 Df TameScrollWidget[26491:122a6] [com.apple.runningboard:connection] Handshake succeeded
+2026-11-07 17:42:33.371 Df TameScrollWidget[26491:122a6] [com.apple.runningboard:connection] Identity resolved as anon<TameScrollWidget>
+2026-11-07 17:42:33.372 Df TameScrollWidget[26491:122a1] [com.apple.PlugInKit:lifecycle] Bootstrapping; Bootstrap complete. Ready for handshake from host.
+2026-11-07 17:42:33.372 E  TameScrollWidget[26491:0] [com.apple.os_debug_log:] assertion failed: 24H232 22F77: libxpc.dylib + 198260 [021C0BF8-EDD4-395A-B281-2CC7A26F742F]: 0x71
+2026-11-07 17:42:33.372 Df SpringBoard[15644:b116] [com.apple.runningboard:monitor] Received state update for 26491 (anon<TameScrollWidget>, running-NotVisible
+2026-11-07 17:42:33.374 Df launchd_sim[15439:10e11] [user/501:] service inactive: com.apple.xpc.launchd.oneshot.0x10000003.TameScrollWidget
+2026-11-07 17:42:33.374 Df launchd_sim[15439:10e11] [user/501:] removing service: com.apple.xpc.launchd.oneshot.0x10000003.TameScrollWidget
+2026-11-07 17:42:33.379 Df runningboardd[15647:122a9] [com.apple.runningboard:ttl] [anon<TameScrollWidget>:26491] termination reported by launchd (2, 5, 5)
+2026-11-07 17:42:33.379 Df runningboardd[15647:122a9] [com.apple.runningboard:process] Removing process: [anon<TameScrollWidget>:26491]
+2026-11-07 17:42:33.380 Df runningboardd[15647:122a9] [com.apple.runningboard:general] removeJobWithInstance called for identity without existing job [anon<TameScrollWidget>:26491]
+2026-11-07 17:42:33.380 Df runningboardd[15647:122a9] [com.apple.runningboard:process] Removing assertions for terminated process: [anon<TameScrollWidget>:26491]
+2026-11-07 17:42:33.381 Df SpringBoard[15644:b116] [com.apple.runningboard:monitor] Received state update for 26491 (anon<TameScrollWidget>, none-NotVisible
+2026-11-07 17:42:33.382 Df runningboardd[15647:fe1b] [com.apple.runningboard:process] XPC connection invalidated: [anon<TameScrollWidget>:26491]
+2026-11-07 17:42:38.674 Df log[26516:0] [com.apple.log:] log run noninteractively, parent: 15439 (launchd_sim), args: 'log' 'show' '--last' '15m' '--style' 'compact' '--predicate' 'eventMessage CONTAINS[c] "tamescroll" OR process == "TameScrollWidget" OR (process == "chronod" AND eventMessage CONTAINS[c] "error
+--- crash reports
+TameScrollWidget-2026-11-07-174236.ips
+TypeToSiriWidgetExtension-2026-11-07-174012.000.ips
+TypeToSiriWidgetExtension-2026-11-07-174012.ips
+exception {"codes": "0x0000000000000001, 0x00000001800ef900", "rawCodes": [1, 6443432192], "type": "EXC_BREAKPOINT", "signal": "SIGTRAP"}
+termination {"flags": 0, "code": 5, "namespace": "SIGNAL", "indicator": "Trace/BPT trap: 5", "byProc": "exc handler", "byPid": 26491}
+crashed thread:  com.apple.main-thread
+  libxpc.dylib  _xpc_copy_xpcservice_dictionary.cold.2  +60  :
+  libxpc.dylib  _xpc_copy_xpcservice_dictionary  +128  :
+  libxpc.dylib  _xpc_connection_create_service_listener  +56  :
+  libxpc.dylib  xpc_main  +28  :
+  Foundation  -[NSXPCListener resume]  +256  :
+  PlugInKit  ?  +0  :
+  PlugInKit  ?  +0  :
+  PlugInKit  ?  +0  :
+  PlugInKit  ?  +0  :
+  ExtensionFoundation  EXExtensionMain  +284  :
+  Foundation  NSExtensionMain  +172  :
+  ?  ?  +0  :
+  dyld  start  +6076  :

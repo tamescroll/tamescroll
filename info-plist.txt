@@ -1,0 +1,90 @@
+--- Info.plist URL types and quick actions
+Array {
+    Dict {
+        CFBundleURLName = app.tamescroll.client
+        CFBundleURLSchemes = Array {
+            tamescroll
+        }
+    }
+}
+Array {
+    Dict {
+        UIApplicationShortcutItemType = open.youtube
+        UIApplicationShortcutItemTitle = YouTube
+    }
+    Dict {
+        UIApplicationShortcutItemType = open.reddit
+        UIApplicationShortcutItemTitle = Reddit
+    }
+    Dict {
+        UIApplicationShortcutItemType = open.x
+        UIApplicationShortcutItemTitle = X
+    }
+}
+--- UIDeviceFamily (1 iPhone, 2 iPad)
+Array {
+    1
+}
+--- scene manifest (none means tao's app-delegate mode)
+--- widget extension
+TameScrollWidget.appex
+CFBundleIdentifier app=app.tamescroll.client widget=app.tamescroll.client.widgets
+CFBundleVersion app=0.1.140 widget=0.1.140
+CFBundleShortVersionString app=0.1.140 widget=0.1.140
+--- widget Info.plist
+Dict {
+    CFBundleName = TameScrollWidget
+    DTSDKName = iphonesimulator26.2
+    DTXcode = 2630
+    DTSDKBuild = 23C57
+    CFBundleDevelopmentRegion = en
+    CFBundleVersion = 0.1.140
+    BuildMachineOSBuild = 24H232
+    DTPlatformName = iphonesimulator
+    CFBundlePackageType = XPC!
+    CFBundleShortVersionString = 0.1.140
+    CFBundleSupportedPlatforms = Array {
+        iPhoneSimulator
+    }
+    CFBundleInfoDictionaryVersion = 6.0
+    CFBundleExecutable = TameScrollWidget
+    DTCompiler = com.apple.compilers.llvm.clang.1_0
+    MinimumOSVersion = 15.0
+    CFBundleIdentifier = app.tamescroll.client.widgets
+    UIDeviceFamily = Array {
+        1
+    }
+    DTPlatformVersion = 26.2
+    DTXcodeBuild = 17C529
+    CFBundleDisplayName = Tame Scroll
+    DTPlatformBuild = 23C57
+    NSExtension = Dict {
+        NSExtensionPointIdentifier = com.apple.widgetkit-extension
+    }
+}
+total 872
+drwxr-xr-x  3 runner  staff      96 Nov  7 17:36 _CodeSignature
+drwxr-xr-x  5 runner  staff     160 Nov  7 17:36 .
+drwxr-xr-x  3 runner  staff      96 Nov  7 17:36 ..
+-rw-r--r--  1 runner  staff     871 Nov  7 17:36 Info.plist
+-rwxr-xr-x  1 runner  staff  441104 Nov  7 17:36 TameScrollWidget
+--- widget extensions the simulator knows
+     app.tamescroll.client.widgets(0.1.140)
+	            Path = /Users/runner/Library/Developer/CoreSimulator/Devices/4A57FB15-6E7C-49CC-BE93-450B18BD286E/data/Containers/Bundle/Application/BF0F7744-4252-430C-9528-A0EAD6F8EC46/tamescroll.app/PlugIns/TameScrollWidget.appex
+	            UUID = 909D315B-559F-40E0-8DA4-3DA3562DF138
+	       Timestamp = 2026-11-07 17:38:33 +0000
+	             SDK = com.apple.widgetkit-extension
+	   Parent Bundle = /Users/runner/Library/Developer/CoreSimulator/Devices/4A57FB15-6E7C-49CC-BE93-450B18BD286E/data/Containers/Bundle/Application/BF0F7744-4252-430C-9528-A0EAD6F8EC46/tamescroll.app
+	    Display Name = Tame Scroll
+	      Short Name = Tame Scroll
+	     Parent Name = tamescroll
+
+     com.apple.Passbook.PassbookWidgets(1.0)
+	            Path = /Library/Developer/CoreSimulator/Volumes/iOS_22F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 18.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Passbook.app/PlugIns/PassbookWidgetsExtension-iPhone.appex
+	            UUID = 256C5550-4A83-4A54-8772-37E39AEDDDFD
+	       Timestamp = 2026-11-07 17:36:54 +0000
+	             SDK = com.apple.widgetkit-extension
+	   Parent Bundle = /Library/Developer/CoreSimulator/Volumes/iOS_22F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 18.5.simruntime/Contents/Resources/RuntimeRoot/Applications/Passbook.app
+	    Display Name = PassbookWidgets
+	      Short Name = PassbookWidgetsExtension-iPhone
+	     Parent Name = Wallet
