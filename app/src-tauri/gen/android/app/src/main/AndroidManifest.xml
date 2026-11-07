@@ -76,6 +76,30 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- tamescroll (1140): a YouTube entry in the APP LIST. His
+             launcher (olauncher) lists apps as text and refuses pin
+             requests, so the pinned shortcut never existed there and
+             "the yt of tamescroll" was nowhere in All apps. This alias
+             is a second launcher entry onto the same activity. It ships
+             DISABLED so nobody gets two icons unasked; TsLinks.pinShortcut
+             turns it on when the launcher won't take a pinned shortcut.
+             MainActivity reads the alias name and opens YouTube, exactly
+             like a shortcut tap. Our own glyph and a label that names us,
+             never YouTube's logo or a bare "YouTube". -->
+        <activity-alias
+            android:name=".YouTubeEntry"
+            android:targetActivity=".MainActivity"
+            android:label="@string/entry_youtube_label"
+            android:icon="@drawable/shortcut_youtube"
+            android:roundIcon="@drawable/shortcut_youtube"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <provider
           android:name="androidx.core.content.FileProvider"
           android:authorities="${applicationId}.fileprovider"

@@ -77,6 +77,8 @@ class MainActivity : TauriActivity() {
     // ts_probe marker is what tells us the system chose us for it.
     private const val YOUTUBE_PKG = "com.google.android.youtube"
     private const val PROBE_URL = "https://youtu.be/jNQXAC9IVRw?ts_probe=1"
+    // Manifest activity-alias that puts YouTube in the app list (1140).
+    private const val YOUTUBE_ENTRY = "YouTubeEntry"
     private const val LINKS_PREFS = "tamescroll.links"
     private const val LINKS_PROBED = "probed"
     // Height of the top bar above every site (installTopBar).
@@ -106,6 +108,9 @@ class MainActivity : TauriActivity() {
   // Only ids our shortcuts.xml can send; anything else is dropped so an
   // arbitrary external intent can't steer the launcher.
   private fun platformFromIntent(intent: Intent?): String? {
+    // The app-list entry (activity-alias, 1140) carries no extra: the
+    // component name it was launched through is the platform.
+    if (intent?.component?.className == "$packageName.$YOUTUBE_ENTRY") return "youtube"
     val id = intent?.getStringExtra("ts_platform") ?: return null
     return if (id in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) id else null
   }
@@ -432,7 +437,9 @@ class MainActivity : TauriActivity() {
      * WHAT HAPPENED. The first version returned nothing, and on his own
      * phone (olauncher, 2026-09-10) the launcher refuses pin requests, so
      * the "Add" button did nothing at all with no word to the user.
-     * Returns: pinned | requested | unsupported | unavailable | refused. */
+     * Returns: pinned | requested | listed | unsupported | unavailable | refused.
+     * "listed" (1140): the launcher won't take a pinned shortcut, so the
+     * YouTube entry was switched on in the app list instead. */
     @JavascriptInterface
     fun pinShortcut(id: String?): String {
       if (id == null || id !in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) return "refused"
@@ -446,20 +453,46 @@ class MainActivity : TauriActivity() {
       return try {
         val sm = getSystemService(android.content.pm.ShortcutManager::class.java) ?: return "unavailable"
         if (sm.pinnedShortcuts.any { it.id == id }) return "pinned"
-        if (!sm.isRequestPinShortcutSupported) return "unsupported"
+        if (!sm.isRequestPinShortcutSupported) return listInstead(id)
         val existing = sm.manifestShortcuts.firstOrNull { it.id == id } ?: return "unavailable"
-        if (sm.requestPinShortcut(existing, null)) "requested" else "unsupported"
+        if (sm.requestPinShortcut(existing, null)) "requested" else listInstead(id)
       } catch (e: Throwable) {
         Log.w("TsLinks", "pin($id) failed: " + e.message)
         "refused"
       }
     }
 
+    private fun entryComponent() =
+      android.content.ComponentName(packageName, "$packageName.$YOUTUBE_ENTRY")
+
+    private fun entryListed(): Boolean =
+      packageManager.getComponentEnabledSetting(entryComponent()) ==
+        android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+
+    /** The launcher won't pin: put YouTube in the app list instead. Only
+     * YouTube has an entry; the other ids keep the old answer. */
+    private fun listInstead(id: String): String {
+      if (id != "youtube") return "unsupported"
+      return try {
+        packageManager.setComponentEnabledSetting(
+          entryComponent(),
+          android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+          android.content.pm.PackageManager.DONT_KILL_APP,
+        )
+        if (entryListed()) "listed" else "unsupported"
+      } catch (e: Throwable) {
+        Log.w("TsLinks", "list($id) failed: " + e.message)
+        "unsupported"
+      }
+    }
+
     /** Is the platform's shortcut on the home screen, and can this
-     * launcher take one at all. Null where the OS will not say. */
+     * launcher take one at all. Null where the OS will not say.
+     * "listed": the YouTube entry is on in the app list (1140). */
     @JavascriptInterface
     fun pinState(id: String?): String {
       val o = JSONObject()
+      try { if (id == "youtube") o.put("listed", entryListed()) } catch (_: Throwable) {}
       try {
         if (Build.VERSION.SDK_INT >= 26 && id != null) {
           val sm = getSystemService(android.content.pm.ShortcutManager::class.java)

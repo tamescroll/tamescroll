@@ -1123,6 +1123,7 @@ function renderLinksView() {
 const PIN_WORDS: Record<string, string> = {
   pinned: "Already on your home screen.",
   requested: "Confirm on the dialog that just opened.",
+  listed: "Added to your app list as \"tamescroll YouTube\".",
   unsupported: "Your launcher doesn't take shortcuts from apps. Long-press the tamescroll icon and drag YouTube out, or pick another launcher.",
   unavailable: "This phone can't add shortcuts.",
   refused: "That didn't work. Try from the home screen instead.",
@@ -1131,17 +1132,22 @@ const PIN_WORDS: Record<string, string> = {
 function renderPinStep() {
   const li = document.querySelector<HTMLElement>('.step[data-step="pin"]');
   if (!li || !linksBridge?.pinState) return;
-  let st: { supported?: boolean; pinned?: boolean } = {};
+  let st: { supported?: boolean; pinned?: boolean; listed?: boolean } = {};
   try { st = JSON.parse(linksBridge.pinState("youtube")); } catch { /* the OS would not say */ }
-  li.classList.toggle("done", st.pinned === true);
+  li.classList.toggle("done", st.pinned === true || st.listed === true);
   const body = li.querySelector<HTMLElement>(".step-body")!;
   const btn = li.querySelector<HTMLButtonElement>("button")!;
   if (st.pinned) {
     body.textContent = "On your home screen.";
     btn.hidden = true;
-  } else if (st.supported === false) {
-    body.textContent = "Your launcher won't take it from here: long-press the tamescroll icon and drag YouTube out.";
+  } else if (st.listed) {
+    // A launcher that won't pin (olauncher) gets the app-list entry.
+    body.textContent = "In your app list as \"tamescroll YouTube\".";
     btn.hidden = true;
+  } else if (st.supported === false) {
+    // The button still helps here: it switches on the app-list entry.
+    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll YouTube\" to your app list.";
+    btn.hidden = false;
   } else {
     body.textContent = "A tamescroll icon that opens YouTube, cleaned.";
     btn.hidden = false;
