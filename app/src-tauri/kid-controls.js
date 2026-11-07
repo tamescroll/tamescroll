@@ -12,7 +12,7 @@
 //                working. Out of fullscreen YouTube's swipes do nothing
 //                (same probe), so the page and our own drag-to-mini
 //                gesture are left alone there.
-//   lock      -- "Child lock button" is Shown: a padlock sits beside the
+//   lock      -- "Touch lock button" is Shown: a padlock sits beside the
 //                home pill. One tap locks: a clear layer covers the page
 //                and swallows every touch while the video keeps playing.
 //                Unlocking is a deliberate act a small child will not
@@ -100,7 +100,11 @@
     );
   }
 
-  // ---- child lock -----------------------------------------------------
+  // ---- touch lock -----------------------------------------------------
+  // Named "Touch lock" everywhere a user reads it (ZV, 2026-11-07, after
+  // the legal review): calling it a child or kid feature reads as an app
+  // made for children, which brings in Google Play's Families rules. The
+  // surface id stays `child_lock` so settings already saved keep working.
   if (!KID.lock) {
     try { if (window.TsLock) window.TsLock.set(false); } catch (e) {}
     return;
@@ -220,7 +224,7 @@
     if (!btn) return;
     while (btn.firstChild) btn.removeChild(btn.firstChild);
     btn.appendChild(icon(locked));
-    btn.setAttribute("aria-label", locked ? "Child lock on. Hold to unlock" : "Turn on child lock");
+    btn.setAttribute("aria-label", locked ? "Touch lock on. Hold to unlock" : "Turn on touch lock");
     btn.setAttribute("aria-pressed", locked ? "true" : "false");
     btn.style.opacity = locked ? "1" : ".55";
     btn.style.background = locked ? "rgba(15,17,21,.85)" : "rgba(15,17,21,.62)";
