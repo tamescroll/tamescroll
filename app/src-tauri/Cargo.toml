@@ -20,6 +20,8 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
+# iOS WebKit hooks (document-start rules, swipe back); no-op elsewhere.
+tauri-plugin-ts-webkit = { path = "plugins/ts-webkit" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 adblock = { version = "0.13.2", default-features = false, features = ["content-blocking", "embedded-domain-resolver", "full-regex-handling"] }

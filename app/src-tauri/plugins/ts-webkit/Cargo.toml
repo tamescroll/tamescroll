@@ -1,0 +1,14 @@
+[package]
+name = "tauri-plugin-ts-webkit"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "tamescroll's iOS WebKit hooks: document-start rules, swipe-back, content blockers"
+links = "tauri-plugin-ts-webkit"
+
+[dependencies]
+tauri = { version = "2", default-features = false }
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

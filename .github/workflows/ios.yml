@@ -1,0 +1,334 @@
+name: iOS
+
+# The iPhone build (#16). Runs on GitHub's macOS runners so nobody needs a
+# Mac: it generates the Xcode project, builds the app for the iPhone
+# simulator, launches it, and uploads a screenshot as proof it starts.
+#
+# The Xcode project (app/src-tauri/gen/apple) is regenerated on every run
+# by `tauri ios init` rather than committed, so everything iOS-specific
+# lives in tauri.conf.json, Info.ios.plist and our own plugin code, where
+# a reviewer can read it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    name: iOS simulator build
+    runs-on: macos-15
+    permissions:
+      contents: write
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      # App Store Connect refuses uploads built with an SDK older than
+      # iOS 26 (first upload, 2026-10-27), so use the newest Xcode 26
+      # on the runner. The simulator job uses the same one, so what CI
+      # tests is what ships.
+      - name: Xcode 26
+        working-directory: .
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$X" ] || { echo "no Xcode 26 on this runner:"; ls /Applications | grep -i xcode; exit 1; }
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim,aarch64-apple-ios
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+          key: ios-sim
+
+      - name: Tools
+        run: |
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodebuild -version
+          xcrun simctl list runtimes | grep -i ios
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate the Xcode project
+        run: pnpm tauri ios init --ci
+
+      # tauri ios init writes Tauri's own placeholder icon; ours lives in
+      # icons/ios (full-bleed and opaque, iOS rounds the corners itself).
+      - name: Our app icon
+        run: |
+          SET=src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset
+          for f in "$SET"/*.png; do
+            n=$(basename "$f")
+            [ -f "src-tauri/icons/ios/$n" ] || { echo "no icons/ios/$n"; exit 1; }
+            cp "src-tauri/icons/ios/$n" "$f"
+          done
+          ls "$SET"
+
+      # iPhone only for now: an iPad listing needs its own screenshots and
+      # the launcher has no iPad layout. tauri ios init asks for both.
+      - name: iPhone only
+        run: |
+          cd src-tauri/gen/apple
+          grep -rl "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | while read -r f; do
+            sed -i '' -E 's/TARGETED_DEVICE_FAMILY( *[:=] *)"?1,2"?/TARGETED_DEVICE_FAMILY\1"1"/' "$f"
+          done
+          grep -rh "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | sort | uniq -c
+          ! grep -rq 'TARGETED_DEVICE_FAMILY.*1,2' --include=project.yml --include=project.pbxproj .
+
+      # Home-screen widgets (our glyphs, added only by the person). The
+      # extension is not in Tauri's project template, so it is appended to
+      # project.yml and the project regenerated.
+      - name: Home-screen widgets
+        run: |
+          cd src-tauri/gen/apple
+          python3 ../../ios-widget/add-to-project.py
+          xcodegen generate
+          grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
+
+      - name: Build for the simulator
+        run: pnpm tauri ios build --debug --target aarch64-sim --ci
+
+      - name: Launch in the simulator and take a screenshot
+        run: |
+          APP=$(find src-tauri/gen/apple -name '*.app' -type d -path '*sim*' | head -1)
+          [ -n "$APP" ] || APP=$(find src-tauri/gen/apple -name '*.app' -type d | head -1)
+          echo "app bundle: $APP"
+          [ -n "$APP" ] || { echo "no .app produced"; find src-tauri/gen/apple -maxdepth 4 -type d | head -80; exit 1; }
+          DEVICE=$(xcrun simctl list devices available | grep -m1 -E 'iPhone 1[5-7]' | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          echo "device: $DEVICE"
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" "$APP"
+          BUNDLE=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")
+          xcrun simctl launch "$DEVICE" "$BUNDLE"
+          sleep 20
+          mkdir -p ../ios-proof
+          xcrun simctl io "$DEVICE" screenshot ../ios-proof/launcher.png
+          # The app must still be running: a crash at start would leave
+          # the home screen in the screenshot and nothing else to say so.
+          xcrun simctl spawn "$DEVICE" launchctl list | grep -i "$BUNDLE"
+
+          # A platform, opened the way a tile tap opens it (debug-only
+          # --ts-open argument, see ios_ci_open in lib.rs).
+          xcrun simctl terminate "$DEVICE" "$BUNDLE"
+          xcrun simctl launch "$DEVICE" "$BUNDLE" --ts-open=youtube
+          sleep 35
+          xcrun simctl io "$DEVICE" screenshot ../ios-proof/youtube.png
+          xcrun simctl spawn "$DEVICE" launchctl list | grep -i "$BUNDLE"
+
+          # WebKit's verdict on the network block list (prepare_ios_blocker).
+          DATA=$(xcrun simctl get_app_container "$DEVICE" "$BUNDLE" data)
+          find "$DATA/Library/Caches" -name content-blocker-status.txt -exec cat {} \; \
+            | tee ../ios-proof/content-blocker.txt
+
+          # A link: our tamescroll:// address through the same door a link
+          # from another app uses (debug-only --ts-url; simctl openurl stops
+          # at a system prompt CI cannot tap).
+          xcrun simctl terminate "$DEVICE" "$BUNDLE"
+          xcrun simctl launch "$DEVICE" "$BUNDLE" "--ts-url=tamescroll://open/reddit"
+          sleep 30
+          xcrun simctl io "$DEVICE" screenshot ../ios-proof/reddit-link.png
+
+          # Blur (phase 5): smart mode blurring women, on a search page so
+          # there are thumbnails, and the bundle's own report a minute in.
+          xcrun simctl terminate "$DEVICE" "$BUNDLE"
+          xcrun simctl launch "$DEVICE" "$BUNDLE" --ts-gaze=smart --ts-gender=man --ts-open=youtube \
+            "--ts-page=https://m.youtube.com/results?search_query=cooking+recipes" --ts-probe=60
+          sleep 50
+          xcrun simctl io "$DEVICE" screenshot ../ios-proof/blur-youtube.png
+          sleep 25
+          xcrun simctl io "$DEVICE" screenshot ../ios-proof/blur-youtube-late.png
+          find "$DATA/Library/Caches" -name gaze-status.txt -exec cat {} \; > ../ios-proof/gaze-status.txt || true
+          head -c 3000 ../ios-proof/gaze-status.txt || true
+
+          {
+            echo "--- Info.plist URL types and quick actions"
+            /usr/libexec/PlistBuddy -c 'Print CFBundleURLTypes' "$APP/Info.plist" || true
+            /usr/libexec/PlistBuddy -c 'Print UIApplicationShortcutItems' "$APP/Info.plist" || true
+            echo "--- UIDeviceFamily (1 iPhone, 2 iPad)"
+            /usr/libexec/PlistBuddy -c 'Print UIDeviceFamily' "$APP/Info.plist" || true
+            echo "--- scene manifest (none means tao's app-delegate mode)"
+            /usr/libexec/PlistBuddy -c 'Print UIApplicationSceneManifest' "$APP/Info.plist" || true
+            echo "--- widget extension"
+            ls "$APP/PlugIns" || echo "no PlugIns folder"
+            W="$APP/PlugIns/TameScrollWidget.appex/Info.plist"
+            for k in CFBundleIdentifier CFBundleVersion CFBundleShortVersionString; do
+              echo "$k app=$(/usr/libexec/PlistBuddy -c "Print $k" "$APP/Info.plist") widget=$(/usr/libexec/PlistBuddy -c "Print $k" "$W" 2>&1)"
+            done
+            echo "--- widget Info.plist"
+            /usr/libexec/PlistBuddy -c 'Print' "$W" || true
+            ls -la "$APP/PlugIns/TameScrollWidget.appex" || true
+            echo "--- widget extensions the simulator knows"
+            xcrun simctl spawn "$DEVICE" pluginkit -mAvvv -p com.apple.widgetkit-extension 2>&1 | grep -i -A10 "tamescroll" || echo "Tame Scroll widget NOT registered"
+          } | tee ../ios-proof/info-plist.txt
+
+          # Does the widget actually run? iOS's widget service (chronod)
+          # asks every installed widget for its list after install; a
+          # widget that crashes there is silently left out of the gallery
+          # (ZV's iPhone, builds 39-44).
+          {
+            echo "--- widget binary"
+            WB="$APP/PlugIns/TameScrollWidget.appex/TameScrollWidget"
+            file "$WB"; otool -L "$WB" | head -20
+            echo "--- run it directly for 5 s"
+            ( xcrun simctl spawn "$DEVICE" "$WB" & P=$!; sleep 5; kill $P 2>/dev/null; wait $P; echo "exit $?" ) 2>&1 | tail -20
+            echo "--- system log about the widget"
+            xcrun simctl spawn "$DEVICE" log show --last 15m --style compact \
+              --predicate 'eventMessage CONTAINS[c] "tamescroll" OR process == "TameScrollWidget" OR (process == "chronod" AND eventMessage CONTAINS[c] "error")' 2>&1 | tail -80
+            echo "--- crash reports"
+            ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "tamescroll|widget" || echo "none"
+            for f in $(ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i TameScrollWidget | head -1); do
+              python3 ../.github/scripts/ips-summary.py ~/Library/Logs/DiagnosticReports/$f
+            done
+          } > ../ios-proof/widget-log.txt 2>&1 || true
+          head -c 6000 ../ios-proof/widget-log.txt || true
+
+          # App Store screenshot: a site with the top bar, on the 6.9-inch
+          # iPhone Apple requires (1320 x 2868), clock at 9:41. Kept full
+          # size in appstore/, which the resize below does not touch.
+          BIG=$(xcrun simctl list devices available | grep -m1 -E 'iPhone 1[6-7] Pro Max' | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          if [ -n "$BIG" ]; then
+            xcrun simctl shutdown "$DEVICE" || true
+            xcrun simctl boot "$BIG"
+            xcrun simctl bootstatus "$BIG" -b
+            xcrun simctl ui "$BIG" appearance dark || true
+            xcrun simctl status_bar "$BIG" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+            xcrun simctl install "$BIG" "$APP"
+            xcrun simctl launch "$BIG" "$BUNDLE" --ts-open=youtube
+            sleep 35
+            mkdir -p ../ios-proof/appstore
+            xcrun simctl io "$BIG" screenshot ../ios-proof/appstore/4-youtube.png
+            xcrun simctl shutdown "$BIG" || true
+            xcrun simctl boot "$DEVICE" || true
+          else
+            echo "no 6.9-inch iPhone simulator on this runner"
+          fi
+
+          # Appetize offers iOS 17, 18 and 26; its sessions opened to a
+          # blank page (2026-10-27) while iOS 26 here draws fine. Launch on
+          # an iOS 18 simulator as well, to see the same thing here.
+          OLD=$(xcrun simctl list devices available | sed -n '/-- iOS 18/,/-- iOS/p' | grep -m1 -E 'iPhone 1[5-6]' | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          if [ -n "$OLD" ]; then
+            xcrun simctl shutdown "$DEVICE" || true
+            xcrun simctl boot "$OLD"
+            xcrun simctl bootstatus "$OLD" -b
+            xcrun simctl install "$OLD" "$APP"
+            xcrun simctl launch "$OLD" "$BUNDLE"
+            sleep 25
+            xcrun simctl io "$OLD" screenshot ../ios-proof/launcher-ios18.png
+            xcrun simctl spawn "$OLD" log show --last 1m --style compact --predicate 'process == "tamescroll"' 2>/dev/null | tail -60 > ../ios-proof/ios18-log.txt || true
+          else
+            echo "no iOS 18 simulator on this runner"
+          fi
+
+      # The owner has no iPhone or Mac, so the simulator build is also put
+      # on Appetize.io, which runs it in a browser (his OK, 2026-10-27).
+      # Needs the repository secret APPETIZE_API_TOKEN; APPETIZE_PUBLIC_KEY
+      # (optional) keeps updating the same app so its link never changes.
+      - name: Upload to Appetize
+        if: success()
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+          APPETIZE_PUBLIC_KEY: ${{ secrets.APPETIZE_PUBLIC_KEY }}
+        run: |
+          [ -n "$APPETIZE_API_TOKEN" ] || { echo "no APPETIZE_API_TOKEN secret, skipping"; exit 0; }
+          # A release build: the debug one stops right after launch on
+          # Appetize, before any of our code runs (2026-10-27 log), most
+          # likely waiting for the CLI's dev log server that only CI has.
+          # The debug build's output in gen/apple/build would block Tauri's
+          # rename of the new app ("Directory not empty").
+          rm -rf src-tauri/gen/apple/build
+          touch "$RUNNER_TEMP/release-marker"
+          pnpm tauri ios build --target aarch64-sim --ci
+          APP=$(find src-tauri/gen/apple ~/Library/Developer/Xcode/DerivedData -name '*.app' -type d -path '*elease*' -newer "$RUNNER_TEMP/release-marker" 2>/dev/null | grep -v '/PlugIns/' | head -1)
+          [ -n "$APP" ] || APP=$(find src-tauri/gen/apple -name '*.app' -type d -newer "$RUNNER_TEMP/release-marker" | head -1)
+          [ -n "$APP" ] || { echo "no release .app found"; exit 1; }
+          echo "release app: $APP"
+          # Prove the release build draws before anyone spends Appetize
+          # minutes on it.
+          D=$(xcrun simctl list devices booted | grep -m1 -oE '[0-9A-F-]{36}')
+          if [ -n "$D" ]; then
+            B=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")
+            xcrun simctl uninstall "$D" "$B" || true
+            xcrun simctl install "$D" "$APP"
+            xcrun simctl launch "$D" "$B"
+            sleep 25
+            mkdir -p ../ios-proof
+            xcrun simctl io "$D" screenshot ../ios-proof/release.png
+          fi
+          (cd "$(dirname "$APP")" && ditto -c -k --keepParent "$(basename "$APP")" "$RUNNER_TEMP/app.zip")
+          # Update the app already there for this bundle id, so the link
+          # stays the same build after build.
+          KEY="$APPETIZE_PUBLIC_KEY"
+          if [ -z "$KEY" ]; then
+            curl -sS "https://api.appetize.io/v1/apps" -H "X-API-KEY: $APPETIZE_API_TOKEN" -o "$RUNNER_TEMP/apps.json" || true
+            KEY=$(python3 - "$RUNNER_TEMP/apps.json" <<'PY'
+          import json, sys
+          try:
+              d = json.load(open(sys.argv[1]))
+          except Exception:
+              sys.exit(0)
+          items = d.get("data", d) if isinstance(d, dict) else d
+          for a in items if isinstance(items, list) else []:
+              if a.get("bundle") == "app.tamescroll.client" and a.get("platform") == "ios":
+                  print(a.get("publicKey", "")); break
+          PY
+            )
+          fi
+          URL=https://api.appetize.io/v1/apps
+          [ -z "$KEY" ] || URL="$URL/$KEY"
+          curl -sS --fail-with-body "$URL" -H "X-API-KEY: $APPETIZE_API_TOKEN" \
+            -F "file=@$RUNNER_TEMP/app.zip" -F "platform=ios" \
+            -F "note=tamescroll ${GITHUB_SHA::7}" -o "$RUNNER_TEMP/appetize.json"
+          mkdir -p ../ios-proof
+          python3 -c "import json;d=json.load(open('$RUNNER_TEMP/appetize.json'));print(d.get('publicKey'), d.get('appURL') or 'https://appetize.io/app/'+str(d.get('publicKey')))" \
+            | tee ../ios-proof/appetize.txt
+
+      # The proof goes to a throwaway branch as well as the artifact, so
+      # it can be opened without signing in to download an artifact.
+      - name: Publish the proof to the ci/ios-proof branch
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        working-directory: .
+        run: |
+          # A build that fails early leaves no proof folder at all.
+          [ -d ios-proof ] || { echo "no proof to publish"; exit 0; }
+          cd ios-proof
+          for f in *.png; do [ -e "$f" ] && sips -Z 700 "$f" >/dev/null; done
+          echo "${{ github.event.pull_request.head.sha }}" > SHA
+          git init -q -b ci/ios-proof
+          git -c user.name=ci -c user.email=ci@localhost add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "iOS proof for ${{ github.event.pull_request.head.sha }}"
+          # GitHub has answered this push with a 408 once (2026-10-28), so
+          # try a few times before giving up on the proof.
+          for i in 1 2 3 4; do
+            git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci/ios-proof && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-simulator-proof
+          path: ios-proof/
+          if-no-files-found: ignore
