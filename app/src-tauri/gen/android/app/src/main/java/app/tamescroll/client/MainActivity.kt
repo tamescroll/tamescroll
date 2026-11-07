@@ -84,6 +84,7 @@ class MainActivity : TauriActivity() {
     private const val TOP_STRIP_DP = 24
     private const val STATS_PREFS = "tamescroll.stats"
     private const val LOOK_PREFS = "tamescroll.look"
+    private const val SETTINGS_PREFS = "tamescroll.settings"
     private const val NIGHT_BG = 0xFF141414.toInt()
     private const val PAPER_BG = 0xFFF7F5F0.toInt()
   }
@@ -255,6 +256,72 @@ class MainActivity : TauriActivity() {
   // words and only acts while the launcher is showing.
   @Volatile
   private var paperLook = false
+
+  // ---- child lock (ZV ask 2026-11-06, #50): a toddler swiped from video
+  // to video. The lock itself is page-side -- an injected layer over the
+  // page that swallows every touch until a parent holds the lock button
+  // (kid_controls_script in lib.rs). What the page cannot stop is Back,
+  // so the page tells us it is locked and Back does nothing until it is
+  // unlocked.
+  //
+  // Untrusted like every bridge: any page can call it. The worst a hostile
+  // page can do is make Back a no-op while it is open, which the Home
+  // gesture still escapes, and the flag clears the moment the launcher
+  // loads (see onBack below), so it can never outlive the page.
+  @Volatile
+  private var pageLocked = false
+
+  // KEY Back in fullscreen got past the lock (emulator verify 2026-11-06):
+  // the fullscreen view handles the key before the Back dispatcher, so the
+  // child landed back in portrait with the lock still on. The key is
+  // swallowed here, ahead of every view, while the page is locked.
+  override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+    if (pageLocked && event.keyCode == android.view.KeyEvent.KEYCODE_BACK) return true
+    return super.dispatchKeyEvent(event)
+  }
+
+  inner class LockBridge {
+    @JavascriptInterface
+    fun set(locked: Boolean) {
+      pageLocked = locked
+    }
+  }
+
+  // ---- launcher settings mirror (#50). MEASURED 2026-11-06 on the
+  // emulator: flip a YouTube setting, swipe the app away at once, and the
+  // old setting comes back -- WebView localStorage reaches disk lazily and
+  // a force-stop loses the write; after a 20s wait it stuck. That is one
+  // of the ways his Recommendations were "hidden, then not hidden". The
+  // launcher now writes the bring-back map here too, synchronously, and
+  // reads it back first.
+  //
+  // Launcher-only, both ways: a platform page can neither read nor
+  // rewrite the user's settings through this.
+  inner class PrefsBridge {
+    private fun onLauncher(): Boolean {
+      val task = java.util.concurrent.FutureTask<Boolean> {
+        val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+        here.startsWith("http://tauri.localhost/")
+      }
+      runOnUiThread(task)
+      return try { task.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
+    }
+
+    @JavascriptInterface
+    fun get(key: String?): String? {
+      if (key != "shown" || !onLauncher()) return null
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).getString(key, null)
+    }
+
+    @JavascriptInterface
+    fun set(key: String?, value: String?): Boolean {
+      if (key != "shown" || value == null || value.length > 64 * 1024 || !onLauncher()) return false
+      // commit(), not apply(): the whole point is that it is on disk
+      // before the app can be swiped away. This runs on the JS bridge
+      // thread, never the UI thread.
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).edit().putString(key, value).commit()
+    }
+  }
 
   inner class LookBridge {
     @JavascriptInterface
@@ -1816,6 +1883,8 @@ class MainActivity : TauriActivity() {
     paperLook = getSharedPreferences(LOOK_PREFS, MODE_PRIVATE).getBoolean("paper", false)
     webView.setBackgroundColor(if (paperLook) PAPER_BG else NIGHT_BG)
     webView.addJavascriptInterface(LookBridge(), "TsLook")
+    webView.addJavascriptInterface(LockBridge(), "TsLock")
+    webView.addJavascriptInterface(PrefsBridge(), "TsPrefs")
     webView.addJavascriptInterface(ShortcutBridge(), "TsShortcuts")
     webView.addJavascriptInterface(LinksBridge(), "TsLinks")
     // Updater bridge: only ever reachable from the launcher's About
@@ -1872,7 +1941,12 @@ class MainActivity : TauriActivity() {
         // back into a feed from home would turn Back into a toggle
         // (observed on the emulator 2026-08-18, press-2 anomaly).
         val onLauncher = webView.url?.contains("tauri.localhost") == true
+        if (onLauncher) pageLocked = false
         when {
+          // Child lock on: Back is one of the ways a child leaves the
+          // video, so it does nothing -- not even leave fullscreen --
+          // until a parent unlocks on the page.
+          pageLocked -> {}
           // Fullscreen video first: Back exits fullscreen, not the page —
           // the same contract every browser honors.
           fullscreenView != null -> exitFullscreen()
