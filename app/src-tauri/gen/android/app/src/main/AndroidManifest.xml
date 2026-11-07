@@ -85,7 +85,7 @@
              turns it on when the launcher won't take a pinned shortcut.
              MainActivity reads the alias name and opens YouTube, exactly
              like a shortcut tap. Our own glyph and a label that names us,
-             never YouTube's logo or a bare "YouTube". -->
+             never YouTube's logo or YouTube's name (his ruling 2026-11-07). -->
         <activity-alias
             android:name=".YouTubeEntry"
             android:targetActivity=".MainActivity"

@@ -1123,7 +1123,7 @@ function renderLinksView() {
 const PIN_WORDS: Record<string, string> = {
   pinned: "Already on your home screen.",
   requested: "Confirm on the dialog that just opened.",
-  listed: "Added to your app list as \"tamescroll YouTube\".",
+  listed: "Added to your app list as \"tamescroll video\".",
   unsupported: "Your launcher doesn't take shortcuts from apps. Long-press the tamescroll icon and drag YouTube out, or pick another launcher.",
   unavailable: "This phone can't add shortcuts.",
   refused: "That didn't work. Try from the home screen instead.",
@@ -1142,11 +1142,11 @@ function renderPinStep() {
     btn.hidden = true;
   } else if (st.listed) {
     // A launcher that won't pin (olauncher) gets the app-list entry.
-    body.textContent = "In your app list as \"tamescroll YouTube\".";
+    body.textContent = "In your app list as \"tamescroll video\".";
     btn.hidden = true;
   } else if (st.supported === false) {
     // The button still helps here: it switches on the app-list entry.
-    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll YouTube\" to your app list.";
+    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll video\" to your app list.";
     btn.hidden = false;
   } else {
     body.textContent = "A tamescroll icon that opens YouTube, cleaned.";
