@@ -2198,6 +2198,10 @@ fn ios_ci_open(app: tauri::AppHandle) {
         let js = "JSON.stringify({bundle: !!window.__TS_GAZE_BUNDLE__, mode: window.__TS_GAZE_MODE, \
                   evalMs: window.__TS_GAZE_EVALMS, boot: window.__TS_GAZE_BOOT || null, \
                   worker: window.__TS_GAZE_WORKER || null, \
+                  pageBackend: window.__TS_GAZE_PAGE_BACKEND || null, \
+                  gl: (function () { try { var c = document.createElement('canvas').getContext('webgl'); \
+                    if (!c) return null; var d = c.getExtension('WEBGL_debug_renderer_info'); \
+                    return c.getParameter(d ? d.UNMASKED_RENDERER_WEBGL : c.RENDERER); } catch (e) { return String(e); } })(), \
                   blurred: document.querySelectorAll('[class*=\"ts-gaze\"]').length, \
                   imgs: document.images.length, \
                   diag: typeof window.__TS_DIAG_NOW === 'function' ? window.__TS_DIAG_NOW() : null})";

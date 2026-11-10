@@ -128,6 +128,16 @@ import { needsGenderWait, wantsGenderPreload, mustRejudgeWithNsfw } from './gend
 import * as codecProbe from './codec-probe.mjs';
 import { makeTimeline, resetTimeline, pushSnapshot, pushCut, boxesAt, latestSnapshot } from './track-timeline.mjs';
 
+// Which tfjs backend the in-page pipeline got (webgl or cpu). Read by
+// the iOS CI probe, where the worker cannot start and the page does the
+// work: a cpu fallback there explains slow images by itself.
+try {
+  Object.defineProperty(window, '__TS_GAZE_PAGE_BACKEND', {
+    get: function () { return detector.backendName(); },
+    configurable: true,
+  });
+} catch (e) {}
+
 // ONE ARTIFACT, TWO ROLES.
 //
 // This bundle is evaluated into the page AND served (by the Rust request
