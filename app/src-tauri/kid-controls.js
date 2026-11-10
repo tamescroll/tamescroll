@@ -1,7 +1,8 @@
 // KID CONTROLS (ZV ask 2026-11-06, issue #50).
 //
 // A toddler using the app swiped from one YouTube video to the next. Two
-// page-side controls answer that, each behind its own YouTube setting:
+// page-side controls answer that, each behind its own YouTube setting
+// (a third, autoplay, followed on 2026-11-10 -- see its block below):
 //
 //   swipeOff  -- "Swiping between videos" is Hidden: in fullscreen, a
 //                swipe that starts on the player is swallowed before
@@ -25,7 +26,7 @@
 // with a JSON object of booleans it produced itself. Nothing here is OTA.
 (function () {
   var KID = /*TS_KID*/ null;
-  if (!KID || (!KID.swipeOff && !KID.lock)) {
+  if (!KID || (!KID.swipeOff && !KID.lock && !KID.autoplayOff)) {
     try { if (window.TsLock) window.TsLock.set(false); } catch (e) {}
     return;
   }
@@ -97,6 +98,91 @@
         start = null;
       },
       { capture: true, passive: false }
+    );
+  }
+
+  // ---- autoplay next video ------------------------------------------
+  // ZV 2026-11-10: at the end of a video the app still went on to the
+  // next one, autoplay switch off or not, and YouTube's "next video"
+  // overlay came up over the finished frame. Both start from the same
+  // moment: the watch video reaching its ENDED state. So it never gets
+  // there. A moment before the end the video is paused, which leaves the
+  // last frame on screen with YouTube's ordinary paused controls: no
+  // countdown, no end screen, nothing to carry on to. Pressing play again
+  // from there starts the video over, as a finished video's replay would.
+  //
+  // This reads the video element's own clock and calls pause(), nothing
+  // else (player red line): no YouTube code is patched, and no selector
+  // has to keep up with how YouTube draws its end screen.
+  //
+  // Only the watch page's player: Shorts loop by design, and the feed's
+  // inline previews share the same player element off /watch. A live
+  // stream has no end, an ad is left to finish, and a video set to loop
+  // keeps looping.
+  if (KID.autoplayOff) {
+    var heldAt = null; // the video we stopped, until it plays again
+
+    function watchVideo(v) {
+      if (!v || v.tagName !== "VIDEO") return false;
+      var p = location.pathname || "";
+      if (p.indexOf("/watch") !== 0 && p.indexOf("/live/") !== 0) return false;
+      if (v.loop) return false;
+      var d = v.duration;
+      if (!isFinite(d) || d < 3) return false;
+      try {
+        if (v.closest && v.closest(".ad-showing, .ad-interrupting")) return false;
+      } catch (e) {}
+      return true;
+    }
+
+    // timeupdate arrives about four times a second of wall time, so the
+    // margin covers at least two of them at any playback speed.
+    function margin(v) {
+      return 0.6 * Math.max(1, v.playbackRate || 1);
+    }
+
+    function nearEnd(v) {
+      return v.duration - v.currentTime <= margin(v);
+    }
+
+    // `timeupdate`, `play` and `ended` do not bubble: listen in the
+    // capture phase on the document, which every media event passes.
+    document.addEventListener(
+      "timeupdate",
+      function (e) {
+        var v = e.target;
+        if (v.paused || !watchVideo(v) || !nearEnd(v)) return;
+        heldAt = v;
+        try { v.pause(); } catch (err) {}
+      },
+      true
+    );
+    document.addEventListener(
+      "play",
+      function (e) {
+        var v = e.target;
+        if (!watchVideo(v)) return;
+        // Play pressed on a video we held (or one sitting at its end):
+        // start it over rather than run the last moment into autoplay.
+        if (heldAt === v || nearEnd(v)) {
+          try { v.currentTime = 0; } catch (err) {}
+        }
+        heldAt = null;
+      },
+      true
+    );
+    // A backstop for the one case the pause above cannot catch: a seek
+    // straight onto the end. YouTube's player listens for `ended` on the
+    // video itself, after this capture listener, so stopping the event
+    // here keeps its end screen and autoplay countdown from starting.
+    document.addEventListener(
+      "ended",
+      function (e) {
+        if (!watchVideo(e.target)) return;
+        e.stopImmediatePropagation();
+        heldAt = e.target;
+      },
+      true
     );
   }
 
