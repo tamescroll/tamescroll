@@ -27,3 +27,29 @@ export function watchUrlForShortsHref(href, origin) {
   if (!/(^|\.)youtube\.com$/.test(u.hostname)) return null;
   return watchUrlForShorts(u.pathname, u.search);
 }
+
+// THE SHORTS FEED ITSELF (2026-11-10). A bare /shorts or /shorts/ is the
+// swipe feed with no video named: YouTube picks one and starts the feed.
+// There is no video to turn into a watch page, so it goes home instead.
+export function isShortsFeedPath(pathname) {
+  return /^\/shorts\/?$/.test(String(pathname || ''));
+}
+
+/**
+ * Where a navigation to `url` must go instead, or null to let it through.
+ * `url` is anything a page hands history.pushState / replaceState or an
+ * anchor: absolute, root-relative or relative to `base`. A short becomes
+ * its watch page, the bare feed becomes home.
+ */
+export function shortsExitFor(url, base) {
+  var u;
+  try {
+    u = new URL(String(url == null ? '' : url), base || 'https://m.youtube.com/');
+  } catch (e) {
+    return null;
+  }
+  if (!/(^|\.)youtube\.com$/.test(u.hostname)) return null;
+  var w = watchUrlForShorts(u.pathname, u.search);
+  if (w) return w;
+  return isShortsFeedPath(u.pathname) ? '/' : null;
+}

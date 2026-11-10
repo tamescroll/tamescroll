@@ -20,3 +20,24 @@ test('hrefs resolve relative to the page and stay on youtube', () => {
   assert.equal(watchUrlForShortsHref('https://example.com/shorts/abcdefg', 'https://m.youtube.com'), null);
   assert.equal(watchUrlForShortsHref('/watch?v=abcdefg', 'https://m.youtube.com'), null);
 });
+
+test('the bare Shorts feed goes home, a short goes to its watch page', async () => {
+  const { shortsExitFor, isShortsFeedPath } = await import('../src/shorts-redirect.mjs');
+  assert.equal(isShortsFeedPath('/shorts'), true);
+  assert.equal(isShortsFeedPath('/shorts/'), true);
+  assert.equal(isShortsFeedPath('/shorts/abcdefg'), false);
+  assert.equal(shortsExitFor('/shorts', 'https://m.youtube.com/results?search_query=x'), '/');
+  assert.equal(shortsExitFor('/shorts/?feature=x', 'https://m.youtube.com/'), '/');
+  // what YouTube's own router hands pushState when a playlist or a search
+  // result opens a short: root-relative, with a query
+  assert.equal(
+    shortsExitFor('/shorts/abc_-9XYZ12?list=PLxyz&pp=abc', 'https://m.youtube.com/playlist?list=PLxyz'),
+    '/watch?v=abc_-9XYZ12'
+  );
+  assert.equal(shortsExitFor('https://m.youtube.com/shorts/abcdefg', 'https://m.youtube.com/'), '/watch?v=abcdefg');
+  assert.equal(shortsExitFor('/watch?v=abcdefg&list=PLx', 'https://m.youtube.com/'), null);
+  assert.equal(shortsExitFor('/results?search_query=shorts', 'https://m.youtube.com/'), null);
+  assert.equal(shortsExitFor('/hashtag/shorts', 'https://m.youtube.com/'), null);
+  assert.equal(shortsExitFor(null, 'https://m.youtube.com/'), null);
+  assert.equal(shortsExitFor('https://example.com/shorts/abcdefg', 'https://m.youtube.com/'), null);
+});

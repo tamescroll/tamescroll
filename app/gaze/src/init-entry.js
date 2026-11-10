@@ -108,7 +108,7 @@ import {
 import * as videoRegion from './video-region.mjs';
 import { createTextMatcher } from './text-signals.mjs';
 import { buildReport, reportViolations, platformOf, pageKind, imgDiagRead } from './diag-report.mjs';
-import { watchUrlForShorts, watchUrlForShortsHref } from './shorts-redirect.mjs';
+import { shortsExitFor } from './shorts-redirect.mjs';
 import { planForMode, rotateBudget } from './pipeline-plan.mjs';
 import { createWorkerClient } from './worker-client.mjs';
 import { startWorker } from './worker-entry.js';
@@ -158,11 +158,20 @@ if (
     var tsPagePlatform = platformOf(location.hostname);
     var tsPageLast = null;
     // A SHORT IS A VIDEO: /shorts/<id> becomes /watch?v=<id> before the
-    // swipe feed can draw (see shorts-redirect.mjs). The click hook
-    // catches the in-page route; the tick catches everything else.
+    // swipe feed can draw, and the bare /shorts feed goes home (see
+    // shorts-redirect.mjs). Three doors, because a single one was
+    // walked around (2026-11-10: search "shorts", open a playlist, tap a
+    // short, and the swipe feed played):
+    //   1. the click hook catches a tapped <a href="/shorts/...">;
+    //   2. the history hook catches YouTube's own router, which reaches
+    //      /shorts/ by pushState from playlists, players and lockups
+    //      that are not plain links -- BEFORE the URL changes, so the
+    //      swipe feed never mounts and Back returns to where he was;
+    //   3. the tick catches everything else (a server redirect, a
+    //      navigation the first two never saw).
     var shortsToWatch = function () {
       if (tsPagePlatform !== 'youtube') return false;
-      var w = watchUrlForShorts(location.pathname, location.search);
+      var w = shortsExitFor(location.pathname + location.search, location.href);
       if (!w) return false;
       location.replace(w);
       return true;
@@ -171,12 +180,29 @@ if (
       document.addEventListener('click', function (ev) {
         var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
         if (!a) return;
-        var w = watchUrlForShortsHref(a.getAttribute('href'), location.origin);
+        var w = shortsExitFor(a.getAttribute('href'), location.href);
         if (!w) return;
         ev.preventDefault();
         ev.stopPropagation();
         location.assign(w);
       }, true);
+      ['pushState', 'replaceState'].forEach(function (name) {
+        var orig = history[name];
+        if (typeof orig !== 'function' || orig.__tsShorts) return;
+        var hooked = function (state, title, url) {
+          if (url != null) {
+            var w = shortsExitFor(url, location.href);
+            if (w) {
+              if (name === 'pushState') location.assign(w);
+              else location.replace(w);
+              return;
+            }
+          }
+          return orig.apply(this, arguments);
+        };
+        hooked.__tsShorts = true;
+        try { history[name] = hooked; } catch (e) {}
+      });
     }
     var syncTsPage = function () {
       if (shortsToWatch()) return;
