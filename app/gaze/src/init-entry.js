@@ -108,7 +108,7 @@ import {
 import * as videoRegion from './video-region.mjs';
 import { createTextMatcher } from './text-signals.mjs';
 import { buildReport, reportViolations, platformOf, pageKind, imgDiagRead } from './diag-report.mjs';
-import { shortsExitFor } from './shorts-redirect.mjs';
+import { shortsExitFor, reelPlayerExit, REEL_PLAYER_SELECTOR } from './shorts-redirect.mjs';
 import { planForMode, rotateBudget } from './pipeline-plan.mjs';
 import { createWorkerClient } from './worker-client.mjs';
 import { startWorker } from './worker-entry.js';
@@ -176,6 +176,28 @@ if (
       location.replace(w);
       return true;
     };
+    // 4. the player itself: a visible swipe player at an address none of
+    //    the doors recognised still leaves (watch pages never hold one).
+    var reelToWatch = function () {
+      if (tsPagePlatform !== 'youtube' || /^\/watch/.test(location.pathname)) return false;
+      var els = document.querySelectorAll(REEL_PLAYER_SELECTOR);
+      for (var i = 0; i < els.length; i++) {
+        var r = els[i].getBoundingClientRect();
+        if (r.width > 40 && r.height > 40) {
+          var exit = reelPlayerExit(location.pathname, location.search);
+          if (exit !== location.pathname + location.search) {
+            location.replace(exit);
+            return true;
+          }
+          // Already home and it is still here: no reload loop, just
+          // stop it and take it off the screen.
+          var vids = els[i].querySelectorAll('video');
+          for (var j = 0; j < vids.length; j++) { try { vids[j].pause(); } catch (e) {} }
+          els[i].style.setProperty('display', 'none', 'important');
+        }
+      }
+      return false;
+    };
     if (tsPagePlatform === 'youtube') {
       document.addEventListener('click', function (ev) {
         var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
@@ -205,7 +227,7 @@ if (
       });
     }
     var syncTsPage = function () {
-      if (shortsToWatch()) return;
+      if (shortsToWatch() || reelToWatch()) return;
       var k = pageKind(tsPagePlatform, location.pathname);
       if (k === tsPageLast) return;
       tsPageLast = k;

@@ -41,3 +41,11 @@ test('the bare Shorts feed goes home, a short goes to its watch page', async () 
   assert.equal(shortsExitFor(null, 'https://m.youtube.com/'), null);
   assert.equal(shortsExitFor('https://example.com/shorts/abcdefg', 'https://m.youtube.com/'), null);
 });
+
+test('a swipe player found on screen always leaves', async () => {
+  const { reelPlayerExit, REEL_PLAYER_SELECTOR } = await import('../src/shorts-redirect.mjs');
+  assert.equal(reelPlayerExit('/shorts/abcdefg', ''), '/watch?v=abcdefg');
+  assert.equal(reelPlayerExit('/playlist', '?list=PLx'), '/');
+  assert.equal(reelPlayerExit('/results', '?search_query=shorts'), '/');
+  assert.match(REEL_PLAYER_SELECTOR, /ytm-reel-player-renderer/);
+});

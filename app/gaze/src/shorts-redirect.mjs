@@ -53,3 +53,21 @@ export function shortsExitFor(url, base) {
   if (w) return w;
   return isShortsFeedPath(u.pathname) ? '/' : null;
 }
+
+// THE SWIPE PLAYER UNDER ANY ADDRESS (2026-11-10). The doors above all
+// read the URL. If YouTube ever draws its swipe player at an address
+// none of them recognises, the player itself is the tell. These are the
+// players' own tags (the same list kid-controls.js keys its touch lock
+// on); a hidden or zero-size one is a template, not a player.
+export var REEL_PLAYER_SELECTOR =
+  'ytm-reel-player-renderer, ytm-shorts-player, ytm-reel-watch, .reel-player';
+
+/** Where to go when a visible swipe player is on screen at `pathname`. */
+export function reelPlayerExit(pathname, search) {
+  var p = String(pathname || '');
+  var w = watchUrlForShorts(p, search);
+  if (w) return w;
+  // A real watch page never holds the swipe player; anywhere else it
+  // does, there is no video to name, so home.
+  return '/';
+}
