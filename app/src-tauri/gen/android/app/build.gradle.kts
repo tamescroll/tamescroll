@@ -60,6 +60,8 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
+            // The sideloaded GitHub APK is this build type (scripts/release.sh).
+            signingConfig = signingConfigs.findByName("upload")
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
