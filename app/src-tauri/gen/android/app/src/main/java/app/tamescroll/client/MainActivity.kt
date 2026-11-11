@@ -77,6 +77,8 @@ class MainActivity : TauriActivity() {
     // ts_probe marker is what tells us the system chose us for it.
     private const val YOUTUBE_PKG = "com.google.android.youtube"
     private const val PROBE_URL = "https://youtu.be/jNQXAC9IVRw?ts_probe=1"
+    // Manifest activity-alias that puts YouTube in the app list (1140).
+    private const val YOUTUBE_ENTRY = "YouTubeEntry"
     private const val LINKS_PREFS = "tamescroll.links"
     private const val LINKS_PROBED = "probed"
     // Height of the top bar above every site (installTopBar).
@@ -84,6 +86,7 @@ class MainActivity : TauriActivity() {
     private const val TOP_STRIP_DP = 24
     private const val STATS_PREFS = "tamescroll.stats"
     private const val LOOK_PREFS = "tamescroll.look"
+    private const val SETTINGS_PREFS = "tamescroll.settings"
     private const val NIGHT_BG = 0xFF141414.toInt()
     private const val PAPER_BG = 0xFFF7F5F0.toInt()
   }
@@ -105,6 +108,9 @@ class MainActivity : TauriActivity() {
   // Only ids our shortcuts.xml can send; anything else is dropped so an
   // arbitrary external intent can't steer the launcher.
   private fun platformFromIntent(intent: Intent?): String? {
+    // The app-list entry (activity-alias, 1140) carries no extra: the
+    // component name it was launched through is the platform.
+    if (intent?.component?.className == "$packageName.$YOUTUBE_ENTRY") return "youtube"
     val id = intent?.getStringExtra("ts_platform") ?: return null
     return if (id in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) id else null
   }
@@ -256,6 +262,72 @@ class MainActivity : TauriActivity() {
   @Volatile
   private var paperLook = false
 
+  // ---- child lock (ZV ask 2026-11-06, #50): a toddler swiped from video
+  // to video. The lock itself is page-side -- an injected layer over the
+  // page that swallows every touch until a parent holds the lock button
+  // (kid_controls_script in lib.rs). What the page cannot stop is Back,
+  // so the page tells us it is locked and Back does nothing until it is
+  // unlocked.
+  //
+  // Untrusted like every bridge: any page can call it. The worst a hostile
+  // page can do is make Back a no-op while it is open, which the Home
+  // gesture still escapes, and the flag clears the moment the launcher
+  // loads (see onBack below), so it can never outlive the page.
+  @Volatile
+  private var pageLocked = false
+
+  // KEY Back in fullscreen got past the lock (emulator verify 2026-11-06):
+  // the fullscreen view handles the key before the Back dispatcher, so the
+  // child landed back in portrait with the lock still on. The key is
+  // swallowed here, ahead of every view, while the page is locked.
+  override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+    if (pageLocked && event.keyCode == android.view.KeyEvent.KEYCODE_BACK) return true
+    return super.dispatchKeyEvent(event)
+  }
+
+  inner class LockBridge {
+    @JavascriptInterface
+    fun set(locked: Boolean) {
+      pageLocked = locked
+    }
+  }
+
+  // ---- launcher settings mirror (#50). MEASURED 2026-11-06 on the
+  // emulator: flip a YouTube setting, swipe the app away at once, and the
+  // old setting comes back -- WebView localStorage reaches disk lazily and
+  // a force-stop loses the write; after a 20s wait it stuck. That is one
+  // of the ways his Recommendations were "hidden, then not hidden". The
+  // launcher now writes the bring-back map here too, synchronously, and
+  // reads it back first.
+  //
+  // Launcher-only, both ways: a platform page can neither read nor
+  // rewrite the user's settings through this.
+  inner class PrefsBridge {
+    private fun onLauncher(): Boolean {
+      val task = java.util.concurrent.FutureTask<Boolean> {
+        val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+        here.startsWith("http://tauri.localhost/")
+      }
+      runOnUiThread(task)
+      return try { task.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
+    }
+
+    @JavascriptInterface
+    fun get(key: String?): String? {
+      if (key != "shown" || !onLauncher()) return null
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).getString(key, null)
+    }
+
+    @JavascriptInterface
+    fun set(key: String?, value: String?): Boolean {
+      if (key != "shown" || value == null || value.length > 64 * 1024 || !onLauncher()) return false
+      // commit(), not apply(): the whole point is that it is on disk
+      // before the app can be swiped away. This runs on the JS bridge
+      // thread, never the UI thread.
+      return getSharedPreferences(SETTINGS_PREFS, MODE_PRIVATE).edit().putString(key, value).commit()
+    }
+  }
+
   inner class LookBridge {
     @JavascriptInterface
     fun set(look: String?) {
@@ -365,9 +437,20 @@ class MainActivity : TauriActivity() {
      * WHAT HAPPENED. The first version returned nothing, and on his own
      * phone (olauncher, 2026-09-10) the launcher refuses pin requests, so
      * the "Add" button did nothing at all with no word to the user.
-     * Returns: pinned | requested | unsupported | unavailable | refused. */
+     * Returns: pinned | requested | listed | unsupported | unavailable | refused.
+     * "listed" (1140): the launcher won't take a pinned shortcut, so the
+     * YouTube entry was switched on in the app list instead. */
     @JavascriptInterface
-    fun pinShortcut(id: String?): String {
+    fun pinShortcut(id: String?): String = pin(id, null)
+
+    /** 1140: pin with a name THE PERSON typed, the way Chrome's Add to
+     * home screen lets them name it. Blank means "tamescroll". We never
+     * suggest a name: a pre-filled platform name would be our naming.
+     * The app-list fallback keeps its fixed label; launchers rename it. */
+    @JavascriptInterface
+    fun pinNamed(id: String?, name: String?): String = pin(id, name)
+
+    private fun pin(id: String?, name: String?): String {
       if (id == null || id !in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) return "refused"
       // JavascriptInterface runs off the UI thread and WebView.getUrl()
       // throws there (measured 1117 first cut: "Java exception was raised").
@@ -376,29 +459,74 @@ class MainActivity : TauriActivity() {
       val ok = try { onLauncher.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
       if (!ok) return "refused"
       if (Build.VERSION.SDK_INT < 26) return "unavailable"
+      // Every launcher gets the app-list entry (his ask 2026-11-07: "for
+      // normal people, not dependent on olauncher"). A pinned shortcut
+      // only ever lands on the HOME SCREEN, never in All apps, so the
+      // alias is what puts it in the app list on Pixel, Samsung, MIUI.
+      if (id == "youtube") listInstead(id)
       return try {
         val sm = getSystemService(android.content.pm.ShortcutManager::class.java) ?: return "unavailable"
-        if (sm.pinnedShortcuts.any { it.id == id }) return "pinned"
-        if (!sm.isRequestPinShortcutSupported) return "unsupported"
+        if (sm.pinnedShortcuts.any { it.id == id || it.id == "${id}_named" }) return "pinned"
+        if (!sm.isRequestPinShortcutSupported) return listInstead(id)
         val existing = sm.manifestShortcuts.firstOrNull { it.id == id } ?: return "unavailable"
-        if (sm.requestPinShortcut(existing, null)) "requested" else "unsupported"
+        val label = name?.filter { !it.isISOControl() }?.trim()?.take(24)
+        val info = if (label == null) existing else {
+          android.content.pm.ShortcutInfo.Builder(this@MainActivity, "${id}_named")
+            .setShortLabel(label.ifEmpty { getString(R.string.app_name) })
+            .setLongLabel(label.ifEmpty { getString(R.string.app_name) })
+            .setIcon(android.graphics.drawable.Icon.createWithResource(
+              this@MainActivity,
+              resources.getIdentifier("shortcut_$id", "drawable", packageName)
+                .takeIf { it != 0 } ?: R.mipmap.ic_launcher))
+            .setIntent(Intent(Intent.ACTION_VIEW)
+              .setClassName(packageName, "$packageName.MainActivity")
+              .putExtra("ts_platform", id))
+            .build()
+        }
+        if (sm.requestPinShortcut(info, null)) "requested" else listInstead(id)
       } catch (e: Throwable) {
         Log.w("TsLinks", "pin($id) failed: " + e.message)
         "refused"
       }
     }
 
+    private fun entryComponent() =
+      android.content.ComponentName(packageName, "$packageName.$YOUTUBE_ENTRY")
+
+    private fun entryListed(): Boolean =
+      packageManager.getComponentEnabledSetting(entryComponent()) ==
+        android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+
+    /** The launcher won't pin: put YouTube in the app list instead. Only
+     * YouTube has an entry; the other ids keep the old answer. */
+    private fun listInstead(id: String): String {
+      if (id != "youtube") return "unsupported"
+      return try {
+        packageManager.setComponentEnabledSetting(
+          entryComponent(),
+          android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+          android.content.pm.PackageManager.DONT_KILL_APP,
+        )
+        if (entryListed()) "listed" else "unsupported"
+      } catch (e: Throwable) {
+        Log.w("TsLinks", "list($id) failed: " + e.message)
+        "unsupported"
+      }
+    }
+
     /** Is the platform's shortcut on the home screen, and can this
-     * launcher take one at all. Null where the OS will not say. */
+     * launcher take one at all. Null where the OS will not say.
+     * "listed": the YouTube entry is on in the app list (1140). */
     @JavascriptInterface
     fun pinState(id: String?): String {
       val o = JSONObject()
+      try { if (id == "youtube") o.put("listed", entryListed()) } catch (_: Throwable) {}
       try {
         if (Build.VERSION.SDK_INT >= 26 && id != null) {
           val sm = getSystemService(android.content.pm.ShortcutManager::class.java)
           if (sm != null) {
             o.put("supported", sm.isRequestPinShortcutSupported)
-            o.put("pinned", sm.pinnedShortcuts.any { it.id == id })
+            o.put("pinned", sm.pinnedShortcuts.any { it.id == id || it.id == "${id}_named" })
           }
         }
       } catch (_: Throwable) {}
@@ -1816,6 +1944,8 @@ class MainActivity : TauriActivity() {
     paperLook = getSharedPreferences(LOOK_PREFS, MODE_PRIVATE).getBoolean("paper", false)
     webView.setBackgroundColor(if (paperLook) PAPER_BG else NIGHT_BG)
     webView.addJavascriptInterface(LookBridge(), "TsLook")
+    webView.addJavascriptInterface(LockBridge(), "TsLock")
+    webView.addJavascriptInterface(PrefsBridge(), "TsPrefs")
     webView.addJavascriptInterface(ShortcutBridge(), "TsShortcuts")
     webView.addJavascriptInterface(LinksBridge(), "TsLinks")
     // Updater bridge: only ever reachable from the launcher's About
@@ -1872,7 +2002,12 @@ class MainActivity : TauriActivity() {
         // back into a feed from home would turn Back into a toggle
         // (observed on the emulator 2026-08-18, press-2 anomaly).
         val onLauncher = webView.url?.contains("tauri.localhost") == true
+        if (onLauncher) pageLocked = false
         when {
+          // Child lock on: Back is one of the ways a child leaves the
+          // video, so it does nothing -- not even leave fullscreen --
+          // until a parent unlocks on the page.
+          pageLocked -> {}
           // Fullscreen video first: Back exits fullscreen, not the page —
           // the same contract every browser honors.
           fullscreenView != null -> exitFullscreen()

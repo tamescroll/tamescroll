@@ -134,8 +134,36 @@ static SHOWN_STATE: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// shared, so "ads shown on YouTube" must not leak onto Reddit.
 static SHOWN_PLATFORM: Mutex<&'static str> = Mutex::new("");
 
+/// EVERY PLATFORM'S bring-back prefs, as the launcher holds them.
+///
+/// ZV, 2026-11-06: "recommendations for some reason were hidden. Then they
+/// were not hidden." SHOWN_STATE is the list of the LAST TILE tapped, and
+/// a page reached any other way -- a YouTube link followed out of Reddit
+/// or X, or the launcher's search-or-type box -- was dressed in that
+/// tile's list. Reddit's list has no `watch_recs`, so YouTube's
+/// Recommendations (Shown by default) vanished until the YouTube tile was
+/// tapped again. The launcher now hands over every platform's list, and a
+/// page wears its OWN platform's prefs whichever way it was reached.
+static SHOWN_MAP: Mutex<Option<HashMap<String, Vec<String>>>> = Mutex::new(None);
+
 fn set_shown_state(shown: Vec<String>) {
     *SHOWN_STATE.lock().unwrap() = shown;
+}
+
+fn set_shown_map(map: Option<HashMap<String, Vec<String>>>) {
+    if let Some(map) = map {
+        *SHOWN_MAP.lock().unwrap() = Some(map);
+    }
+}
+
+/// A platform's prefs on an install that has never told us any: the
+/// same defaults the launcher seeds (`defaultShown` in main.ts).
+fn default_shown_for(platform_id: &str) -> Vec<String> {
+    surfaces(platform_id.to_string())
+        .into_iter()
+        .filter(|s| s.default_shown)
+        .map(|s| s.id)
+        .collect()
 }
 
 fn set_shown_platform(id: &'static str) {
@@ -180,12 +208,28 @@ fn ads_let_through(page_url: &str, shown_platform: &str, shown: &[String]) -> bo
 /// shared `ads` id when the list was set for a different platform.
 #[cfg_attr(not(target_os = "android"), allow(dead_code))] // android page loads
 fn shown_for(platform_id: &str) -> Vec<String> {
-    let shown = shown_state();
-    if *SHOWN_PLATFORM.lock().unwrap() == platform_id {
-        shown
-    } else {
-        shown.into_iter().filter(|id| id != ADS_SURFACE).collect()
+    let held_for = *SHOWN_PLATFORM.lock().unwrap();
+    let map = SHOWN_MAP.lock().unwrap().clone();
+    pick_shown(platform_id, held_for, &shown_state(), map.as_ref())
+}
+
+/// Pure half of `shown_for`, so the routing can be tested without the
+/// process-wide state. The tile's own list wins (it is the freshest), then
+/// the launcher's map, then the install defaults -- never another
+/// platform's list.
+fn pick_shown(
+    platform_id: &str,
+    held_for: &str,
+    held: &[String],
+    map: Option<&HashMap<String, Vec<String>>>,
+) -> Vec<String> {
+    if held_for == platform_id {
+        return held.to_vec();
     }
+    if let Some(list) = map.and_then(|m| m.get(platform_id)) {
+        return list.clone();
+    }
+    default_shown_for(platform_id)
 }
 
 #[cfg_attr(not(target_os = "android"), allow(dead_code))] // android page loads
@@ -273,6 +317,7 @@ fn page_load_rules_script(url: &str) -> Option<String> {
         &scriptlets,
         true,
     );
+    let kid = kid_controls_script(platform.id, &shown);
     Some(format!(
         r#"
 (function () {{
@@ -289,8 +334,57 @@ fn page_load_rules_script(url: &str) -> Option<String> {
   }} catch (e) {{}}
 {script}
 }})();
+{kid}
 "#
     ))
+}
+
+/// KID CONTROLS (ZV ask 2026-11-06, #50): the two YouTube settings that
+/// are not stylesheet rules. `player_swipe` Hidden swallows swipes on the
+/// player; `child_lock` Shown puts the padlock beside the home pill. Both
+/// are offered as surfaces (`kid_surfaces`) so they sit in the same Bring
+/// back list as every other YouTube setting.
+///
+/// The page script is built here and only here (CODE MAY NEVER TRAVEL OVER
+/// OTA); the one thing spliced into it is a JSON object of two booleans
+/// this function produced itself. Every other platform gets an empty
+/// string: no padlock, no swipe guard, nothing evaluated.
+pub(crate) const SWIPE_SURFACE: &str = "player_swipe";
+pub(crate) const CHILD_LOCK_SURFACE: &str = "child_lock";
+
+fn kid_surfaces(platform_id: &str) -> Vec<SurfaceInfo> {
+    if platform_id != "youtube" {
+        return Vec::new();
+    }
+    vec![
+        // Hidden by default: like every surface, the clean state is the
+        // default, and a swipe that changes the video is the trap.
+        SurfaceInfo {
+            id: SWIPE_SURFACE.to_string(),
+            label: "Swiping between videos".to_string(),
+            default_shown: false,
+        },
+        // Hidden by default: a padlock nobody asked for is clutter. A
+        // parent turns it on once.
+        SurfaceInfo {
+            id: CHILD_LOCK_SURFACE.to_string(),
+            label: "Touch lock button".to_string(),
+            default_shown: false,
+        },
+    ]
+}
+
+fn kid_controls_script(platform_id: &str, shown: &[String]) -> String {
+    if platform_id != "youtube" {
+        return String::new();
+    }
+    let has = |id: &str| shown.iter().any(|s| s == id);
+    let config = format!(
+        r#"{{"swipeOff":{},"lock":{}}}"#,
+        !has(SWIPE_SURFACE),
+        has(CHILD_LOCK_SURFACE)
+    );
+    include_str!("../kid-controls.js").replacen("/*TS_KID*/ null", &config, 1)
 }
 
 fn page_load_gaze_script(url: &str, mode: &str) -> Option<String> {
@@ -1324,6 +1418,11 @@ fn surfaces(id: String) -> Vec<SurfaceInfo> {
                     label: s.label.to_string(),
                     default_shown: s.default_shown,
                 })
+                // The kid controls (#50) are page code, not rules, so they
+                // are listed here and NOT in rules/youtube.txt: a rules OTA
+                // would otherwise hand older builds two switches that do
+                // nothing.
+                .chain(kid_surfaces(&id))
                 // The ads switch (ADS_SURFACE), on every platform, last:
                 // it governs network blocking too, so it exists even where
                 // the rules file has no `ads` surface of its own.
@@ -1961,11 +2060,13 @@ async fn open_address(
     mode: String,
     strength: u32,
     gender: String,
+    shown_map: Option<HashMap<String, Vec<String>>>,
 ) -> Result<(), String> {
     let url = resolve_address(&input).ok_or_else(|| "nothing to open".to_string())?;
     set_gaze_state(&mode);
     set_blur_px(strength);
     set_user_gender_state(&gender);
+    set_shown_map(shown_map);
 
     #[cfg(target_os = "android")]
     {
@@ -2021,6 +2122,7 @@ async fn open_platform(
     gender: String,
     shown: Vec<String>,
     url: Option<String>,
+    shown_map: Option<HashMap<String, Vec<String>>>,
 ) -> Result<(), String> {
     let platform = PLATFORMS
         .iter()
@@ -2050,6 +2152,7 @@ async fn open_platform(
     set_user_gender_state(&gender);
     set_shown_state(shown.clone());
     set_shown_platform(platform.id);
+    set_shown_map(shown_map);
 
     let url: tauri::Url = match requested {
         Some(u) => u,
@@ -2462,6 +2565,82 @@ mod tests {
         assert!(a < b, "the perf stash precedes the native stash");
     }
 
+    /// ZV 2026-11-06: recommendations "hidden, then not hidden". A YouTube
+    /// page reached from the Reddit tile wore Reddit's list, which has no
+    /// `watch_recs`. It must wear YouTube's own list from the map, and with
+    /// no map at all YouTube's install defaults -- never another
+    /// platform's choices.
+    #[test]
+    fn a_page_wears_its_own_platforms_prefs_however_it_was_reached() {
+        let reddit = vec!["discovery".to_string()];
+        let mut map = HashMap::new();
+        map.insert("youtube".to_string(), vec!["watch_recs".to_string(), "ads".to_string()]);
+        map.insert("reddit".to_string(), reddit.clone());
+
+        // Reached from the Reddit tile: YouTube's own list, from the map.
+        let yt = pick_shown("youtube", "reddit", &reddit, Some(&map));
+        assert!(yt.contains(&"watch_recs".to_string()), "{yt:?}");
+        assert!(!yt.contains(&"discovery".to_string()), "{yt:?}");
+
+        // No map yet: YouTube's defaults -- Recommendations and Ads Shown.
+        let yt = pick_shown("youtube", "reddit", &reddit, None);
+        assert!(yt.contains(&"watch_recs".to_string()), "{yt:?}");
+        assert!(yt.contains(&"ads".to_string()), "{yt:?}");
+        assert!(!yt.contains(&"discovery".to_string()), "{yt:?}");
+
+        // The tile's own list wins over the map: it is the freshest.
+        let held = vec!["shorts".to_string()];
+        assert_eq!(pick_shown("youtube", "youtube", &held, Some(&map)), held);
+    }
+
+    /// The kid controls (#50) are YouTube's alone, start Hidden, and the
+    /// page script carries exactly what the two switches say.
+    #[test]
+    fn kid_controls_follow_their_two_switches_on_youtube_only() {
+        let yt = surfaces("youtube".to_string());
+        for id in [SWIPE_SURFACE, CHILD_LOCK_SURFACE] {
+            let s = yt.iter().find(|s| s.id == id).unwrap_or_else(|| panic!("{id} offered"));
+            assert!(!s.default_shown, "{id} starts Hidden");
+        }
+        assert_eq!(yt.last().map(|s| s.id.as_str()), Some(ADS_SURFACE), "ads stays last");
+        // The two that ARE rules (#50) start Hidden too, and their CSS ships
+        // by default: Next/Previous, and the search dropdown.
+        for id in ["player_skip", "search_suggestions"] {
+            let s = yt.iter().find(|s| s.id == id).unwrap_or_else(|| panic!("{id} offered"));
+            assert!(!s.default_shown, "{id} starts Hidden");
+        }
+        let css = surfaces_css("youtube", &[]);
+        for needle in [
+            ".player-middle-controls-prev-next-button",
+            ".ytSearchboxComponentSuggestionsContainer",
+            ".ytFullscreenVideoRecommendationsHost",
+        ] {
+            assert!(css.contains(needle), "{needle} hidden by default");
+        }
+        // Fullscreen recommendations follow the Recommendations switch.
+        assert!(!surfaces_css("youtube", &["watch_recs".to_string()]).contains(".ytFullscreenVideoRecommendationsHost"));
+        assert!(surfaces("reddit".to_string()).iter().all(|s| s.id != SWIPE_SURFACE && s.id != CHILD_LOCK_SURFACE));
+
+        // Install defaults: swiping blocked, no padlock.
+        let js = kid_controls_script("youtube", &[]);
+        assert!(js.contains(r#"var KID = {"swipeOff":true,"lock":false};"#), "token replaced");
+        assert!(!js.contains("/*TS_KID*/"));
+        let js = kid_controls_script(
+            "youtube",
+            &[SWIPE_SURFACE.to_string(), CHILD_LOCK_SURFACE.to_string()],
+        );
+        assert!(js.contains(r#"var KID = {"swipeOff":false,"lock":true};"#));
+        assert!(kid_controls_script("reddit", &[]).is_empty());
+
+        // And it reaches YouTube's pages through the rules payload, whatever
+        // the switches say (the script itself decides what to do). Read
+        // without touching the shared prefs other tests set.
+        let page = page_load_rules_script("https://m.youtube.com/watch?v=x").expect("youtube page");
+        assert!(page.contains("window.__TS_KID__"));
+        let page = page_load_rules_script("https://www.reddit.com/").expect("reddit page");
+        assert!(!page.contains("window.__TS_KID__"));
+    }
+
     /// The ads switch (#23): Shown lets the platform's own page through
     /// and nothing else -- not another platform's page, and not this
     /// platform while the switch says Hidden.
@@ -2602,7 +2781,9 @@ mod tests {
         assert!(page_load_rules_script("https://www.youtube.com/").is_some());
 
         // The current bring-back prefs must reach the payload: a shown
-        // surface's selectors disappear from it.
+        // surface's selectors disappear from it. Held for YouTube: a list
+        // held for another platform never dresses a YouTube page (#50).
+        set_shown_platform("youtube");
         set_shown_state(vec!["shorts".into()]);
         let js_shown = page_load_rules_script("https://www.youtube.com/").expect("rules");
         assert!(

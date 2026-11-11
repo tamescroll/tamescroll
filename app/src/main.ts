@@ -437,13 +437,54 @@ type SurfaceInfo = { id: string; label: string; default_shown: boolean };
 
 const SHOWN_KEY = "tamescroll.shown";
 
-function readShownMap(): Record<string, string[]> {
+// THE MAP IS MIRRORED NATIVELY (#50). WebView localStorage reaches disk
+// lazily: measured on the emulator, a setting flipped and the app swiped
+// away at once came back with its OLD value. MainActivity's TsPrefs writes
+// synchronously, so it is read first and written on every change; desktop
+// has no bridge and keeps localStorage alone.
+type PrefsBridge = { get(key: string): string | null; set(key: string, value: string): boolean };
+function prefsBridge(): PrefsBridge | null {
+  return ((window as unknown as { TsPrefs?: PrefsBridge }).TsPrefs) ?? null;
+}
+
+function parseShownMap(raw: string | null | undefined): Record<string, string[]> | null {
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(localStorage.getItem(SHOWN_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
   } catch {
-    return {};
+    return null;
   }
+}
+
+function readShownMap(): Record<string, string[]> {
+  let native: string | null = null;
+  try {
+    native = prefsBridge()?.get("shown") ?? null;
+  } catch {
+    native = null;
+  }
+  return parseShownMap(native) ?? parseShownMap(localStorage.getItem(SHOWN_KEY)) ?? {};
+}
+
+function writeShownMap(map: Record<string, string[]>) {
+  const json = JSON.stringify(map);
+  localStorage.setItem(SHOWN_KEY, json);
+  try {
+    prefsBridge()?.set("shown", json);
+  } catch {
+    // localStorage still has it; the mirror is a backstop, not the store.
+  }
+}
+
+// The whole map for Rust, cleaned: one malformed entry would fail the
+// invoke's deserialisation and with it the tap, so only string lists go.
+function shownMapForRust(): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [id, list] of Object.entries(readShownMap())) {
+    if (Array.isArray(list)) out[id] = list.filter((v) => typeof v === "string");
+  }
+  return out;
 }
 
 function getShown(platformId: string): string[] {
@@ -471,7 +512,7 @@ async function seedDefaultShown(platformIds: string[]) {
       const defaults = list.filter((s) => s.default_shown).map((s) => s.id);
       if (defaults.length) map[id] = defaults;
     }
-    localStorage.setItem(SHOWN_KEY, JSON.stringify(map));
+    writeShownMap(map);
     localStorage.setItem(SEEDED_KEY, "1");
   } catch (error) {
     // A failed seed must not stop the launcher rendering: the user simply
@@ -483,7 +524,7 @@ async function seedDefaultShown(platformIds: string[]) {
 function setShown(platformId: string, shown: string[]) {
   const map = readShownMap();
   map[platformId] = shown;
-  localStorage.setItem(SHOWN_KEY, JSON.stringify(map));
+  writeShownMap(map);
 }
 
 function surfaceRow(platformId: string, surface: SurfaceInfo): HTMLElement {
@@ -761,6 +802,9 @@ async function open(platform: Platform, url?: string, tile?: HTMLElement) {
       shown: getShown(platform.id),
       // The page a link asked for (1107); Rust re-checks the host.
       url: url ?? null,
+      // Every platform's list, so a page reached from ANOTHER platform (a
+      // YouTube link inside Reddit) wears its own prefs, not this tile's.
+      shownMap: shownMapForRust(),
     });
     // Android navigates this very document away: restoring here would
     // paint the un-dimmed tile as the LAST frame before teardown (measured,
@@ -829,6 +873,7 @@ async function openAddress(raw: string) {
       mode: getMode(),
       strength: getStrength(),
       gender: getGender(),
+      shownMap: shownMapForRust(),
     });
     if (!isAndroid) status.textContent = restingStatus;
   } catch (error) {
@@ -992,6 +1037,7 @@ type LinksBridge = {
   openAppInfo(pkg: string): void;
   probe(): void;
   pinShortcut(id: string): string;
+  pinNamed?(id: string, name: string): string;
   pinState?(id: string): string;
   state(): string;
 };
@@ -1087,7 +1133,8 @@ function renderLinksView() {
 // long-press route still works on most of them, so it is offered.
 const PIN_WORDS: Record<string, string> = {
   pinned: "Already on your home screen.",
-  requested: "Confirm on the dialog that just opened.",
+  requested: "Confirm on the dialog that just opened. It's in your app list too, as \"tamescroll video\".",
+  listed: "Added to your app list as \"tamescroll video\". To call it something else, rename it in your launcher (on olauncher: start typing its name in the app list, then tap Rename).",
   unsupported: "Your launcher doesn't take shortcuts from apps. Long-press the tamescroll icon and drag YouTube out, or pick another launcher.",
   unavailable: "This phone can't add shortcuts.",
   refused: "That didn't work. Try from the home screen instead.",
@@ -1096,19 +1143,34 @@ const PIN_WORDS: Record<string, string> = {
 function renderPinStep() {
   const li = document.querySelector<HTMLElement>('.step[data-step="pin"]');
   if (!li || !linksBridge?.pinState) return;
-  let st: { supported?: boolean; pinned?: boolean } = {};
+  let st: { supported?: boolean; pinned?: boolean; listed?: boolean } = {};
   try { st = JSON.parse(linksBridge.pinState("youtube")); } catch { /* the OS would not say */ }
-  li.classList.toggle("done", st.pinned === true);
+  li.classList.toggle("done", st.pinned === true || (st.listed === true && st.supported === false));
   const body = li.querySelector<HTMLElement>(".step-body")!;
   const btn = li.querySelector<HTMLButtonElement>("button")!;
+  const nameBox = li.querySelector<HTMLInputElement>("#pin-name");
+  // The name box only matters where the launcher takes a shortcut: an
+  // app-list entry's name is fixed, and the launcher renames it.
+  if (nameBox) nameBox.hidden = !!(st.pinned || st.supported === false);
   if (st.pinned) {
-    body.textContent = "On your home screen.";
+    body.textContent = st.listed
+      ? "On your home screen, and in your app list as \"tamescroll video\"."
+      : "On your home screen.";
+    btn.hidden = true;
+  } else if (st.listed && st.supported !== false) {
+    // In the app list already; the home icon (with their name) is still on offer.
+    body.textContent = "In your app list as \"tamescroll video\". Add a home screen icon and name it what you like.";
+    btn.hidden = false;
+  } else if (st.listed) {
+    // A launcher that won't pin (olauncher) gets the app-list entry.
+    body.textContent = "In your app list as \"tamescroll video\". Rename it in your launcher if you like.";
     btn.hidden = true;
   } else if (st.supported === false) {
-    body.textContent = "Your launcher won't take it from here: long-press the tamescroll icon and drag YouTube out.";
-    btn.hidden = true;
+    // The button still helps here: it switches on the app-list entry.
+    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll video\" to your app list.";
+    btn.hidden = false;
   } else {
-    body.textContent = "A tamescroll icon that opens YouTube, cleaned.";
+    body.textContent = "Adds \"tamescroll video\" to your app list, and a home screen icon you name yourself.";
     btn.hidden = false;
   }
 }
@@ -1128,7 +1190,10 @@ document.querySelectorAll<HTMLButtonElement>("#view-links [data-act]").forEach((
         case "ours-on": linksBridge.openDefaultApps(null); break;
         case "probe": linksBridge.probe(); break;
         case "pin": {
-          const r = String(linksBridge.pinShortcut("youtube"));
+          const name = (document.querySelector<HTMLInputElement>("#pin-name")?.value ?? "").trim();
+          const r = String(linksBridge.pinNamed
+            ? linksBridge.pinNamed("youtube", name)
+            : linksBridge.pinShortcut("youtube"));
           const note = document.querySelector<HTMLElement>("#links-note")!;
           note.textContent = PIN_WORDS[r] ?? "";
           renderPinStep();

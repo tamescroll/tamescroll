@@ -349,6 +349,39 @@ m.youtube.com##ytm-single-column-watch-next-results-renderer ytm-video-with-cont
 ! test: on m.youtube.com /watch, 12s after load ->
 !   performance.getEntriesByType('resource').filter(e=>/youtubei\/v1\/next/.test(e.name)).length === 0
 m.youtube.com##ytm-item-section-renderer[section-identifier="related-items"]
+! FULLSCREEN LEAKED THEM (#50, ZV 2026-11-06: recommendations "hidden,
+! then not hidden"). m.youtube's fullscreen player carries its own
+! related videos, which no rule above reached: a "More videos" button
+! bottom right, and a strip of 12 related videos that a tap on it or a
+! SWIPE UP on the player opens. .ytp-fullscreen-grid and
+! .ytp-endscreen-content do not exist on m.youtube.
+! Safe for the player: both live under the control container, not around
+! the video (fullscreen element is #player-container-id; the strip is in
+! div.fullscreen-controls beside the action menu).
+! [live 2026-11-06, emulator, 1138] strip
+!   div.ytFullscreenVideoRecommendationsHost > 12 ytm-endscreen-video-renderer;
+!   button ytm-fullscreen-related-videos-entry-point-view-model inside
+!   div.fullscreen-watch-next-entrypoint-wrapper (probe_kidlock_*.py)
+! test: on m.youtube.com /watch in fullscreen, swipe up on the video ->
+!   no strip of videos, and no "More videos" button bottom right
+m.youtube.com##.ytFullscreenVideoRecommendationsHost
+m.youtube.com##.fullscreen-watch-next-entrypoint-wrapper
+m.youtube.com##ytm-fullscreen-related-videos-entry-point-view-model
+
+!surface: player_skip Next and previous buttons
+
+! The middle row of the player shows Previous, Play/pause and Next. Next
+! shows on EVERY video, not only in a playlist, and opens a related video
+! -- a way out even with Recommendations hidden (#50: a toddler went
+! video to video). Play/pause and replay are untouched (player red line).
+! [live 2026-11-06, emulator, 1138] row
+!   player-middle-controls.player-controls-middle >
+!   div.player-controls-middle-core-buttons > button.player-middle-controls-
+!   prev-next-button[aria-label="Previous video"], play/pause, and the same
+!   class with aria-label "Next video". Same buttons in fullscreen.
+! test: on m.youtube.com /watch, tap the video and pause ->
+!   only the play button shows in the middle; tapping it still plays
+m.youtube.com##.player-middle-controls-prev-next-button
 
 
 ! ============================================================
@@ -458,6 +491,26 @@ youtube.com##ytd-universal-watch-card-renderer
 ! test: search an artist name ->
 !   document.querySelectorAll('ytd-search ytd-radio-renderer').length >= 1
 youtube.com##ytd-search ytd-radio-renderer
+
+
+! ============================================================
+! SEARCH SUGGESTIONS -- the dropdown under the search box
+! ============================================================
+
+!surface: search_suggestions Search suggestions
+
+! ZV 2026-11-06: tapping the search box showed his past searches, signed
+! out. The same dropdown shows YouTube's suggested searches while typing,
+! which is a small recommendation feed of its own. The box and the
+! results page are untouched; Enter still searches.
+! [live 2026-11-06, emulator, 1138] yt-searchbox[role=search] holds
+!   input.ytSearchboxComponentInput[role=combobox] and, as a SIBLING
+!   branch, div.ytSearchboxComponentSuggestionsContainer[role=listbox]
+!   -- the same element for past searches (empty box) and suggestions
+!   (typing). The results page does not use it.
+! test: on m.youtube.com, tap the search box, then type "cat" ->
+!   no list under the box; Enter opens the results
+m.youtube.com##yt-searchbox .ytSearchboxComponentSuggestionsContainer
 
 
 ! ============================================================

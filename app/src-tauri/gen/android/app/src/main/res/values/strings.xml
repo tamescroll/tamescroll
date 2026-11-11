@@ -3,6 +3,7 @@
     <string name="main_activity_title">"tamescroll"</string>
     <string name="shortcut_youtube_short">YouTube</string>
     <string name="shortcut_youtube_long">YouTube, cleaned</string>
+    <string name="entry_youtube_label">tamescroll video</string>
     <string name="shortcut_reddit_short">Reddit</string>
     <string name="shortcut_reddit_long">Reddit, cleaned</string>
     <string name="shortcut_x_short">X</string>
