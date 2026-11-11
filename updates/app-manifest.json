@@ -1,7 +1,7 @@
 {
-  "versionCode": 1139,
-  "versionName": "0.1.139",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.139/tamescroll-1139.apk",
-  "sha256": "5dd6d87dd82308a9409b6ae6f5d436f7a6a678eca7782a8160af3f1ef9621c39",
-  "notes": "YouTube: a touch lock, no swiping to other videos in fullscreen, Next/Previous and search suggestions can be hidden. Recommendations no longer switch on and off by themselves."
+  "versionCode": 1141,
+  "versionName": "0.1.141",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.141/tamescroll-1141.apk",
+  "sha256": "e849876dbbc9deffb5b328b5a54e92569041aa7c4f6fc50674d0b22cb68b2ee6",
+  "notes": "One-time reinstall: uninstall Tame Scroll, then install this version. Settings reset once; updates work normally after."
 }
