@@ -180,7 +180,7 @@
                    out where people look for it. main.ts shows it on iPhone. -->
               <section class="card" id="ios-home-card" hidden aria-label="YouTube on your home screen">
                 <div class="card-title">YouTube on your home screen</div>
-                <p class="card-body">A tamescroll icon that opens YouTube, cleaned. Takes about 30 seconds:</p>
+                <p class="card-body">An icon that opens YouTube here, cleaned. Takes about a minute:</p>
                 <div class="ios-home-steps"></div>
                 <button type="button" class="btn-ghost small" id="ios-home-added">It's on my home screen</button>
               </section>
@@ -407,11 +407,20 @@
       </section>
     </main>
     <template id="ios-home-steps">
+      <div class="ios-home-sub">Small icon, like an app (recommended)</div>
+      <ol class="steps">
+        <li class="step"><span class="step-num">1</span><div class="grow"><div class="step-title">Tap <b>Open Shortcuts</b> below</div><p class="step-body">Apple's Shortcuts app opens on a new, empty shortcut.</p></div></li>
+        <li class="step"><span class="step-num">2</span><div class="grow"><div class="step-title">Tap <b>Add Action</b>, search <b>Tame for YouTube</b>, tap it</div><p class="step-body">It's listed under Tame Scroll.</p></div></li>
+        <li class="step"><span class="step-num">3</span><div class="grow"><div class="step-title">Tap the name at the top, then <b>Add to Home Screen</b></div><p class="step-body">On some versions it's under the share button at the bottom instead.</p></div></li>
+        <li class="step"><span class="step-num">4</span><div class="grow"><div class="step-title">Name it <b>YouTube</b> and tap <b>Add</b></div><p class="step-body">A normal-sized icon appears. Put it where the YouTube app was.</p></div></li>
+      </ol>
+      <button type="button" class="btn-solid small ios-open-shortcuts">Open Shortcuts</button>
+      <div class="ios-home-sub">Or a bigger tile (a widget)</div>
       <ol class="steps">
         <li class="step"><span class="step-num">1</span><div class="grow"><div class="step-title">Touch and hold your home screen</div><p class="step-body">Hold an empty spot until the icons jiggle.</p></div></li>
         <li class="step"><span class="step-num">2</span><div class="grow"><div class="step-title">Tap <b>Edit</b>, then <b>Add Widget</b></div><p class="step-body">Edit is in the top-left corner. On iOS 17 or older, tap <b>+</b> there instead.</p></div></li>
         <li class="step"><span class="step-num">3</span><div class="grow"><div class="step-title">Search <b>tamescroll</b> and pick YouTube</div><p class="step-body">Swipe sideways to see Reddit, X, or all three in one.</p></div></li>
-        <li class="step"><span class="step-num">4</span><div class="grow"><div class="step-title">Tap <b>Add Widget</b>, then <b>Done</b></div><p class="step-body">Drag it wherever you like, even where the YouTube app was.</p></div></li>
+        <li class="step"><span class="step-num">4</span><div class="grow"><div class="step-title">Tap <b>Add Widget</b>, then <b>Done</b></div><p class="step-body">The smallest widget Apple allows is the size of four icons.</p></div></li>
       </ol>
     </template>
 

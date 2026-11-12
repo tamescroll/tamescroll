@@ -39,6 +39,7 @@ class TsWebkitPlugin: Plugin {
     // go back, including from a platform to the launcher.
     webview.allowsBackForwardNavigationGestures = true
     installTouchLockBridge(webview)
+    webview.configuration.userContentController.add(ShortcutsOpener(), name: "tsShortcuts")
     // The blur's face models answer here (TsInfer.swift); the page finds
     // them through lib.rs's native-port stash.
     webview.configuration.userContentController.addScriptMessageHandler(
@@ -523,6 +524,23 @@ final class TouchLockHandler: NSObject, WKScriptMessageHandler {
     guard message.frameInfo.isMainFrame else { return }
     let locked = (message.body as? Bool) ?? ((message.body as? NSNumber)?.boolValue ?? false)
     DispatchQueue.main.async { self.owner?.setTouchLocked(locked) }
+  }
+}
+
+/// The launcher's "Open Shortcuts" button: Apple's Shortcuts app on a
+/// new shortcut, where the person adds "Tame for YouTube" and puts it on
+/// the home screen as a normal-sized icon (no app may place one itself).
+/// Only our own launcher page may ask (never a website), and it can
+/// open nothing else.
+final class ShortcutsOpener: NSObject, WKScriptMessageHandler {
+  func userContentController(
+    _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
+  ) {
+    let origin = message.frameInfo.securityOrigin
+    guard message.frameInfo.isMainFrame, origin.protocol != "http" && origin.protocol != "https" || origin.host == "tauri.localhost",
+      (message.body as? String) == "create", let url = URL(string: "shortcuts://create-shortcut")
+    else { return }
+    DispatchQueue.main.async { UIApplication.shared.open(url) }
   }
 }
 

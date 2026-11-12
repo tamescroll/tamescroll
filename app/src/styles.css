@@ -492,6 +492,8 @@ b { font-weight: 600; }
 
 /* iPhone home screen steps: in a card and on the welcome screens. */
 .ios-home-steps .steps { margin: var(--s2) 0 0; }
+.ios-home-sub { font-weight: 600; margin-top: var(--s3); }
+.ios-open-shortcuts { margin-top: var(--s2); }
 .ios-home-steps.left { text-align: left; max-width: 420px; margin: var(--s3) auto 0; }
 .ios-home-nudge { margin-top: var(--s4); }
 /* ---------- update prompt (#55) ----------

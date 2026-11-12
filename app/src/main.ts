@@ -183,6 +183,16 @@ if (IOS) {
   document.querySelectorAll(".ios-home-steps").forEach((slot) => {
     slot.appendChild(tpl.content.cloneNode(true));
   });
+  // Opens Apple's Shortcuts app on a new shortcut, where the person adds
+  // our "Tame for YouTube" action and puts it on the home screen.
+  document.querySelectorAll<HTMLButtonElement>(".ios-open-shortcuts").forEach((b) => {
+    b.addEventListener("click", () => {
+      const w = window as unknown as {
+        webkit?: { messageHandlers?: { tsShortcuts?: { postMessage(m: string): void } } };
+      };
+      try { w.webkit?.messageHandlers?.tsShortcuts?.postMessage("create"); } catch { /* no Shortcuts bridge */ }
+    });
+  });
   document.querySelector<HTMLElement>("#ios-home-card")!.hidden = false;
 }
 const IOS_HOME_KEY = "ts.iosHomeNudge";
