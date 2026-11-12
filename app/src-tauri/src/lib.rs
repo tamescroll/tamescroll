@@ -1894,10 +1894,66 @@ fn native_port_stash_script() -> &'static str {
   try {
     if (window.top !== window) return;
     var pending = null;
+    var start = null;
     Object.defineProperty(window, "__TS_TAKE_NATIVE_PORT", {
-      value: function () { var p = pending; pending = null; return p; },
+      value: function () {
+        if (start) { var go = start; start = null; go(); }
+        var p = pending; pending = null; return p;
+      },
       writable: false, configurable: false, enumerable: false
     });
+    // iPhone: the same port, made here from WebKit's reply handler for
+    // the Core ML models (TsInfer.swift). Started only when the gaze
+    // bundle takes the port, so a page without blur loads no model.
+    // Bytes cross as base64 because a WebKit message carries no
+    // ArrayBuffer.
+    try {
+      var h = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tsInfer;
+      if (h && typeof MessageChannel === "function") {
+        Object.defineProperty(window, "__TS_NATIVE_IMAGES", {
+          value: 1, writable: false, configurable: false, enumerable: false
+        });
+        start = function () {
+          var ch = new MessageChannel(), near = ch.port2;
+          var b64 = function (buf) {
+            var u = new Uint8Array(buf), s = "", k = 0x8000;
+            for (var i = 0; i < u.length; i += k) s += String.fromCharCode.apply(null, u.subarray(i, i + k));
+            return btoa(s);
+          };
+          var unb64 = function (str) {
+            var s = atob(str), u = new Uint8Array(s.length);
+            for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+            return u.buffer;
+          };
+          var fail = function (buf) {
+            try {
+              var r = new ArrayBuffer(16), v = new DataView(r);
+              v.setUint32(0, new DataView(buf).getUint32(0, true), true);
+              v.setUint32(4, 1, true);
+              near.postMessage(r, [r]);
+            } catch (x) {}
+          };
+          near.onmessage = function (e) {
+            var d = e.data;
+            if (!(d instanceof ArrayBuffer) || d.byteLength < 16) return;
+            var msg;
+            try { msg = b64(d); } catch (x) { fail(d); return; }
+            h.postMessage(msg).then(function (r) {
+              if (typeof r !== "string") { fail(d); return; }
+              var out = unb64(r);
+              near.postMessage(out, [out]);
+            }, function () { fail(d); });
+          };
+          h.postMessage("hello").then(function (r) {
+            near.postMessage(typeof r === "string" ? r : '{"type":"native-failed","why":"no answer"}');
+          }, function () {
+            near.postMessage('{"type":"native-failed","why":"no answer"}');
+          });
+          pending = ch.port1;
+          window.__TS_NATIVE_PORT_HELD = true;
+        };
+      }
+    } catch (e) {}
     window.addEventListener("message", function (e) {
       try {
         if (!e || e.data !== "ts-native-port") return;

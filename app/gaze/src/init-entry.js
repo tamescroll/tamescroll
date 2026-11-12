@@ -111,6 +111,7 @@ import { buildReport, reportViolations, platformOf, pageKind, imgDiagRead } from
 import { watchUrlForShorts, watchUrlForShortsHref } from './shorts-redirect.mjs';
 import { planForMode, rotateBudget } from './pipeline-plan.mjs';
 import { createWorkerClient } from './worker-client.mjs';
+import { createNativeImageEngine } from './native-images.mjs';
 import { startWorker } from './worker-entry.js';
 import { installMiniplayer } from './miniplayer.mjs';
 import { makeVerdictCache, verdictKey } from './verdict-cache.mjs';
@@ -752,9 +753,18 @@ if (
       t[k] = v;
     } catch (e) {}
   }
+  // iPhone's engine has the face models only (no MoveNet), so it serves
+  // images and never the player.
+  function nativeImagesOnly() {
+    try {
+      return window.__TS_NATIVE_IMAGES === 1;
+    } catch (e) {
+      return false;
+    }
+  }
   function nativeVideo() {
     try {
-      if (!nativeClient) return false;
+      if (!nativeClient || nativeImagesOnly()) return false;
       if (nativeClient.dead()) {
         if (!nativeDeadCounted) {
           nativeDeadCounted = true;
@@ -6028,8 +6038,7 @@ lf.delayHeldLate = lf.delayHeldLate || 0;
     }
     try {
       bootMark('workerNew');
-      gazeWorker = createWorkerClient({
-        onEvent: function (ev) {
+      var onWorkerEvent = function (ev) {
           try {
             var t = (window.__TS_GAZE_WORKER = window.__TS_GAZE_WORKER || {});
             t[ev.type === 'loaded' || ev.type === 'loadFailed' ? ev.type + ':' + ev.model : ev.type] =
@@ -6095,8 +6104,23 @@ lf.delayHeldLate = lf.delayHeldLate || 0;
           if (ev.type === 'loaded' || ev.type === 'loadFailed' || ev.type === 'ready') {
             if (imageQueue.length) drainImages();
           }
-        },
-      });
+      };
+      // iPhone: no worker can start in WKWebView, and the Core ML engine
+      // took the port above. Images go to it (native-images.mjs); the
+      // NSFW classifier, which has no native model, runs in the page.
+      if (nativeImagesOnly() && nativeClient && !nativeClient.dead()) {
+        loadInPageNsfw();
+        gazeWorker = createNativeImageEngine(nativeClient, {
+          onEvent: onWorkerEvent,
+          nsfw: function (bmp) {
+            return loadInPageNsfw().then(function (m) {
+              return m ? detector.isNsfw(m, bmp, null) : false;
+            });
+          },
+        });
+        return;
+      }
+      gazeWorker = createWorkerClient({ onEvent: onWorkerEvent });
       // A prestarted worker can already be up by now.
       setTimeout(preloadGender, 0);
     } catch (e) {

@@ -322,12 +322,21 @@ export function createNativeClient(port, opts) {
   // `document` reference anywhere).
   var canvas256 = null;
   var canvas224 = null;
+  // iPhone before iOS 16.4 has no OffscreenCanvas; there this client
+  // runs on the page's thread, so a plain canvas does the same job.
+  function makeCanvas(size) {
+    if (typeof OffscreenCanvas === 'function') return new OffscreenCanvas(size, size);
+    var c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    return c;
+  }
   function canvasFor(size) {
     if (size === GENDER_SIZE) {
-      if (!canvas224) canvas224 = new OffscreenCanvas(GENDER_SIZE, GENDER_SIZE);
+      if (!canvas224) canvas224 = makeCanvas(GENDER_SIZE);
       return canvas224;
     }
-    if (!canvas256) canvas256 = new OffscreenCanvas(FACE_SIZE, FACE_SIZE);
+    if (!canvas256) canvas256 = makeCanvas(FACE_SIZE);
     return canvas256;
   }
 

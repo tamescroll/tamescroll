@@ -95,6 +95,13 @@ jobs:
           grep -rh "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | sort | uniq -c
           ! grep -rq 'TARGETED_DEVICE_FAMILY.*1,2' --include=project.yml --include=project.pbxproj .
 
+      # The blur's Core ML models must answer like Android's TFLite ones.
+      - name: Blur models match Android
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ct"
+          "$RUNNER_TEMP/ct/bin/pip" install -q "coremltools==9.0" "numpy<2.4"
+          "$RUNNER_TEMP/ct/bin/python" src-tauri/ios-models/parity.py src-tauri/ios-models
+
       # Home-screen widgets (our glyphs, added only by the person). The
       # extension is not in Tauri's project template, so it is appended to
       # project.yml and the project regenerated.
@@ -102,8 +109,10 @@ jobs:
         run: |
           cd src-tauri/gen/apple
           python3 ../../ios-widget/add-to-project.py
+          python3 ../../ios-models/add-to-project.py
           xcodegen generate
           grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
+          grep -q "faceres.mlpackage" *.xcodeproj/project.pbxproj
 
       - name: Build for the simulator
         run: pnpm tauri ios build --debug --target aarch64-sim --ci

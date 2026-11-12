@@ -129,8 +129,10 @@ jobs:
         run: |
           cd src-tauri/gen/apple
           python3 ../../ios-widget/add-to-project.py
+          python3 ../../ios-models/add-to-project.py
           xcodegen generate
           grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
+          grep -q "faceres.mlpackage" *.xcodeproj/project.pbxproj
 
       # The build number must rise with every upload; the run number does.
       - name: Build the signed app

@@ -39,6 +39,10 @@ class TsWebkitPlugin: Plugin {
     // go back, including from a platform to the launcher.
     webview.allowsBackForwardNavigationGestures = true
     installTouchLockBridge(webview)
+    // The blur's face models answer here (TsInfer.swift); the page finds
+    // them through lib.rs's native-port stash.
+    webview.configuration.userContentController.addScriptMessageHandler(
+      TsInfer.shared, contentWorld: .page, name: "tsInfer")
     installQuickActions()
     keepBelowStatusBar(webview)
   }
