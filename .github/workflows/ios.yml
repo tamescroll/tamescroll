@@ -175,6 +175,9 @@ jobs:
           sleep 25
           xcrun simctl io "$DEVICE" screenshot ../ios-proof/blur-youtube-late.png
           find "$DATA/Library/Caches" -name gaze-status.txt -exec cat {} \; > ../ios-proof/gaze-status.txt || true
+          xcrun simctl spawn "$DEVICE" log show --last 5m --style compact \
+            --predicate 'eventMessage CONTAINS "TsInfer"' > ../ios-proof/infer-log.txt 2>&1 || true
+          head -c 4000 ../ios-proof/infer-log.txt || true
           head -c 3000 ../ios-proof/gaze-status.txt || true
 
           {

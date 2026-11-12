@@ -25,6 +25,7 @@ final class TsInfer: NSObject, WKScriptMessageHandlerWithReply {
   private var models: [UInt32: MLModel] = [:]
   private var inputNames: [UInt32: String] = [:]
   private var readyJSON: String?
+  private var logged = 0
 
   private static let files: [(UInt32, String)] = [(1, "blazeface"), (2, "faceres")]
 
@@ -111,44 +112,89 @@ final class TsInfer: NSObject, WKScriptMessageHandlerWithReply {
   private func run(_ id: UInt32, width w: Int, height h: Int, rgba: Data) throws -> [[Float]] {
     guard let model = models[id], let inputName = inputNames[id] else { return [] }
     let input = try MLMultiArray(shape: [1, NSNumber(value: h), NSNumber(value: w), 3], dataType: .float32)
-    let dst = input.dataPointer.bindMemory(to: Float.self, capacity: w * h * 3)
+    let dst = input.dataPointer.bindMemory(to: Float.self, capacity: input.count)
+    // Core ML may pad an array's rows, so every index goes through the
+    // array's own strides rather than assuming a packed layout.
+    let sy = input.strides[1].intValue, sx = input.strides[2].intValue, sc = input.strides[3].intValue
     let blazeface = id == 1
     rgba.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
       let src = raw.bindMemory(to: UInt8.self)
-      var o = 0
-      for p in stride(from: 0, to: w * h * 4, by: 4) {
-        for c in 0..<3 {
-          let v = Float(src[p + c])
-          dst[o] = blazeface ? v / 127.5 - 1 : v
-          o += 1
+      for y in 0..<h {
+        for x in 0..<w {
+          let p = (y * w + x) * 4
+          let o = y * sy + x * sx
+          for c in 0..<3 {
+            let v = Float(src[p + c])
+            dst[o + c * sc] = blazeface ? v / 127.5 - 1 : v
+          }
         }
       }
     }
     let features = try MLDictionaryFeatureProvider(dictionary: [inputName: MLFeatureValue(multiArray: input)])
     let result = try model.prediction(from: features)
-    return result.featureNames.sorted().compactMap { name in
+    let names = result.featureNames.sorted()
+    let outs = names.compactMap { name in
       result.featureValue(for: name)?.multiArrayValue.map(floats)
     }
+    // The first few runs say what came back, for the CI log.
+    if logged < 8 {
+      logged += 1
+      var line = "TsInfer model \(id) \(w)x\(h):"
+      for (k, name) in names.enumerated() {
+        guard let a = result.featureValue(for: name)?.multiArrayValue, k < outs.count else { continue }
+        let o = outs[k]
+        line += " \(name) type=\(a.dataType.rawValue) shape=\(a.shape) strides=\(a.strides)"
+        line += " min=\(o.min() ?? 0) max=\(o.max() ?? 0);"
+      }
+      NSLog("%@", line)
+    }
+    return outs
   }
 
+  /// An output in plain row-major order. The Neural Engine and GPU hand
+  /// back arrays whose rows are padded (a [1,512,1] score array can carry
+  /// 64 bytes per row), so reading `count` floats straight from memory
+  /// returns padding: every index is walked through the array's strides.
   private func floats(_ a: MLMultiArray) -> [Float] {
     let n = a.count
-    if a.dataType == .float32 && isContiguous(a) {
-      let p = a.dataPointer.bindMemory(to: Float.self, capacity: n)
-      return Array(UnsafeBufferPointer(start: p, count: n))
-    }
+    let shape = a.shape.map { $0.intValue }
+    let strides = a.strides.map { $0.intValue }
     var out = [Float](repeating: 0, count: n)
-    for i in 0..<n { out[i] = a[i].floatValue }
-    return out
-  }
-
-  private func isContiguous(_ a: MLMultiArray) -> Bool {
-    var expected = 1
-    for k in stride(from: a.shape.count - 1, through: 0, by: -1) {
-      if a.strides[k].intValue != expected { return false }
-      expected *= a.shape[k].intValue
+    if n == 0 { return out }
+    var idx = [Int](repeating: 0, count: shape.count)
+    func offset() -> Int {
+      var off = 0
+      for k in 0..<idx.count { off += idx[k] * strides[k] }
+      return off
     }
-    return true
+    func step() {
+      var k = idx.count - 1
+      while k >= 0 {
+        idx[k] += 1
+        if idx[k] < shape[k] { return }
+        idx[k] = 0
+        k -= 1
+      }
+    }
+    if a.dataType == .float32 {
+      let p = a.dataPointer.assumingMemoryBound(to: Float.self)
+      for i in 0..<n {
+        out[i] = p[offset()]
+        step()
+      }
+    } else if a.dataType == .double {
+      let p = a.dataPointer.assumingMemoryBound(to: Double.self)
+      for i in 0..<n {
+        out[i] = Float(p[offset()])
+        step()
+      }
+    } else {
+      for i in 0..<n {
+        out[i] = a[idx.map { NSNumber(value: $0) }].floatValue
+        step()
+      }
+    }
+    return out
   }
 
   private func u32(_ d: Data, _ at: Int) -> UInt32 {
