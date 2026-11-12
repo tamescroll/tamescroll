@@ -50,6 +50,17 @@
 
         <p class="eyebrow tiles-head">Your sites <span class="legend"><i aria-hidden="true"></i>tamed</span></p>
         <div id="tiles" class="tiles" aria-label="Your sites"></div>
+        <!-- iPhone only, until the person says it is done or not now. -->
+        <section class="card ios-home-nudge" id="ios-home-nudge" hidden aria-label="YouTube on your home screen">
+          <div class="links-card-row">
+            <div class="grow">
+              <div class="card-title">Put YouTube on your home screen</div>
+              <p class="card-body">One tap opens it in tamescroll, cleaned.</p>
+            </div>
+            <button type="button" class="btn-solid small" id="ios-home-show">Show me</button>
+          </div>
+          <button type="button" class="link-btn" id="ios-home-hide">Not now</button>
+        </section>
 
         <section class="today" id="today" hidden aria-label="Today">
           <p class="today-line"><span class="today-num"></span> <span class="today-text"></span></p>
@@ -164,6 +175,15 @@
                   <button type="button" class="btn-ghost small" id="links-card-btn">Set up</button>
                 </div>
               </section>
+              <!-- iPhone only (ZV 2026-11-12: "it needs to be evident"). Apple
+                   lets no app place a home screen icon, so the steps are spelled
+                   out where people look for it. main.ts shows it on iPhone. -->
+              <section class="card" id="ios-home-card" hidden aria-label="YouTube on your home screen">
+                <div class="card-title">YouTube on your home screen</div>
+                <p class="card-body">An icon that opens YouTube here, cleaned. Takes about a minute:</p>
+                <div class="ios-home-steps"></div>
+                <button type="button" class="btn-ghost small" id="ios-home-added">It's on my home screen</button>
+              </section>
               <section class="card" aria-label="Always hidden">
                 <div class="eyebrow in-card">Always hidden</div>
                 <div class="always-row">Sign-in and app-install nags <span class="pill">Always</span></div>
@@ -242,6 +262,9 @@
               <p class="pane-sub">tamescroll is a calm browser: it opens any site, and tames the busy ones.</p>
               <section class="card">
                 <p class="card-body">Free and open source, MPL-2.0. No account, no telemetry, no server in the middle. Image blur and keyword filters run on your device.</p>
+              </section>
+              <section class="card">
+                <p class="card-body">Questions or feedback: <span style="user-select:text;-webkit-user-select:text">tamescroll@proton.me</span></p>
               </section>
               <section class="card">
                 <div class="card-title">Filter rules</div>
@@ -356,6 +379,18 @@
           </div>
         </div>
 
+        <!-- iPhone only: the home screen icon, taught before the end. -->
+        <div class="ob-step" data-step="home" hidden>
+          <div class="ob-center">
+            <h1 class="display">Put YouTube on your home screen</h1>
+            <p class="lede">One tap opens YouTube in tamescroll, cleaned. Do it now or later from Settings, under Sites.</p>
+            <div class="ios-home-steps left"></div>
+            <div class="actions center col narrow-actions">
+              <button type="button" class="btn-solid" id="ob-home-next">I've added it</button>
+              <button type="button" class="link-btn center" id="ob-home-later">Later</button>
+            </div>
+          </div>
+        </div>
         <div class="ob-step" data-step="done" hidden>
           <div class="ob-center">
             <h1 class="display">That's it.</h1>
@@ -371,6 +406,23 @@
         </div>
       </section>
     </main>
+    <template id="ios-home-steps">
+      <div class="ios-home-sub">Small icon, like an app (recommended)</div>
+      <ol class="steps">
+        <li class="step"><span class="step-num">1</span><div class="grow"><div class="step-title">Tap <b>Open Shortcuts</b> below</div><p class="step-body">Apple's Shortcuts app opens on a new, empty shortcut.</p></div></li>
+        <li class="step"><span class="step-num">2</span><div class="grow"><div class="step-title">Tap <b>Add Action</b>, search <b>Tame for YouTube</b>, tap it</div><p class="step-body">It's listed under Tame Scroll.</p></div></li>
+        <li class="step"><span class="step-num">3</span><div class="grow"><div class="step-title">Tap the name at the top, then <b>Add to Home Screen</b></div><p class="step-body">On some versions it's under the share button at the bottom instead.</p></div></li>
+        <li class="step"><span class="step-num">4</span><div class="grow"><div class="step-title">Name it <b>YouTube</b> and tap <b>Add</b></div><p class="step-body">A normal-sized icon appears. Put it where the YouTube app was.</p></div></li>
+      </ol>
+      <button type="button" class="btn-solid small ios-open-shortcuts">Open Shortcuts</button>
+      <div class="ios-home-sub">Or a bigger tile (a widget)</div>
+      <ol class="steps">
+        <li class="step"><span class="step-num">1</span><div class="grow"><div class="step-title">Touch and hold your home screen</div><p class="step-body">Hold an empty spot until the icons jiggle.</p></div></li>
+        <li class="step"><span class="step-num">2</span><div class="grow"><div class="step-title">Tap <b>Edit</b>, then <b>Add Widget</b></div><p class="step-body">Edit is in the top-left corner. On iOS 17 or older, tap <b>+</b> there instead.</p></div></li>
+        <li class="step"><span class="step-num">3</span><div class="grow"><div class="step-title">Search <b>tamescroll</b> and pick YouTube</div><p class="step-body">Swipe sideways to see Reddit, X, or all three in one.</p></div></li>
+        <li class="step"><span class="step-num">4</span><div class="grow"><div class="step-title">Tap <b>Add Widget</b>, then <b>Done</b></div><p class="step-body">The smallest widget Apple allows is the size of four icons.</p></div></li>
+      </ol>
+    </template>
 
     <!-- Update prompt (#55, his 2026-11-07: "directly give the update
          prompt" when a build is released). Rises over the launcher on

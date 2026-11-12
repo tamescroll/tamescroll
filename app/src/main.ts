@@ -173,6 +173,51 @@ strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) 
   btn.addEventListener("click", () => setStrength(Number(btn.dataset.value)));
 });
 
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+// iPhone: the home screen icon is a widget the person adds. The steps
+// show in Settings -> Sites and once during the welcome screens.
+if (IOS) {
+  const tpl = document.querySelector<HTMLTemplateElement>("#ios-home-steps")!;
+  document.querySelectorAll(".ios-home-steps").forEach((slot) => {
+    slot.appendChild(tpl.content.cloneNode(true));
+  });
+  // Opens Apple's Shortcuts app on a new shortcut, where the person adds
+  // our "Tame for YouTube" action and puts it on the home screen.
+  document.querySelectorAll<HTMLButtonElement>(".ios-open-shortcuts").forEach((b) => {
+    b.addEventListener("click", () => {
+      const w = window as unknown as {
+        webkit?: { messageHandlers?: { tsShortcuts?: { postMessage(m: string): void } } };
+      };
+      try { w.webkit?.messageHandlers?.tsShortcuts?.postMessage("create"); } catch { /* no Shortcuts bridge */ }
+    });
+  });
+  document.querySelector<HTMLElement>("#ios-home-card")!.hidden = false;
+}
+const IOS_HOME_KEY = "ts.iosHomeNudge";
+const nudge = document.querySelector<HTMLElement>("#ios-home-nudge")!;
+function iosHomeDismissed(): boolean {
+  try { return localStorage.getItem(IOS_HOME_KEY) === "off"; } catch { return false; }
+}
+function dismissIosHome() {
+  try { localStorage.setItem(IOS_HOME_KEY, "off"); } catch { /* shown again next launch */ }
+  nudge.hidden = true;
+}
+nudge.hidden = !IOS || iosHomeDismissed();
+document.querySelector<HTMLButtonElement>("#ios-home-hide")!.addEventListener("click", dismissIosHome);
+document.querySelector<HTMLButtonElement>("#ios-home-added")!.addEventListener("click", () => {
+  dismissIosHome();
+  const card = document.querySelector<HTMLElement>("#ios-home-card")!;
+  card.querySelector<HTMLElement>(".card-body")!.textContent = "Done. Tap it any time to open YouTube here.";
+});
+document.querySelector<HTMLButtonElement>("#ios-home-show")!.addEventListener("click", () => {
+  siteHere.textContent = "";
+  showView("settings");
+  showPane("bringback");
+  document.querySelector<HTMLElement>("#ios-home-card")!.scrollIntoView({ block: "start" });
+});
+
 renderBlurToggle();
 // Sync stored state into Rust at startup too, not just on change —
 // otherwise a relaunch would leave Rust at defaults until first touch.
@@ -495,6 +540,9 @@ invoke<UpdateStatus>("app_update_check")
     // An Android build without the installer is a Play build, which must
     // never point at the releases page.
     if (!s.available || (isAndroid && !hasInstaller)) return;
+    // iPhone updates come through TestFlight or the App Store, never the
+    // Android download on the releases page.
+    if (IOS) return;
     if (hasInstaller) {
       present({ code: s.versionCode, name: s.versionName, notes: s.notes, via: "sideload" });
     } else {
@@ -1537,8 +1585,9 @@ function runOnboarding(done: () => void) {
     goto("demo");
     playDemo();
   });
-  document.querySelector<HTMLButtonElement>("#ob-skip-demo")!.addEventListener("click", () => goto("blur"));
-  document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", () => goto("blur"));
+  const afterDemo = () => goto("blur");
+  document.querySelector<HTMLButtonElement>("#ob-skip-demo")!.addEventListener("click", afterDemo);
+  document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", afterDemo);
   document.querySelector<HTMLButtonElement>("#ob-demo-replay")!.addEventListener("click", playDemo);
 
   // COMMIT ON REACHING "done", not on its button, so a reload there
@@ -1552,7 +1601,13 @@ function runOnboarding(done: () => void) {
   document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
     btn.addEventListener("click", () => finish(btn.dataset.choice as BlurChoice));
   });
-  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () => goto("done"));
+  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () =>
+    goto(IOS ? "home" : "done"));
+  document.querySelector<HTMLButtonElement>("#ob-home-next")!.addEventListener("click", () => {
+    dismissIosHome();
+    goto("done");
+  });
+  document.querySelector<HTMLButtonElement>("#ob-home-later")!.addEventListener("click", () => goto("done"));
 
   document.querySelector<HTMLButtonElement>("#ob-open")!.addEventListener("click", () => done());
 

@@ -206,7 +206,7 @@ fn ads_let_through(page_url: &str, shown_platform: &str, shown: &[String]) -> bo
 
 /// The shown prefs that apply to `platform_id`: the held list, minus the
 /// shared `ads` id when the list was set for a different platform.
-#[cfg_attr(not(target_os = "android"), allow(dead_code))] // android page loads
+#[cfg_attr(not(mobile), allow(dead_code))] // android page loads
 fn shown_for(platform_id: &str) -> Vec<String> {
     let held_for = *SHOWN_PLATFORM.lock().unwrap();
     let map = SHOWN_MAP.lock().unwrap().clone();
@@ -232,7 +232,7 @@ fn pick_shown(
     default_shown_for(platform_id)
 }
 
-#[cfg_attr(not(target_os = "android"), allow(dead_code))] // android page loads
+#[cfg_attr(not(mobile), allow(dead_code))] // android page loads
 fn shown_state() -> Vec<String> {
     SHOWN_STATE.lock().unwrap().clone()
 }
@@ -268,7 +268,7 @@ fn blur_vars_css(px: u32) -> String {
 /// with mobile/www prefixes (m.youtube.com after the UA redirect —
 /// the lesson behind dropping per-window host filters), so match on
 /// the platform's root domain.
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+#[cfg_attr(not(mobile), allow(dead_code))]
 fn platform_for_host(host: &str) -> Option<&'static Platform> {
     // Same suffix semantics as universal_injection_script's JS matcher
     // (root or ".root" suffix) — the two matchers diverging meant
@@ -299,7 +299,7 @@ fn platform_for_host(host: &str) -> Option<&'static Platform> {
 /// only — owner-reported 2026-08-20 as "ad blocking does not work at
 /// all" on the phone). Guarded so Started + Finished double-eval is a
 /// no-op: scriptlets are not all idempotent.
-#[cfg_attr(not(target_os = "android"), allow(dead_code))] // android page loads
+#[cfg_attr(not(mobile), allow(dead_code))] // android page loads
 fn page_load_rules_script(url: &str) -> Option<String> {
     let platform = platform_for_host(platform_root(url))?;
     let shown = shown_for(platform.id);
@@ -1166,6 +1166,44 @@ pub(crate) fn link_host_belongs(platform: &str, host: &str) -> bool {
     }
 }
 
+/// THE iOS DOOR IN (#16). iPhone lets no app claim youtube.com links, so
+/// links and shortcuts arrive as our own scheme instead:
+///
+/// - `tamescroll://open/youtube`: a platform, as a tile tap opens it
+///   (home-screen quick actions, a Shortcuts-app icon);
+/// - `tamescroll://open/youtube?url=<link>`: one page on that platform;
+/// - `tamescroll://open?url=<link>`: the platform is read off the link.
+///
+/// The answer is the launcher query Android's MainActivity builds
+/// (`?open=<id>&url=<page>`), so the launcher frontend opens it exactly
+/// like a tile tap. Same rule as 1107: a link may pick the page, never
+/// the platform, and anything that is not ours is refused.
+#[cfg_attr(not(any(target_os = "ios", test)), allow(dead_code))]
+fn launcher_query_for_open(url: &tauri::Url) -> Option<String> {
+    if url.scheme() != "tamescroll" || url.host_str() != Some("open") {
+        return None;
+    }
+    let link = url
+        .query_pairs()
+        .find(|(k, _)| k == "url")
+        .and_then(|(_, v)| v.parse::<tauri::Url>().ok())
+        .filter(|l| matches!(l.scheme(), "https" | "http"));
+    let named = url.path().trim_matches('/');
+    let id = if named.is_empty() {
+        let host = link.as_ref()?.host_str()?.to_string();
+        PLATFORMS.iter().find(|p| link_host_belongs(p.id, &host))?.id
+    } else {
+        PLATFORMS.iter().find(|p| p.id == named)?.id
+    };
+    let link = link.filter(|l| link_host_belongs(id, l.host_str().unwrap_or("")));
+    let mut query = tauri::Url::parse("tauri://localhost/").ok()?;
+    query.query_pairs_mut().append_pair("open", id);
+    if let Some(l) = link {
+        query.query_pairs_mut().append_pair("url", l.as_str());
+    }
+    query.query().map(|q| format!("?{q}"))
+}
+
 /// THE SHORT LINK IS RESOLVED HERE, NOT BY THE WEBVIEW (1107). Measured
 /// on his phone: a cold `youtu.be/<id>` intent reached open_platform,
 /// navigated, and the native layer logged `page start host=youtu.be
@@ -1739,7 +1777,7 @@ fn injection_script(css: &str, scriptlets: &str, scoped: bool) -> String {
 
 /// Root domain a platform's rules key on: the platform URL's host minus
 /// a leading `www.` — `youtube.com`, `reddit.com`, `x.com`.
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+#[cfg_attr(not(mobile), allow(dead_code))]
 fn platform_root(url: &str) -> &str {
     let host = url
         .split("://")
@@ -1762,7 +1800,7 @@ fn platform_root(url: &str) -> &str {
 /// gaze — Android settings/mode plumbing is a follow-up, as are the
 /// vendor cosmetic lists and scriptlets, which need the warmed engine
 /// and can't block app startup).
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+#[cfg_attr(not(mobile), allow(dead_code))]
 fn universal_injection_script() -> String {
     let mut branches = String::new();
     for p in PLATFORMS {
@@ -1871,10 +1909,66 @@ fn native_port_stash_script() -> &'static str {
   try {
     if (window.top !== window) return;
     var pending = null;
+    var start = null;
     Object.defineProperty(window, "__TS_TAKE_NATIVE_PORT", {
-      value: function () { var p = pending; pending = null; return p; },
+      value: function () {
+        if (start) { var go = start; start = null; go(); }
+        var p = pending; pending = null; return p;
+      },
       writable: false, configurable: false, enumerable: false
     });
+    // iPhone: the same port, made here from WebKit's reply handler for
+    // the Core ML models (TsInfer.swift). Started only when the gaze
+    // bundle takes the port, so a page without blur loads no model.
+    // Bytes cross as base64 because a WebKit message carries no
+    // ArrayBuffer.
+    try {
+      var h = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tsInfer;
+      if (h && typeof MessageChannel === "function") {
+        Object.defineProperty(window, "__TS_NATIVE_IMAGES", {
+          value: 1, writable: false, configurable: false, enumerable: false
+        });
+        start = function () {
+          var ch = new MessageChannel(), near = ch.port2;
+          var b64 = function (buf) {
+            var u = new Uint8Array(buf), s = "", k = 0x8000;
+            for (var i = 0; i < u.length; i += k) s += String.fromCharCode.apply(null, u.subarray(i, i + k));
+            return btoa(s);
+          };
+          var unb64 = function (str) {
+            var s = atob(str), u = new Uint8Array(s.length);
+            for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+            return u.buffer;
+          };
+          var fail = function (buf) {
+            try {
+              var r = new ArrayBuffer(16), v = new DataView(r);
+              v.setUint32(0, new DataView(buf).getUint32(0, true), true);
+              v.setUint32(4, 1, true);
+              near.postMessage(r, [r]);
+            } catch (x) {}
+          };
+          near.onmessage = function (e) {
+            var d = e.data;
+            if (!(d instanceof ArrayBuffer) || d.byteLength < 16) return;
+            var msg;
+            try { msg = b64(d); } catch (x) { fail(d); return; }
+            h.postMessage(msg).then(function (r) {
+              if (typeof r !== "string") { fail(d); return; }
+              var out = unb64(r);
+              near.postMessage(out, [out]);
+            }, function () { fail(d); });
+          };
+          h.postMessage("hello").then(function (r) {
+            near.postMessage(typeof r === "string" ? r : '{"type":"native-failed","why":"no answer"}');
+          }, function () {
+            near.postMessage('{"type":"native-failed","why":"no answer"}');
+          });
+          pending = ch.port1;
+          window.__TS_NATIVE_PORT_HELD = true;
+        };
+      }
+    } catch (e) {}
     window.addEventListener("message", function (e) {
       try {
         if (!e || e.data !== "ts-native-port") return;
@@ -1992,7 +2086,7 @@ fn perf_token_stash_script() -> &'static str {
 /// Everything Android runs at document start, in order: the worker
 /// prestart, the AV1 capability wrappers, the perf-token stash, the
 /// native-port stash, the universal rules script.
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+#[cfg_attr(not(mobile), allow(dead_code))]
 fn android_init_script(mode: &str) -> String {
     worker_prestart_script(mode)
         + no_av1_script()
@@ -2005,7 +2099,7 @@ fn android_init_script(mode: &str) -> String {
 /// Android-only: on desktop each platform window gets its own richer
 /// script (vendor cosmetics, scriptlets, mode and shown prefs) and this
 /// would only double up.
-#[cfg(target_os = "android")]
+#[cfg(mobile)]
 fn injection_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("ts-inject")
         .js_init_script(android_init_script(gaze_state()))
@@ -2022,11 +2116,172 @@ fn injection_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             if let Some(js) = page_load_rules_script(payload.url().as_str()) {
                 let _ = webview.eval(&js);
             }
+            // iOS: the gaze bundle arrives with the document-start script
+            // instead (set_ios_page_script); an eval here would boot it twice.
+            #[cfg(not(target_os = "ios"))]
             if let Some(js) = page_load_gaze_script(payload.url().as_str(), gaze_state()) {
                 let _ = webview.eval(&js);
             }
         })
         .build()
+}
+
+/// iOS: hands WebKit the full rules for the page about to open, as a
+/// document-start user script. Android evals the same payload from
+/// onPageStarted, where the new document already exists; WebKit's
+/// equivalent event fires before it does, so the eval would land in the
+/// page being left and the scriptlets would arrive after the player has
+/// read its ad payload. The host guard keeps it off every other site the
+/// user wanders to; those still get the page-load eval.
+#[cfg(target_os = "ios")]
+fn set_ios_page_script(app: &tauri::AppHandle, url: &str) {
+    // Network blocking follows the Ads switch of the platform being
+    // opened; any other site is blocked as usual.
+    let ads = platform_for_host(platform_root(url)).is_some_and(|p| ads_shown(&shown_for(p.id)));
+    let _ = tauri_plugin_ts_webkit::set_blocking(app, !ads);
+    let Some(rules) = page_load_rules_script(url) else {
+        let _ = tauri_plugin_ts_webkit::set_page_script(app, String::new());
+        return;
+    };
+    let root = platform_for_host(platform_root(url)).map_or("", |p| platform_root(p.url));
+    let root = serde_json::to_string(root).unwrap_or_else(|_| "\"\"".into());
+    // Blur rides the same script. WKWebView cannot serve the synthetic
+    // urls the Android bundle fetches its worker and models from, so here
+    // the models travel inline (gaze_script never finds the host in
+    // SYNTHETIC_HOSTS on iOS) and the worker's failed start hands the
+    // work to the in-page pipeline, as on Android's strict hosts.
+    // Blur set to Nothing means nothing at all: no bundle, no models.
+    let gaze = match gaze_state() {
+        "off" => String::new(),
+        mode => page_load_gaze_script(url, mode).unwrap_or_default(),
+    };
+    let guarded = format!(
+        "(function () {{ var r = {root}, h = location.hostname; \
+         if (h !== r && !h.endsWith('.' + r)) return; {rules}\n{gaze} }})();"
+    );
+    let _ = tauri_plugin_ts_webkit::set_page_script(app, guarded);
+}
+
+/// iOS network blocking (#16): WKWebView cannot intercept requests, so
+/// the engine's network lists go to WebKit as a content-blocker list
+/// (rules::content_blocker_json). The list is keyed by a hash of the
+/// list texts, so WebKit compiles it once per rules version and every
+/// later start is a lookup. Off the main thread: the conversion parses
+/// every list, and WebKit's first compile takes seconds.
+#[cfg(target_os = "ios")]
+fn prepare_ios_blocker(app: tauri::AppHandle) {
+    use sha2::{Digest, Sha256};
+    std::thread::spawn(move || {
+        // Give the OTA restore a moment to load cached list updates, so
+        // the first list compiled is the current one.
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        let (json, count) = rules::content_blocker_json();
+        if count == 0 || count >= rules::CONTENT_BLOCKER_LIMIT {
+            eprintln!("content blocker skipped: {count} rules");
+            return;
+        }
+        let id = format!("ts-{:x}", Sha256::digest(json.as_bytes()));
+        let Ok(dir) = app.path().app_cache_dir() else { return };
+        let path = dir.join("content-blocker.json");
+        if std::fs::create_dir_all(&dir).and_then(|_| std::fs::write(&path, &json)).is_err() {
+            return;
+        }
+        let result = tauri_plugin_ts_webkit::prepare_blocker(
+            &app,
+            id,
+            path.to_string_lossy().into_owned(),
+        );
+        // A plain-text record next to the list: what a support report or
+        // the CI job reads to know whether WebKit took it.
+        let _ = std::fs::write(
+            dir.join("content-blocker-status.txt"),
+            format!("{count} rules: {result:?}\n"),
+        );
+    });
+}
+
+/// iOS: a tamescroll:// link reloads the launcher with the query that
+/// launcher_query_for_open allows, and the launcher opens it like a tile.
+#[cfg(target_os = "ios")]
+fn open_launcher_link(app: &tauri::AppHandle, url: &tauri::Url) {
+    let Some(q) = launcher_query_for_open(url) else { return };
+    if let (Some(main), Ok(target)) =
+        (app.get_webview_window("main"), format!("tauri://localhost/{q}").parse())
+    {
+        let _ = main.navigate(target);
+    }
+}
+
+/// CI only (debug builds on iOS): `simctl launch <app> --ts-open=youtube`
+/// opens that platform the way a tile tap does, so the simulator job can
+/// screenshot a cleaned page without driving taps. Release builds never
+/// read their arguments.
+#[cfg(all(target_os = "ios", debug_assertions))]
+fn ios_ci_open(app: tauri::AppHandle) {
+    // `--ts-url=tamescroll://...` goes through the same door as a link
+    // from another app (RunEvent::Opened); simctl's own openurl stops at
+    // a system "Open in tamescroll?" prompt that CI cannot tap.
+    if let Some(link) = std::env::args().find_map(|a| a.strip_prefix("--ts-url=").map(String::from)) {
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(4));
+            if let Ok(url) = link.parse() {
+                open_launcher_link(&app, &url);
+            }
+        });
+        return;
+    }
+    let arg = |name: &str| std::env::args().find_map(|a| a.strip_prefix(name).map(String::from));
+    // `--ts-gaze=smart --ts-gender=man` sets the blur choice the launcher
+    // would, `--ts-page=<url>` opens that page of the platform instead of
+    // its home, and `--ts-probe=<seconds>` writes the gaze bundle's own
+    // report to Caches/gaze-status.txt that long after opening.
+    let gaze = arg("--ts-gaze=");
+    let gender = arg("--ts-gender=");
+    let Some(id) = arg("--ts-open=") else {
+        return;
+    };
+    let page = arg("--ts-page=");
+    let probe = arg("--ts-probe=").and_then(|s| s.parse::<u64>().ok());
+    std::thread::spawn(move || {
+        // Let the launcher finish loading first, as a person would.
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        let Some(platform) = PLATFORMS.iter().find(|p| p.id == id) else {
+            eprintln!("ts-open: unknown platform {id}");
+            return;
+        };
+        // Set only now: the launcher sends its own blur choice when it
+        // starts, which would undo a choice made before it loaded.
+        if let Some(mode) = &gaze {
+            set_gaze_state(mode);
+        }
+        if let Some(g) = &gender {
+            set_user_gender_state(g);
+        }
+        let target = page.as_deref().unwrap_or(platform.url);
+        set_shown_platform(platform.id);
+        set_ios_page_script(&app, target);
+        let (Some(main), Ok(url)) = (app.get_webview_window("main"), target.parse()) else {
+            return;
+        };
+        let _ = main.navigate(url);
+        let (Some(secs), Ok(dir)) = (probe, app.path().app_cache_dir()) else { return };
+        std::thread::sleep(std::time::Duration::from_secs(secs));
+        let js = "JSON.stringify({bundle: !!window.__TS_GAZE_BUNDLE__, mode: window.__TS_GAZE_MODE, \
+                  evalMs: window.__TS_GAZE_EVALMS, boot: window.__TS_GAZE_BOOT || null, \
+                  worker: window.__TS_GAZE_WORKER || null, \
+                  pageBackend: window.__TS_GAZE_PAGE_BACKEND || null, \
+                  gl: (function () { try { var c = document.createElement('canvas').getContext('webgl'); \
+                    if (!c) return null; var d = c.getExtension('WEBGL_debug_renderer_info'); \
+                    return c.getParameter(d ? d.UNMASKED_RENDERER_WEBGL : c.RENDERER); } catch (e) { return String(e); } })(), \
+                  blurred: document.querySelectorAll('[class*=\"ts-gaze\"]').length, \
+                  imgs: document.images.length, \
+                  diag: typeof window.__TS_DIAG_NOW === 'function' ? window.__TS_DIAG_NOW() : null})";
+        let _ = tauri_plugin_ts_webkit::eval_to_file(
+            &app,
+            js.to_string(),
+            dir.join("gaze-status.txt").to_string_lossy().into_owned(),
+        );
+    });
 }
 
 /// THE SEARCH-OR-TYPE BOX (decided 2026-10-22, #22). What the launcher's
@@ -2067,7 +2322,7 @@ pub(crate) fn resolve_address(input: &str) -> Option<tauri::Url> {
 /// tile uses. The gaze prefs ride along exactly as they do for a tile, so
 /// a platform reached by address gets the same treatment it would from
 /// its tile; any other site gets network ad blocking.
-#[cfg_attr(target_os = "android", allow(unreachable_code, unused_variables))]
+#[cfg_attr(mobile, allow(unreachable_code, unused_variables))]
 #[tauri::command]
 async fn open_address(
     app: tauri::AppHandle,
@@ -2083,12 +2338,15 @@ async fn open_address(
     set_user_gender_state(&gender);
     set_shown_map(shown_map);
 
-    #[cfg(target_os = "android")]
+    #[cfg(mobile)]
     {
         let main = app
             .get_webview_window("main")
             .ok_or_else(|| "no main webview".to_string())?;
-        return main.navigate(mobile_youtube_url(url)).map_err(|e| e.to_string());
+        let url = mobile_youtube_url(url);
+        #[cfg(target_os = "ios")]
+        set_ios_page_script(&app, url.as_str());
+        return main.navigate(url).map_err(|e| e.to_string());
     }
 
     // Desktop: one browsing window, reused, with the same per-navigation
@@ -2127,7 +2385,7 @@ async fn open_address(
 
 // Android: everything after the navigate-and-return block is
 // desktop-only builder code the compiler sees as unreachable there.
-#[cfg_attr(target_os = "android", allow(unreachable_code, unused_variables))]
+#[cfg_attr(mobile, allow(unreachable_code, unused_variables))]
 #[tauri::command]
 async fn open_platform(
     app: tauri::AppHandle,
@@ -2184,12 +2442,15 @@ async fn open_platform(
     // logcat-probe7.log: JS "open ok" with no visible effect). Navigate
     // the main webview in place instead; cosmetic injection rides the
     // ts-inject plugin script, which fires on every page load.
-    #[cfg(target_os = "android")]
+    #[cfg(mobile)]
     {
         let main = app
             .get_webview_window("main")
             .ok_or_else(|| "no main webview".to_string())?;
-        let nav = main.navigate(mobile_youtube_url(url));
+        let url = mobile_youtube_url(url);
+        #[cfg(target_os = "ios")]
+        set_ios_page_script(&app, url.as_str());
+        let nav = main.navigate(url);
         #[cfg(debug_assertions)]
         eprintln!("open_platform navigate main -> {nav:?}");
         return nav.map_err(|e| e.to_string());
@@ -2197,7 +2458,7 @@ async fn open_platform(
 
     // Desktop: re-opening a platform whose window is still open just
     // focuses it — a second Builder::build on a taken label would error.
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(mobile))]
     if let Some(existing) = app.get_webview_window(platform.id) {
         // A webview that closed ITSELF leaves the label taken with
         // nothing behind it: a sign-in popup or any page calling
@@ -2330,8 +2591,10 @@ pub fn run() {
 
     // Android: the single-WebView model means per-window injection never
     // fires — the plugin script is the only reliable delivery there.
-    #[cfg(target_os = "android")]
+    #[cfg(mobile)]
     let builder = builder.plugin(injection_plugin());
+    // iOS: the WKWebView hooks Android gets from MainActivity.
+    let builder = builder.plugin(tauri_plugin_ts_webkit::init());
 
     builder
         .setup(|app| {
@@ -2346,6 +2609,10 @@ pub fn run() {
             if let Some(dir) = cache_dir {
                 std::thread::spawn(move || ota::init(dir));
             }
+            #[cfg(target_os = "ios")]
+            prepare_ios_blocker(app.handle().clone());
+            #[cfg(all(target_os = "ios", debug_assertions))]
+            ios_ci_open(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -2362,8 +2629,19 @@ pub fn run() {
             app_update_check,
             should_block_request
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tamescroll");
+        .build(tauri::generate_context!())
+        .expect("error while building tamescroll")
+        .run(|_app, _event| {
+            // iOS: our tamescroll:// links and the home-screen quick
+            // actions (launcher_query_for_open). The launcher reloads
+            // with the query, which is how Android's shortcuts land.
+            #[cfg(target_os = "ios")]
+            if let tauri::RunEvent::Opened { urls } = _event {
+                if let Some(url) = urls.first() {
+                    open_launcher_link(_app, url);
+                }
+            }
+        });
 }
 
 #[cfg(test)]
@@ -2400,6 +2678,33 @@ mod tests {
     /// 1107: a link may pick the PAGE, never the PLATFORM. Red-proved by
     /// adding "example.com" to the youtube arm and watching the last
     /// assertion fail.
+    #[test]
+    fn ios_open_links_land_on_the_launcher_like_a_tile() {
+        let q = |u: &str| launcher_query_for_open(&u.parse().unwrap());
+        assert_eq!(q("tamescroll://open/youtube").as_deref(), Some("?open=youtube"));
+        assert_eq!(q("tamescroll://open/reddit/").as_deref(), Some("?open=reddit"));
+        assert_eq!(
+            q("tamescroll://open?url=https%3A%2F%2Fyoutu.be%2Fabc").as_deref(),
+            Some("?open=youtube&url=https%3A%2F%2Fyoutu.be%2Fabc")
+        );
+        assert_eq!(
+            q("tamescroll://open/youtube?url=https://m.youtube.com/watch?v=1").as_deref(),
+            Some("?open=youtube&url=https%3A%2F%2Fm.youtube.com%2Fwatch%3Fv%3D1")
+        );
+        // A link may pick the page, never the platform: a foreign url
+        // keeps the named platform's front page, and with no platform
+        // named it opens nothing.
+        assert_eq!(
+            q("tamescroll://open/youtube?url=https://evil.example/").as_deref(),
+            Some("?open=youtube")
+        );
+        assert_eq!(q("tamescroll://open?url=https://evil.example/"), None);
+        assert_eq!(q("tamescroll://open/youtube?url=javascript:alert(1)").as_deref(), Some("?open=youtube"));
+        assert_eq!(q("tamescroll://open/nope"), None);
+        assert_eq!(q("tamescroll://settings/youtube"), None);
+        assert_eq!(q("https://open/youtube"), None);
+    }
+
     #[test]
     fn link_host_belongs_is_a_whitelist_per_platform() {
         for h in ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "YOUTU.BE"] {
