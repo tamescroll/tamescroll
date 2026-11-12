@@ -270,7 +270,7 @@
               <section class="card" id="app-update-card" hidden>
                 <div class="card-title">App update</div>
                 <p class="card-body" id="app-update-notes"></p>
-                <div class="actions"><button type="button" class="btn-solid" id="app-update-btn">Download &amp; install</button></div>
+                <div class="actions"><button type="button" class="btn-solid" id="app-update-btn">Update now</button></div>
                 <p class="setting-caption" id="app-update-status"></p>
               </section>
             </section>
@@ -371,5 +371,23 @@
         </div>
       </section>
     </main>
+
+    <!-- Update prompt (#55, his 2026-11-07: "directly give the update
+         prompt" when a build is released). Rises over the launcher on
+         launch when a newer build is waiting; main.ts fills it from the
+         sideload feed or from Play. "Later" snoozes that version a day. -->
+    <div class="update-sheet" id="update-sheet" hidden>
+      <div class="update-scrim" id="update-scrim"></div>
+      <section class="update-panel" role="dialog" aria-modal="true" aria-labelledby="update-title">
+        <p class="eyebrow in-card">New version</p>
+        <h2 class="update-title" id="update-title">An update is ready</h2>
+        <p class="card-body" id="update-sheet-notes"></p>
+        <div class="actions col">
+          <button type="button" class="btn-solid" id="update-now">Update now</button>
+          <button type="button" class="btn-ghost" id="update-later">Later</button>
+        </div>
+        <p class="setting-caption" id="update-sheet-status" role="status"></p>
+      </section>
+    </div>
   </body>
 </html>

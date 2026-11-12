@@ -105,6 +105,10 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.10.1")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
+    // Play In-App Updates (#55): the Play build asks Play for a newer build
+    // on launch. Unused by sideload builds (BuildConfig.UPDATER gates it)
+    // and it adds no permission to either.
+    implementation("com.google.android.play:app-update:2.1.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.4")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
