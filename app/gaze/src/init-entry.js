@@ -108,7 +108,7 @@ import {
 import * as videoRegion from './video-region.mjs';
 import { createTextMatcher } from './text-signals.mjs';
 import { buildReport, reportViolations, platformOf, pageKind, imgDiagRead } from './diag-report.mjs';
-import { watchUrlForShorts, watchUrlForShortsHref } from './shorts-redirect.mjs';
+import { shortsExitFor, reelPlayerExit, REEL_PLAYER_SELECTOR } from './shorts-redirect.mjs';
 import { planForMode, rotateBudget } from './pipeline-plan.mjs';
 import { createWorkerClient } from './worker-client.mjs';
 import { createNativeImageEngine } from './native-images.mjs';
@@ -169,28 +169,76 @@ if (
     var tsPagePlatform = platformOf(location.hostname);
     var tsPageLast = null;
     // A SHORT IS A VIDEO: /shorts/<id> becomes /watch?v=<id> before the
-    // swipe feed can draw (see shorts-redirect.mjs). The click hook
-    // catches the in-page route; the tick catches everything else.
+    // swipe feed can draw, and the bare /shorts feed goes home (see
+    // shorts-redirect.mjs). Three doors, because a single one was
+    // walked around (2026-11-10: search "shorts", open a playlist, tap a
+    // short, and the swipe feed played):
+    //   1. the click hook catches a tapped <a href="/shorts/...">;
+    //   2. the history hook catches YouTube's own router, which reaches
+    //      /shorts/ by pushState from playlists, players and lockups
+    //      that are not plain links -- BEFORE the URL changes, so the
+    //      swipe feed never mounts and Back returns to where he was;
+    //   3. the tick catches everything else (a server redirect, a
+    //      navigation the first two never saw).
     var shortsToWatch = function () {
       if (tsPagePlatform !== 'youtube') return false;
-      var w = watchUrlForShorts(location.pathname, location.search);
+      var w = shortsExitFor(location.pathname + location.search, location.href);
       if (!w) return false;
       location.replace(w);
       return true;
+    };
+    // 4. the player itself: a visible swipe player at an address none of
+    //    the doors recognised still leaves (watch pages never hold one).
+    var reelToWatch = function () {
+      if (tsPagePlatform !== 'youtube' || /^\/watch/.test(location.pathname)) return false;
+      var els = document.querySelectorAll(REEL_PLAYER_SELECTOR);
+      for (var i = 0; i < els.length; i++) {
+        var r = els[i].getBoundingClientRect();
+        if (r.width > 40 && r.height > 40) {
+          var exit = reelPlayerExit(location.pathname, location.search);
+          if (exit !== location.pathname + location.search) {
+            location.replace(exit);
+            return true;
+          }
+          // Already home and it is still here: no reload loop, just
+          // stop it and take it off the screen.
+          var vids = els[i].querySelectorAll('video');
+          for (var j = 0; j < vids.length; j++) { try { vids[j].pause(); } catch (e) {} }
+          els[i].style.setProperty('display', 'none', 'important');
+        }
+      }
+      return false;
     };
     if (tsPagePlatform === 'youtube') {
       document.addEventListener('click', function (ev) {
         var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
         if (!a) return;
-        var w = watchUrlForShortsHref(a.getAttribute('href'), location.origin);
+        var w = shortsExitFor(a.getAttribute('href'), location.href);
         if (!w) return;
         ev.preventDefault();
         ev.stopPropagation();
         location.assign(w);
       }, true);
+      ['pushState', 'replaceState'].forEach(function (name) {
+        var orig = history[name];
+        if (typeof orig !== 'function' || orig.__tsShorts) return;
+        var hooked = function (state, title, url) {
+          if (url != null) {
+            var w = shortsExitFor(url, location.href);
+            if (w) {
+              if (name === 'pushState') location.assign(w);
+              else location.replace(w);
+              return;
+            }
+          }
+          return orig.apply(this, arguments);
+        };
+        hooked.__tsShorts = true;
+        try { history[name] = hooked; } catch (e) {}
+      });
     }
     var syncTsPage = function () {
-      if (shortsToWatch()) return;
+      if (shortsToWatch() || reelToWatch()) return;
       var k = pageKind(tsPagePlatform, location.pathname);
       if (k === tsPageLast) return;
       tsPageLast = k;

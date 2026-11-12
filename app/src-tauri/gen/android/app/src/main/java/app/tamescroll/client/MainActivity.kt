@@ -54,6 +54,16 @@ import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebMessagePortCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.play.core.appupdate.AppUpdateInfo
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
 
 class MainActivity : TauriActivity() {
   private lateinit var webView: WebView
@@ -693,7 +703,15 @@ class MainActivity : TauriActivity() {
           // update server could not be reached. The app's own cache is
           // always there, and file_paths.xml shares it too.
           val apk = File(externalCacheDir ?: cacheDir, "tamescroll-update.apk")
-          val got = download(apkUrl, apk)
+          var lastPct = -1
+          val got = download(apkUrl, apk) { pct ->
+            // Every 5%: often enough to look alive, rare enough that the
+            // page is not flooded with evaluateJavascript calls.
+            if (pct >= lastPct + 5 || (pct == 100 && lastPct < 100)) {
+              lastPct = pct
+              report("Downloading update… $pct%")
+            }
+          }
           if (got != sha256) {
             apk.delete()
             report("Update failed a security check. Not installed.")
@@ -723,6 +741,169 @@ class MainActivity : TauriActivity() {
     }
   }
 
+  // ---- Play in-app updates (owner ask 2026-11-07, #55: "directly give
+  // the update prompt" so nobody has to keep reopening the Play Store).
+  //
+  // Play builds only (BuildConfig.UPDATER false): the store delivers the
+  // build, Google's own In-App Updates API asks for it, and nothing here
+  // downloads or installs anything itself -- so the Play build still
+  // carries no REQUEST_INSTALL_PACKAGES and no self-updater.
+  //
+  // Launcher-only: a platform page can see every @JavascriptInterface,
+  // so each method refuses unless the WebView is on our own launcher.
+  // The worst a page could do otherwise is open Play's update screen.
+  private val appUpdateManager: AppUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
+
+  private val playUpdateLauncher =
+    registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r: ActivityResult ->
+      // RESULT_OK on an immediate update never arrives (the app restarts
+      // into the new build); anything else is the user backing out or a
+      // failure, and the sheet says so instead of sitting on "Opening…".
+      if (r.resultCode != RESULT_OK) pushStoreUpdate("{\"state\":\"cancelled\"}")
+    }
+
+  private val playInstallListener = InstallStateUpdatedListener { st ->
+    when (st.installStatus()) {
+      InstallStatus.DOWNLOADING -> {
+        val total = st.totalBytesToDownload()
+        val pct = if (total > 0) ((st.bytesDownloaded() * 100) / total).toInt() else 0
+        pushStoreUpdate("{\"state\":\"downloading\",\"percent\":$pct}")
+      }
+      InstallStatus.DOWNLOADED -> pushStoreUpdate("{\"state\":\"downloaded\"}")
+      InstallStatus.FAILED -> pushStoreUpdate("{\"state\":\"failed\"}")
+      else -> {}
+    }
+  }
+  private var playListening = false
+
+  private fun onLauncherPage(): Boolean {
+    val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+    return here.startsWith("http://tauri.localhost/")
+  }
+
+  private fun pushStoreUpdate(json: String) {
+    runOnUiThread {
+      if (!this@MainActivity::webView.isInitialized || !onLauncherPage()) return@runOnUiThread
+      // json is built here from numbers and fixed words only, never
+      // from page input, so it is safe to splice as a JS literal.
+      webView.evaluateJavascript("window.__tsStoreUpdate && window.__tsStoreUpdate($json)", null)
+    }
+  }
+
+  private fun storeInfoJson(info: AppUpdateInfo): String {
+    val avail = info.updateAvailability()
+    val available = avail == UpdateAvailability.UPDATE_AVAILABLE ||
+      avail == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
+    val state = when {
+      info.installStatus() == InstallStatus.DOWNLOADED -> "downloaded"
+      available -> "available"
+      else -> "none"
+    }
+    return "{\"state\":\"$state\",\"versionCode\":${info.availableVersionCode()}," +
+      "\"immediate\":${info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)}," +
+      "\"flexible\":${info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)}}"
+  }
+
+  private fun openPlayListing() {
+    try {
+      startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")))
+    } catch (e: Exception) {
+      try {
+        startActivity(Intent(Intent.ACTION_VIEW,
+          Uri.parse("https://play.google.com/store/apps/details?id=$packageName")))
+      } catch (_: Exception) {}
+    }
+  }
+
+  inner class StoreUpdateBridge {
+    /** Asks Play whether a newer build is waiting; answers through
+     * window.__tsStoreUpdate. An install that did not come from Play
+     * gets an error from Play and the sheet simply never appears. */
+    @JavascriptInterface
+    fun check() {
+      runOnUiThread {
+        if (!onLauncherPage()) return@runOnUiThread
+        try {
+          appUpdateManager.appUpdateInfo
+            .addOnSuccessListener { pushStoreUpdate(storeInfoJson(it)) }
+            .addOnFailureListener { pushStoreUpdate("{\"state\":\"none\"}") }
+        } catch (_: Throwable) {
+          pushStoreUpdate("{\"state\":\"none\"}")
+        }
+      }
+    }
+
+    /** Immediate first (Play's full-screen download, then a restart into
+     * the new build), flexible if Play only allows that, the store
+     * listing if Play allows neither. */
+    @JavascriptInterface
+    fun start() {
+      runOnUiThread {
+        if (!onLauncherPage()) return@runOnUiThread
+        try {
+          appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
+            try {
+              when {
+                info.installStatus() == InstallStatus.DOWNLOADED -> appUpdateManager.completeUpdate()
+                info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE) -> appUpdateManager.startUpdateFlowForResult(
+                  info, playUpdateLauncher, AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
+                )
+                info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> {
+                  if (!playListening) {
+                    appUpdateManager.registerListener(playInstallListener)
+                    playListening = true
+                  }
+                  appUpdateManager.startUpdateFlowForResult(
+                    info, playUpdateLauncher, AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
+                  )
+                }
+                else -> openPlayListing()
+              }
+            } catch (e: Exception) {
+              openPlayListing()
+            }
+          }.addOnFailureListener { openPlayListing() }
+        } catch (_: Throwable) {
+          openPlayListing()
+        }
+      }
+    }
+
+    /** Finishes a flexible update that has downloaded: Play restarts the
+     * app into the new build. */
+    @JavascriptInterface
+    fun complete() {
+      runOnUiThread {
+        if (onLauncherPage()) try { appUpdateManager.completeUpdate() } catch (_: Throwable) {}
+      }
+    }
+  }
+
+  override fun onResume() {
+    super.onResume()
+    if (BuildConfig.UPDATER) return
+    // Play's rule for immediate updates: if the user left mid-update,
+    // resume it on return rather than leaving them on the old build. A
+    // flexible update that finished in the background gets its
+    // "Restart to finish" offer back.
+    try {
+      appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
+        if (info.installStatus() == InstallStatus.DOWNLOADED) {
+          pushStoreUpdate("{\"state\":\"downloaded\"}")
+        } else if (info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS &&
+          info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+          try {
+            appUpdateManager.startUpdateFlowForResult(
+              info, playUpdateLauncher, AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
+            )
+          } catch (_: Exception) {}
+        }
+      }
+    } catch (_: Throwable) {
+      // Play services missing (some ROMs): nothing to resume.
+    }
+  }
+
   private fun httpGet(spec: String): String {
     val conn = URL(spec).openConnection() as HttpURLConnection
     conn.connectTimeout = 15000
@@ -738,13 +919,15 @@ class MainActivity : TauriActivity() {
   // Streams url -> file, returning the lowercase sha256 hex of the bytes
   // written so the caller can verify against the manifest before ever
   // handing the file to the installer.
-  private fun download(spec: String, dest: File): String {
+  private fun download(spec: String, dest: File, progress: (Int) -> Unit = {}): String {
     val conn = URL(spec).openConnection() as HttpURLConnection
     conn.connectTimeout = 15000
     conn.readTimeout = 60000
     conn.instanceFollowRedirects = true
     val digest = MessageDigest.getInstance("SHA-256")
     try {
+      val total = conn.contentLengthLong
+      var done = 0L
       conn.inputStream.use { input ->
         dest.outputStream().use { output ->
           val buf = ByteArray(64 * 1024)
@@ -753,6 +936,8 @@ class MainActivity : TauriActivity() {
             if (n < 0) break
             digest.update(buf, 0, n)
             output.write(buf, 0, n)
+            done += n
+            if (total > 0) progress(((done * 100) / total).toInt())
           }
         }
       }
@@ -1626,6 +1811,10 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onDestroy() {
+    if (playListening) {
+      try { appUpdateManager.unregisterListener(playInstallListener) } catch (_: Throwable) {}
+      playListening = false
+    }
     // SDK-guarded before touching the class at all: an instanceof/cast
     // against android.os.PerformanceHintManager.Session must never be
     // the thing this method does unconditionally on every API level.
@@ -1956,6 +2145,8 @@ class MainActivity : TauriActivity() {
     // Play flavor: no updater at all -- the store delivers builds, and
     // the bridge's absence is what hides the card (main.ts).
     if (BuildConfig.UPDATER) webView.addJavascriptInterface(UpdateBridge(), "TsUpdater")
+    // Play build: Google's In-App Updates instead (StoreUpdateBridge).
+    else webView.addJavascriptInterface(StoreUpdateBridge(), "TsStoreUpdate")
     // Diagnostics: write-mostly, local-only. See DiagBridge for why a
     // hostile page cannot turn it into anything but a wasted disk write.
     webView.addJavascriptInterface(DiagBridge(), "TsDiag")

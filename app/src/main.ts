@@ -23,10 +23,15 @@ const views = {
   links: document.querySelector<HTMLElement>("#view-links")!,
 };
 
+// Set by the update section: raises the update prompt once the
+// launcher is on screen (#55).
+let onLauncherShown: () => void = () => {};
+
 function showView(name: keyof typeof views) {
   (Object.keys(views) as (keyof typeof views)[]).forEach((k) => {
     views[k].hidden = k !== name;
   });
+  if (name === "launcher") onLauncherShown();
 }
 
 const tiles = document.querySelector<HTMLElement>("#tiles")!;
@@ -304,62 +309,216 @@ refreshForm.addEventListener("submit", (e) => {
     });
 });
 
-// ---------- app update (Settings -> About) ----------
-// Checks a signed manifest on launch; only reveals the card when a newer
-// build exists (no nag when up to date). The actual download + install is
-// Android-native (MainActivity TsUpdater bridge, user-confirmed by the
-// system installer). Desktop has no in-app install — the card stays
-// hidden there and the check is a harmless no-op.
+// ---------- app update (launch prompt + Settings -> About) ----------
+// His 2026-11-07 (#55): "directly give the update prompt" when a build
+// is released, instead of reopening the releases link or Play each time.
+//
+// Two sources, one offer:
+//  - Sideload APK: the Rust check reads the signed manifest; "Update now"
+//    is MainActivity's TsUpdater (hash-pinned download, then the system
+//    installer, which always asks the user to confirm).
+//  - Play build: no TsUpdater exists there. TsStoreUpdate asks Google
+//    Play's In-App Updates API instead, and Play does the download.
+// Either way the offer opens a sheet over the launcher on launch and
+// fills the About card. "Later" snoozes that version for a day. Desktop
+// (and any build with neither bridge) keeps the About card only.
 
 type UpdateStatus = {
   available: boolean;
+  versionCode: number;
   versionName: string;
   notes: string;
   apkUrl: string;
 };
 
+type StoreUpdate = {
+  state: "available" | "none" | "downloading" | "downloaded" | "cancelled" | "failed";
+  versionCode?: number;
+  percent?: number;
+};
+
+type Offer = { code: number; name: string; notes: string; via: "sideload" | "play" };
+
 const updateCard = document.querySelector<HTMLElement>("#app-update-card")!;
 const updateNotes = document.querySelector<HTMLElement>("#app-update-notes")!;
 const updateBtn = document.querySelector<HTMLButtonElement>("#app-update-btn")!;
 const updateStatus = document.querySelector<HTMLElement>("#app-update-status")!;
+const updateSheet = document.querySelector<HTMLElement>("#update-sheet")!;
+const sheetTitle = document.querySelector<HTMLElement>("#update-title")!;
+const sheetNotes = document.querySelector<HTMLElement>("#update-sheet-notes")!;
+const sheetNow = document.querySelector<HTMLButtonElement>("#update-now")!;
+const sheetLater = document.querySelector<HTMLButtonElement>("#update-later")!;
+const sheetStatus = document.querySelector<HTMLElement>("#update-sheet-status")!;
 
-// Android bridge pushes progress here (see MainActivity UpdateBridge.report).
-(window as unknown as { __tsUpdateStatus?: (m: string) => void }).__tsUpdateStatus = (
-  m: string,
-) => {
+const tsWin = window as unknown as {
+  TsUpdater?: { install: () => void };
+  TsStoreUpdate?: { check: () => void; start: () => void; complete: () => void };
+  __tsUpdateStatus?: (m: string) => void;
+  __tsStoreUpdate?: (s: StoreUpdate) => void;
+};
+const hasInstaller = typeof tsWin.TsUpdater !== "undefined";
+const hasStore = typeof tsWin.TsStoreUpdate !== "undefined";
+const isAndroid = /Android/i.test(navigator.userAgent);
+
+const SNOOZE_KEY = "tamescroll.updateSnooze";
+const SNOOZE_MS = 24 * 60 * 60 * 1000;
+
+let offer: Offer | null = null;
+let manifest: UpdateStatus | null = null;
+let playReady = false; // a flexible Play update has downloaded
+let dismissed = false; // closed this session: do not raise it again
+
+function snoozed(code: number): boolean {
+  try {
+    const s = JSON.parse(localStorage.getItem(SNOOZE_KEY) ?? "null") as { code: number; until: number } | null;
+    return !!s && s.code === code && Date.now() < s.until;
+  } catch {
+    return false;
+  }
+}
+
+function setUpdateStatus(m: string) {
   updateStatus.textContent = m;
+  sheetStatus.textContent = m;
+}
+
+function closeSheet() {
+  updateSheet.hidden = true;
+  dismissed = true;
+}
+
+function maybeShowSheet() {
+  if (!offer || dismissed || snoozed(offer.code)) return;
+  // Only over the plain launcher: never over onboarding, settings, or a
+  // link that is on its way to a site.
+  if (views.launcher.hidden || !handoff.hidden) return;
+  updateSheet.hidden = false;
+}
+
+function describe(o: Offer): string {
+  if (o.notes) return o.name ? `New in ${o.name}: ${o.notes}` : o.notes;
+  return o.name ? `Version ${o.name} is ready to install.` : "A new version is ready to install.";
+}
+
+function present(o: Offer) {
+  offer = o;
+  sheetTitle.textContent = playReady ? "Update downloaded" : "An update is ready";
+  sheetNotes.textContent = describe(o);
+  sheetNow.textContent = playReady ? "Restart to finish" : "Update now";
+  updateNotes.textContent = describe(o);
+  updateBtn.textContent = sheetNow.textContent;
+  updateBtn.hidden = false;
+  updateCard.hidden = false;
+  maybeShowSheet();
+}
+
+function startUpdate() {
+  if (!offer) return;
+  if (offer.via === "sideload" && tsWin.TsUpdater) {
+    setUpdateStatus("Checking…");
+    sheetNow.disabled = true;
+    updateBtn.disabled = true;
+    tsWin.TsUpdater.install();
+  } else if (offer.via === "play" && tsWin.TsStoreUpdate) {
+    if (playReady) {
+      setUpdateStatus("Restarting…");
+      tsWin.TsStoreUpdate.complete();
+    } else {
+      setUpdateStatus("Opening Google Play…");
+      tsWin.TsStoreUpdate.start();
+    }
+  }
+}
+
+sheetNow.addEventListener("click", startUpdate);
+updateBtn.addEventListener("click", startUpdate);
+sheetLater.addEventListener("click", () => {
+  if (offer) {
+    try {
+      localStorage.setItem(SNOOZE_KEY, JSON.stringify({ code: offer.code, until: Date.now() + SNOOZE_MS }));
+    } catch {
+      /* no storage: it simply asks again next launch */
+    }
+  }
+  closeSheet();
+});
+document.querySelector<HTMLElement>("#update-scrim")!.addEventListener("click", closeSheet);
+
+onLauncherShown = maybeShowSheet;
+
+// Sideload progress (MainActivity UpdateBridge.report). Anything that is
+// not a step forward gives the button back so the user can try again.
+tsWin.__tsUpdateStatus = (m: string) => {
+  setUpdateStatus(m);
+  // "Starting install…" gives the button back too: the system installer
+  // reports nothing if it is cancelled or refuses, so a retry must stay open.
+  if (!/^Downloading/.test(m)) {
+    sheetNow.disabled = false;
+    updateBtn.disabled = false;
+  }
 };
 
-const hasInstaller = typeof (window as unknown as { TsUpdater?: unknown }).TsUpdater !== "undefined";
-
-updateBtn.addEventListener("click", () => {
-  const u = window as unknown as { TsUpdater?: { install: () => void } };
-  if (u.TsUpdater) {
-    updateStatus.textContent = "Checking…";
-    u.TsUpdater.install();
+// Play's answers (MainActivity StoreUpdateBridge).
+tsWin.__tsStoreUpdate = (s: StoreUpdate) => {
+  if (s.state === "available" || s.state === "downloaded") {
+    playReady = s.state === "downloaded";
+    const code = s.versionCode ?? offer?.code ?? 0;
+    // The notes live in the sideload manifest; they describe this build
+    // only when the codes match (play-build.sh ships the same code).
+    const same = manifest && manifest.versionCode === code;
+    present({
+      code,
+      name: same ? manifest!.versionName : code > 1000 ? `0.1.${code - 1000}` : "",
+      notes: same ? manifest!.notes : "",
+      via: "play",
+    });
+    if (playReady) setUpdateStatus("");
+  } else if (s.state === "downloading") {
+    setUpdateStatus(`Downloading update… ${s.percent ?? 0}%`);
+    closeSheet();
+  } else if (s.state === "cancelled") {
+    setUpdateStatus("Update not started. You can update any time from here.");
+  } else if (s.state === "failed") {
+    setUpdateStatus("The update didn't finish. Try again.");
   }
-});
-
-// A Play build has no installer bridge and must never point at the
-// releases page either: the store is the only update path there.
-const isAndroid = /Android/i.test(navigator.userAgent);
+};
 
 invoke<UpdateStatus>("app_update_check")
   .then((s) => {
-    if (!s.available || (isAndroid && !hasInstaller)) return;
-    updateNotes.textContent = s.notes
-      ? `Version ${s.versionName} is available. ${s.notes}`
-      : `Version ${s.versionName} is available.`;
-    // Only Android can install in place; desktop just gets told it exists.
-    updateBtn.hidden = !hasInstaller;
-    if (!hasInstaller) {
-      updateStatus.textContent = "Get the new build from the releases page.";
+    manifest = s;
+    if (hasStore) {
+      // Play decides whether there is an update; the manifest only
+      // supplies the words. Re-present if Play already answered.
+      if (offer?.via === "play") tsWin.__tsStoreUpdate?.({ state: playReady ? "downloaded" : "available", versionCode: offer.code });
+      return;
     }
-    updateCard.hidden = false;
+    // An Android build without the installer is a Play build, which must
+    // never point at the releases page.
+    if (!s.available || (isAndroid && !hasInstaller)) return;
+    // iPhone updates come through TestFlight or the App Store, never the
+    // Android download on the releases page.
+    if (IOS) return;
+    if (hasInstaller) {
+      present({ code: s.versionCode, name: s.versionName, notes: s.notes, via: "sideload" });
+    } else {
+      // Desktop: no in-app install; the About card just says it exists.
+      updateNotes.textContent = describe({ code: s.versionCode, name: s.versionName, notes: s.notes, via: "sideload" });
+      updateBtn.hidden = true;
+      updateStatus.textContent = "Get the new build from the releases page.";
+      updateCard.hidden = false;
+    }
   })
   .catch(() => {
     /* offline / no manifest: stay hidden, never nag */
   });
+
+if (hasStore) {
+  try {
+    tsWin.TsStoreUpdate!.check();
+  } catch {
+    /* Play unavailable: no prompt */
+  }
+}
 
 // ---------- diagnostics (Settings -> About) ----------
 // Owner ask 2026-08-28: "can't you implement a diagnostics feature in the
@@ -1165,8 +1324,8 @@ function renderLinksView() {
 // long-press route still works on most of them, so it is offered.
 const PIN_WORDS: Record<string, string> = {
   pinned: "Already on your home screen.",
-  requested: "Confirm on the dialog that just opened. It's in your app list too, as \"tamescroll video\".",
-  listed: "Added to your app list as \"tamescroll video\". To call it something else, rename it in your launcher (on olauncher: start typing its name in the app list, then tap Rename).",
+  requested: "Confirm on the dialog that just opened. It's in your app list too, as \"Tame for YouTube\".",
+  listed: "Added to your app list as \"Tame for YouTube\". To call it something else, rename it in your launcher (on olauncher: start typing its name in the app list, then tap Rename).",
   unsupported: "Your launcher doesn't take shortcuts from apps. Long-press the tamescroll icon and drag YouTube out, or pick another launcher.",
   unavailable: "This phone can't add shortcuts.",
   refused: "That didn't work. Try from the home screen instead.",
@@ -1186,23 +1345,23 @@ function renderPinStep() {
   if (nameBox) nameBox.hidden = !!(st.pinned || st.supported === false);
   if (st.pinned) {
     body.textContent = st.listed
-      ? "On your home screen, and in your app list as \"tamescroll video\"."
+      ? "On your home screen, and in your app list as \"Tame for YouTube\"."
       : "On your home screen.";
     btn.hidden = true;
   } else if (st.listed && st.supported !== false) {
     // In the app list already; the home icon (with their name) is still on offer.
-    body.textContent = "In your app list as \"tamescroll video\". Add a home screen icon and name it what you like.";
+    body.textContent = "In your app list as \"Tame for YouTube\". Add a home screen icon and name it what you like.";
     btn.hidden = false;
   } else if (st.listed) {
     // A launcher that won't pin (olauncher) gets the app-list entry.
-    body.textContent = "In your app list as \"tamescroll video\". Rename it in your launcher if you like.";
+    body.textContent = "In your app list as \"Tame for YouTube\". Rename it in your launcher if you like.";
     btn.hidden = true;
   } else if (st.supported === false) {
     // The button still helps here: it switches on the app-list entry.
-    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll video\" to your app list.";
+    body.textContent = "Your launcher won't take a shortcut, so this adds \"Tame for YouTube\" to your app list.";
     btn.hidden = false;
   } else {
-    body.textContent = "Adds \"tamescroll video\" to your app list, and a home screen icon you name yourself.";
+    body.textContent = "Adds \"Tame for YouTube\" to your app list, and a home screen icon you name yourself.";
     btn.hidden = false;
   }
 }

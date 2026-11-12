@@ -351,6 +351,13 @@ fn page_load_rules_script(url: &str) -> Option<String> {
 /// string: no padlock, no swipe guard, nothing evaluated.
 pub(crate) const SWIPE_SURFACE: &str = "player_swipe";
 pub(crate) const CHILD_LOCK_SURFACE: &str = "child_lock";
+/// ZV 2026-11-10: a finished video still went on to the next one with
+/// autoplay off, and the "next video" overlay still came up over the end.
+/// Hidden (the default) stops the watch player just short of its end, so
+/// YouTube never reaches the ended state its autoplay and end screen start
+/// from. Page code like the two above, so it is listed here and not in
+/// rules/youtube.txt.
+pub(crate) const AUTOPLAY_SURFACE: &str = "autoplay_next";
 
 fn kid_surfaces(platform_id: &str) -> Vec<SurfaceInfo> {
     if platform_id != "youtube" {
@@ -371,6 +378,13 @@ fn kid_surfaces(platform_id: &str) -> Vec<SurfaceInfo> {
             label: "Touch lock button".to_string(),
             default_shown: false,
         },
+        // Hidden by default: the next video starting on its own is the
+        // trap. Shown leaves YouTube's own autoplay setting in charge.
+        SurfaceInfo {
+            id: AUTOPLAY_SURFACE.to_string(),
+            label: "Autoplay next video".to_string(),
+            default_shown: false,
+        },
     ]
 }
 
@@ -380,9 +394,10 @@ fn kid_controls_script(platform_id: &str, shown: &[String]) -> String {
     }
     let has = |id: &str| shown.iter().any(|s| s == id);
     let config = format!(
-        r#"{{"swipeOff":{},"lock":{}}}"#,
+        r#"{{"swipeOff":{},"lock":{},"autoplayOff":{}}}"#,
         !has(SWIPE_SURFACE),
-        has(CHILD_LOCK_SURFACE)
+        has(CHILD_LOCK_SURFACE),
+        !has(AUTOPLAY_SURFACE)
     );
     include_str!("../kid-controls.js").replacen("/*TS_KID*/ null", &config, 1)
 }
@@ -2903,7 +2918,7 @@ mod tests {
     #[test]
     fn kid_controls_follow_their_two_switches_on_youtube_only() {
         let yt = surfaces("youtube".to_string());
-        for id in [SWIPE_SURFACE, CHILD_LOCK_SURFACE] {
+        for id in [SWIPE_SURFACE, CHILD_LOCK_SURFACE, AUTOPLAY_SURFACE] {
             let s = yt.iter().find(|s| s.id == id).unwrap_or_else(|| panic!("{id} offered"));
             assert!(!s.default_shown, "{id} starts Hidden");
         }
@@ -2924,17 +2939,22 @@ mod tests {
         }
         // Fullscreen recommendations follow the Recommendations switch.
         assert!(!surfaces_css("youtube", &["watch_recs".to_string()]).contains(".ytFullscreenVideoRecommendationsHost"));
-        assert!(surfaces("reddit".to_string()).iter().all(|s| s.id != SWIPE_SURFACE && s.id != CHILD_LOCK_SURFACE));
+        assert!(surfaces("reddit".to_string())
+            .iter()
+            .all(|s| s.id != SWIPE_SURFACE && s.id != CHILD_LOCK_SURFACE && s.id != AUTOPLAY_SURFACE));
 
-        // Install defaults: swiping blocked, no padlock.
+        // Install defaults: swiping blocked, no padlock, no autoplay.
         let js = kid_controls_script("youtube", &[]);
-        assert!(js.contains(r#"var KID = {"swipeOff":true,"lock":false};"#), "token replaced");
+        assert!(
+            js.contains(r#"var KID = {"swipeOff":true,"lock":false,"autoplayOff":true};"#),
+            "token replaced"
+        );
         assert!(!js.contains("/*TS_KID*/"));
         let js = kid_controls_script(
             "youtube",
-            &[SWIPE_SURFACE.to_string(), CHILD_LOCK_SURFACE.to_string()],
+            &[SWIPE_SURFACE.to_string(), CHILD_LOCK_SURFACE.to_string(), AUTOPLAY_SURFACE.to_string()],
         );
-        assert!(js.contains(r#"var KID = {"swipeOff":false,"lock":true};"#));
+        assert!(js.contains(r#"var KID = {"swipeOff":false,"lock":true,"autoplayOff":false};"#));
         assert!(kid_controls_script("reddit", &[]).is_empty());
 
         // And it reaches YouTube's pages through the rules payload, whatever

@@ -494,3 +494,21 @@ b { font-weight: 600; }
 .ios-home-steps .steps { margin: var(--s2) 0 0; }
 .ios-home-steps.left { text-align: left; max-width: 420px; margin: var(--s3) auto 0; }
 .ios-home-nudge { margin-top: var(--s4); }
+/* ---------- update prompt (#55) ----------
+   A bottom sheet over the launcher: the one surface in the app that
+   interrupts, so it is the quietest card that still asks. */
+.update-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.update-sheet[hidden] { display: none; }
+.update-scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); animation: update-fade 0.2s ease; }
+.update-panel {
+  position: relative; width: 100%; max-width: 520px;
+  background: var(--surface); border: 1px solid var(--hairline); border-bottom: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow);
+  padding: var(--s5) var(--s4) calc(var(--s5) + env(safe-area-inset-bottom, 0px));
+  animation: update-rise 0.24s ease;
+}
+.update-title { font-family: var(--font-display); font-weight: 500; font-size: var(--t-xl); margin: 0 0 var(--s2); }
+.update-panel .btn-solid:disabled { opacity: 0.6; }
+@keyframes update-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes update-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .update-scrim, .update-panel { animation: none; } }
