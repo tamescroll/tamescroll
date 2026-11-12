@@ -175,13 +175,6 @@ strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) 
 
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-if (IOS) {
-  // No blur on iPhone yet: no Blur pane, and the demo must not promise it.
-  document.querySelector<HTMLElement>('.nav-item[data-pane="blur"]')!.hidden = true;
-  document.querySelectorAll(".demo-thumb.blur-in").forEach((t) => t.classList.remove("blur-in"));
-  const toast = document.querySelector<HTMLElement>(".demo-toast");
-  if (toast) toast.innerHTML = "<b>Tamed.</b> Feed gone · nothing fighting for your attention";
-}
 
 // iPhone: the home screen icon is a widget the person adds. The steps
 // show in Settings -> Sites and once during the welcome screens.
@@ -1540,8 +1533,7 @@ function runOnboarding(done: () => void) {
     goto("demo");
     playDemo();
   });
-  // iPhone has no blur yet, so it skips the blur question.
-  const afterDemo = () => (IOS ? finish("none") : goto("blur"));
+  const afterDemo = () => goto("blur");
   document.querySelector<HTMLButtonElement>("#ob-skip-demo")!.addEventListener("click", afterDemo);
   document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", afterDemo);
   document.querySelector<HTMLButtonElement>("#ob-demo-replay")!.addEventListener("click", playDemo);
