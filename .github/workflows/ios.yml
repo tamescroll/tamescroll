@@ -166,10 +166,10 @@ jobs:
           xcrun simctl io "$DEVICE" screenshot ../ios-proof/reddit-link.png
 
           # Blur (phase 5): smart mode blurring women, on a search page so
-          # there are thumbnails, and the bundle's own report a minute in.
+          # there are thumbnails with faces, and the bundle's own report a minute in.
           xcrun simctl terminate "$DEVICE" "$BUNDLE"
           xcrun simctl launch "$DEVICE" "$BUNDLE" --ts-gaze=smart --ts-gender=man --ts-open=youtube \
-            "--ts-page=https://m.youtube.com/results?search_query=cooking+recipes" --ts-probe=60
+            "--ts-page=https://m.youtube.com/results?search_query=actress+interview" --ts-probe=60
           sleep 50
           xcrun simctl io "$DEVICE" screenshot ../ios-proof/blur-youtube.png
           sleep 25
