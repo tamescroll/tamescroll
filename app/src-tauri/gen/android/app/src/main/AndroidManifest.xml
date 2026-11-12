@@ -80,9 +80,11 @@
              launcher (olauncher) lists apps as text and refuses pin
              requests, so the pinned shortcut never existed there and
              "the yt of tamescroll" was nowhere in All apps. This alias
-             is a second launcher entry onto the same activity. It ships
-             DISABLED so nobody gets two icons unasked; the Set up step's
-             Add button (TsLinks.pin) turns it on, on every launcher.
+             is a second launcher entry onto the same activity. 1141: it
+             ships ENABLED. 1140 shipped it disabled until the Set up
+             step's Add button, and he never saw it ("why do we not have
+             a drawer icon yet", 2026-11-12) -- an entry hidden behind a
+             settings step is an entry nobody has.
              MainActivity reads the alias name and opens YouTube, exactly
              like a shortcut tap. Our own glyph and a label that names us,
              never YouTube's logo or YouTube's name (his ruling 2026-11-07). -->
@@ -92,7 +94,7 @@
             android:label="@string/entry_youtube_label"
             android:icon="@drawable/shortcut_youtube"
             android:roundIcon="@drawable/shortcut_youtube"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
