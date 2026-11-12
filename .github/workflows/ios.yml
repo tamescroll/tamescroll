@@ -96,9 +96,16 @@ jobs:
           ! grep -rq 'TARGETED_DEVICE_FAMILY.*1,2' --include=project.yml --include=project.pbxproj .
 
       # The blur's Core ML models must answer like Android's TFLite ones.
+      # coremltools ships its Core ML runtime bindings for set Python
+      # versions only; the runner's newest Python has none.
+      - uses: actions/setup-python@v5
+        id: py312
+        with:
+          python-version: '3.12'
+          update-environment: false
       - name: Blur models match Android
         run: |
-          python3 -m venv "$RUNNER_TEMP/ct"
+          "${{ steps.py312.outputs.python-path }}" -m venv "$RUNNER_TEMP/ct"
           "$RUNNER_TEMP/ct/bin/pip" install -q "coremltools==9.0" "numpy<2.4"
           "$RUNNER_TEMP/ct/bin/python" src-tauri/ios-models/parity.py src-tauri/ios-models
 
