@@ -12,7 +12,7 @@
 //                working. Out of fullscreen YouTube's swipes do nothing
 //                (same probe), so the page and our own drag-to-mini
 //                gesture are left alone there.
-//   lock      -- "Child lock button" is Shown: a padlock sits beside the
+//   lock      -- "Touch lock button" is Shown: a padlock sits beside the
 //                home pill. One tap locks: a clear layer covers the page
 //                and swallows every touch while the video keeps playing.
 //                Unlocking is a deliberate act a small child will not
@@ -100,7 +100,11 @@
     );
   }
 
-  // ---- child lock -----------------------------------------------------
+  // ---- touch lock -----------------------------------------------------
+  // Named "Touch lock" everywhere a user reads it (ZV, 2026-11-07, after
+  // the legal review): calling it a child or kid feature reads as an app
+  // made for children, which brings in Google Play's Families rules. The
+  // surface id stays `child_lock` so settings already saved keep working.
   if (!KID.lock) {
     try { if (window.TsLock) window.TsLock.set(false); } catch (e) {}
     return;
@@ -216,11 +220,36 @@
     hintTimer = setTimeout(function () { hint.style.opacity = "0"; }, 1800);
   }
 
+  // ONLY WHERE THERE IS A VIDEO TO GUARD (ZV, 2026-11-07: a padlock on a
+  // page with no video started "makes no sense"). It shows on a watch page
+  // once its video has started playing, in portrait and in fullscreen, and
+  // nowhere else: not on home, search or a channel, and not on a watch page
+  // whose video has not begun. While locked it always shows, because it is
+  // the only way to unlock.
+  var started = false;
+  var startedFor = "";
+  function videoStarted() {
+    var here = location.pathname + location.search;
+    if (startedFor !== here) {
+      started = false;
+      startedFor = here;
+    }
+    if (!/^\/watch/.test(location.pathname)) return false;
+    if (started) return true;
+    var v = document.querySelector("#movie_player video, video.html5-main-video");
+    if (v && (!v.paused || v.currentTime > 0)) started = true;
+    return started;
+  }
+  function shouldShow() {
+    return locked || videoStarted();
+  }
+
   function paint() {
     if (!btn) return;
+    btn.style.display = shouldShow() ? "flex" : "none";
     while (btn.firstChild) btn.removeChild(btn.firstChild);
     btn.appendChild(icon(locked));
-    btn.setAttribute("aria-label", locked ? "Child lock on. Hold to unlock" : "Turn on child lock");
+    btn.setAttribute("aria-label", locked ? "Touch lock on. Hold to unlock" : "Turn on touch lock");
     btn.setAttribute("aria-pressed", locked ? "true" : "false");
     btn.style.opacity = locked ? "1" : ".55";
     btn.style.background = locked ? "rgba(15,17,21,.85)" : "rgba(15,17,21,.62)";
@@ -316,5 +345,18 @@
   else document.addEventListener("DOMContentLoaded", boot);
   document.addEventListener("fullscreenchange", onFullscreen);
   document.addEventListener("webkitfullscreenchange", onFullscreen);
-  setInterval(ensure, 3000);
+  // A video starting is the moment the padlock appears, so listen for it
+  // rather than wait for the next tick. `play` does not bubble: capture.
+  document.addEventListener("play", function () { setTimeout(ensure, 0); }, true);
+  document.addEventListener("playing", function () { setTimeout(ensure, 0); }, true);
+  ["pushState", "replaceState"].forEach(function (name) {
+    var original = history[name];
+    history[name] = function () {
+      var result = original.apply(this, arguments);
+      setTimeout(ensure, 0);
+      return result;
+    };
+  });
+  window.addEventListener("popstate", function () { setTimeout(ensure, 0); });
+  setInterval(ensure, 1000);
 })();

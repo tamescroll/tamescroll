@@ -284,6 +284,12 @@ b { font-weight: 600; }
 .step-title { font-weight: 600; font-size: var(--t-base); }
 .step-body { color: var(--muted); font-size: var(--t-md); }
 .step.done .step-body { color: var(--faint); }
+.pin-name {
+  margin-top: 8px; width: 100%; max-width: 260px; box-sizing: border-box;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--faint);
+  background: transparent; color: inherit; font: inherit; font-size: var(--t-md);
+}
+.pin-name[hidden] { display: none; }
 .steps.quiet .step-title { font-weight: 500; }
 
 /* ---------- settings ---------- */

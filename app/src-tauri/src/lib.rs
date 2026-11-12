@@ -368,7 +368,7 @@ fn kid_surfaces(platform_id: &str) -> Vec<SurfaceInfo> {
         // parent turns it on once.
         SurfaceInfo {
             id: CHILD_LOCK_SURFACE.to_string(),
-            label: "Child lock button".to_string(),
+            label: "Touch lock button".to_string(),
             default_shown: false,
         },
     ]

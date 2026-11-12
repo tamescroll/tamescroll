@@ -1181,6 +1181,7 @@ type LinksBridge = {
   openAppInfo(pkg: string): void;
   probe(): void;
   pinShortcut(id: string): string;
+  pinNamed?(id: string, name: string): string;
   pinState?(id: string): string;
   state(): string;
 };
@@ -1276,7 +1277,8 @@ function renderLinksView() {
 // long-press route still works on most of them, so it is offered.
 const PIN_WORDS: Record<string, string> = {
   pinned: "Already on your home screen.",
-  requested: "Confirm on the dialog that just opened.",
+  requested: "Confirm on the dialog that just opened. It's in your app list too, as \"tamescroll video\".",
+  listed: "Added to your app list as \"tamescroll video\". To call it something else, rename it in your launcher (on olauncher: start typing its name in the app list, then tap Rename).",
   unsupported: "Your launcher doesn't take shortcuts from apps. Long-press the tamescroll icon and drag YouTube out, or pick another launcher.",
   unavailable: "This phone can't add shortcuts.",
   refused: "That didn't work. Try from the home screen instead.",
@@ -1285,19 +1287,34 @@ const PIN_WORDS: Record<string, string> = {
 function renderPinStep() {
   const li = document.querySelector<HTMLElement>('.step[data-step="pin"]');
   if (!li || !linksBridge?.pinState) return;
-  let st: { supported?: boolean; pinned?: boolean } = {};
+  let st: { supported?: boolean; pinned?: boolean; listed?: boolean } = {};
   try { st = JSON.parse(linksBridge.pinState("youtube")); } catch { /* the OS would not say */ }
-  li.classList.toggle("done", st.pinned === true);
+  li.classList.toggle("done", st.pinned === true || (st.listed === true && st.supported === false));
   const body = li.querySelector<HTMLElement>(".step-body")!;
   const btn = li.querySelector<HTMLButtonElement>("button")!;
+  const nameBox = li.querySelector<HTMLInputElement>("#pin-name");
+  // The name box only matters where the launcher takes a shortcut: an
+  // app-list entry's name is fixed, and the launcher renames it.
+  if (nameBox) nameBox.hidden = !!(st.pinned || st.supported === false);
   if (st.pinned) {
-    body.textContent = "On your home screen.";
+    body.textContent = st.listed
+      ? "On your home screen, and in your app list as \"tamescroll video\"."
+      : "On your home screen.";
+    btn.hidden = true;
+  } else if (st.listed && st.supported !== false) {
+    // In the app list already; the home icon (with their name) is still on offer.
+    body.textContent = "In your app list as \"tamescroll video\". Add a home screen icon and name it what you like.";
+    btn.hidden = false;
+  } else if (st.listed) {
+    // A launcher that won't pin (olauncher) gets the app-list entry.
+    body.textContent = "In your app list as \"tamescroll video\". Rename it in your launcher if you like.";
     btn.hidden = true;
   } else if (st.supported === false) {
-    body.textContent = "Your launcher won't take it from here: long-press the tamescroll icon and drag YouTube out.";
-    btn.hidden = true;
+    // The button still helps here: it switches on the app-list entry.
+    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll video\" to your app list.";
+    btn.hidden = false;
   } else {
-    body.textContent = "A tamescroll icon that opens YouTube, cleaned.";
+    body.textContent = "Adds \"tamescroll video\" to your app list, and a home screen icon you name yourself.";
     btn.hidden = false;
   }
 }
@@ -1317,7 +1334,10 @@ document.querySelectorAll<HTMLButtonElement>("#view-links [data-act]").forEach((
         case "ours-on": linksBridge.openDefaultApps(null); break;
         case "probe": linksBridge.probe(); break;
         case "pin": {
-          const r = String(linksBridge.pinShortcut("youtube"));
+          const name = (document.querySelector<HTMLInputElement>("#pin-name")?.value ?? "").trim();
+          const r = String(linksBridge.pinNamed
+            ? linksBridge.pinNamed("youtube", name)
+            : linksBridge.pinShortcut("youtube"));
           const note = document.querySelector<HTMLElement>("#links-note")!;
           note.textContent = PIN_WORDS[r] ?? "";
           renderPinStep();
