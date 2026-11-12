@@ -80,7 +80,7 @@
              launcher (olauncher) lists apps as text and refuses pin
              requests, so the pinned shortcut never existed there and
              "the yt of tamescroll" was nowhere in All apps. This alias
-             is a second launcher entry onto the same activity. 1141: it
+             is a second launcher entry onto the same activity. It now
              ships ENABLED. 1140 shipped it disabled until the Set up
              step's Add button, and he never saw it ("why do we not have
              a drawer icon yet", 2026-11-12) -- an entry hidden behind a
