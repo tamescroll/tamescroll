@@ -117,9 +117,11 @@ jobs:
           cd src-tauri/gen/apple
           python3 ../../ios-widget/add-to-project.py
           python3 ../../ios-models/add-to-project.py
+          python3 ../../ios-shortcuts/add-to-project.py
           xcodegen generate
           grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
           grep -q "faceres.mlpackage" *.xcodeproj/project.pbxproj
+          grep -q "TameShortcuts.swift" *.xcodeproj/project.pbxproj
 
       - name: Build for the simulator
         run: pnpm tauri ios build --debug --target aarch64-sim --ci
