@@ -290,8 +290,10 @@ type UpdateStatus = {
 };
 
 type StoreUpdate = {
-  state: "available" | "none" | "downloading" | "downloaded" | "cancelled" | "failed";
+  state: "available" | "none" | "error" | "downloading" | "downloaded" | "cancelled" | "failed";
   versionCode?: number;
+  installed?: number; // this build's versionCode
+  fromPlay?: boolean; // Play installed this copy (it only answers for those)
   percent?: number;
 };
 
@@ -325,6 +327,19 @@ let offer: Offer | null = null;
 let manifest: UpdateStatus | null = null;
 let playReady = false; // a flexible Play update has downloaded
 let dismissed = false; // closed this session: do not raise it again
+// Play build: Google's own update screen opens by itself once per launcher
+// load (his 2026-11-12: "automatically the Play Store update thing comes
+// up", like other apps). Backing out of it snoozes that version for 8h.
+let playAutoTried = false;
+const PLAY_CANCEL_SNOOZE_MS = 8 * 60 * 60 * 1000;
+
+function snooze(code: number, ms: number) {
+  try {
+    localStorage.setItem(SNOOZE_KEY, JSON.stringify({ code, until: Date.now() + ms }));
+  } catch {
+    /* no storage: it simply asks again next launch */
+  }
+}
 
 function snoozed(code: number): boolean {
   try {
@@ -350,6 +365,14 @@ function maybeShowSheet() {
   // Only over the plain launcher: never over onboarding, settings, or a
   // link that is on its way to a site.
   if (views.launcher.hidden || !handoff.hidden) return;
+  if (offer.via === "play" && !playReady) {
+    // Play's own sheet instead of ours, and only once per load.
+    if (playAutoTried || !tsWin.TsStoreUpdate) return;
+    playAutoTried = true;
+    setUpdateStatus("Opening Google Play…");
+    tsWin.TsStoreUpdate.start();
+    return;
+  }
   updateSheet.hidden = false;
 }
 
@@ -371,7 +394,14 @@ function present(o: Offer) {
 }
 
 function startUpdate() {
-  if (!offer) return;
+  if (!offer) {
+    // Play build with nothing waiting: the button is "Check again".
+    if (tsWin.TsStoreUpdate) {
+      setUpdateStatus("Checking…");
+      tsWin.TsStoreUpdate.check();
+    }
+    return;
+  }
   if (offer.via === "sideload" && tsWin.TsUpdater) {
     setUpdateStatus("Checking…");
     sheetNow.disabled = true;
@@ -391,13 +421,7 @@ function startUpdate() {
 sheetNow.addEventListener("click", startUpdate);
 updateBtn.addEventListener("click", startUpdate);
 sheetLater.addEventListener("click", () => {
-  if (offer) {
-    try {
-      localStorage.setItem(SNOOZE_KEY, JSON.stringify({ code: offer.code, until: Date.now() + SNOOZE_MS }));
-    } catch {
-      /* no storage: it simply asks again next launch */
-    }
-  }
+  if (offer) snooze(offer.code, SNOOZE_MS);
   closeSheet();
 });
 document.querySelector<HTMLElement>("#update-scrim")!.addEventListener("click", closeSheet);
@@ -435,7 +459,25 @@ tsWin.__tsStoreUpdate = (s: StoreUpdate) => {
     setUpdateStatus(`Downloading update… ${s.percent ?? 0}%`);
     closeSheet();
   } else if (s.state === "cancelled") {
+    if (offer) snooze(offer.code, PLAY_CANCEL_SNOOZE_MS);
     setUpdateStatus("Update not started. You can update any time from here.");
+  } else if (s.state === "none" && !offer) {
+    // Play says this is the newest build: say so in About, so "no prompt"
+    // can be told apart from "the check never ran".
+    const v = s.installed && s.installed > 1000 ? ` (0.1.${s.installed - 1000})` : "";
+    updateNotes.textContent = `You have the latest version${v} that Google Play offers you.`;
+    updateBtn.textContent = "Check again";
+    updateBtn.hidden = false;
+    updateStatus.textContent = "";
+    updateCard.hidden = false;
+  } else if (s.state === "error" && !offer) {
+    updateNotes.textContent = s.fromPlay
+      ? "Couldn't reach Google Play to check for updates."
+      : "This copy wasn't installed from Google Play, so Play can't update it. Install Tame Scroll from the Play Store to get updates there.";
+    updateBtn.textContent = "Check again";
+    updateBtn.hidden = false;
+    updateStatus.textContent = "";
+    updateCard.hidden = false;
   } else if (s.state === "failed") {
     setUpdateStatus("The update didn't finish. Try again.");
   }
