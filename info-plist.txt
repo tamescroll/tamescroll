@@ -1,0 +1,90 @@
+--- Info.plist URL types and quick actions
+Array {
+    Dict {
+        CFBundleURLName = app.tamescroll.client
+        CFBundleURLSchemes = Array {
+            tamescroll
+        }
+    }
+}
+Array {
+    Dict {
+        UIApplicationShortcutItemType = open.youtube
+        UIApplicationShortcutItemTitle = YouTube
+    }
+    Dict {
+        UIApplicationShortcutItemType = open.reddit
+        UIApplicationShortcutItemTitle = Reddit
+    }
+    Dict {
+        UIApplicationShortcutItemType = open.x
+        UIApplicationShortcutItemTitle = X
+    }
+}
+--- UIDeviceFamily (1 iPhone, 2 iPad)
+Array {
+    1
+}
+--- scene manifest (none means tao's app-delegate mode)
+--- widget extension
+TameScrollWidget.appex
+CFBundleIdentifier app=app.tamescroll.client widget=app.tamescroll.client.widgets
+CFBundleVersion app=0.1.143 widget=0.1.143
+CFBundleShortVersionString app=0.1.143 widget=0.1.143
+--- widget Info.plist
+Dict {
+    CFBundleName = TameScrollWidget
+    DTSDKName = iphonesimulator26.2
+    DTXcode = 2630
+    DTSDKBuild = 23C57
+    CFBundleDevelopmentRegion = en
+    CFBundleVersion = 0.1.143
+    BuildMachineOSBuild = 24H232
+    DTPlatformName = iphonesimulator
+    CFBundlePackageType = XPC!
+    CFBundleShortVersionString = 0.1.143
+    CFBundleSupportedPlatforms = Array {
+        iPhoneSimulator
+    }
+    CFBundleInfoDictionaryVersion = 6.0
+    CFBundleExecutable = TameScrollWidget
+    DTCompiler = com.apple.compilers.llvm.clang.1_0
+    MinimumOSVersion = 15.0
+    CFBundleIdentifier = app.tamescroll.client.widgets
+    UIDeviceFamily = Array {
+        1
+    }
+    DTPlatformVersion = 26.2
+    DTXcodeBuild = 17C529
+    CFBundleDisplayName = Tame Scroll
+    DTPlatformBuild = 23C57
+    NSExtension = Dict {
+        NSExtensionPointIdentifier = com.apple.widgetkit-extension
+    }
+}
+total 872
+drwxr-xr-x  3 runner  staff      96 Nov 12 14:47 _CodeSignature
+drwxr-xr-x  5 runner  staff     160 Nov 12 14:47 .
+drwxr-xr-x  3 runner  staff      96 Nov 12 14:47 ..
+-rw-r--r--  1 runner  staff     871 Nov 12 14:47 Info.plist
+-rwxr-xr-x  1 runner  staff  441104 Nov 12 14:47 TameScrollWidget
+--- widget extensions the simulator knows
+     app.tamescroll.client.widgets(0.1.143)
+	            Path = /Users/runner/Library/Developer/CoreSimulator/Devices/4A57FB15-6E7C-49CC-BE93-450B18BD286E/data/Containers/Bundle/Application/AC5BAEB0-AFCB-407F-88DE-BCAB56537275/tamescroll.app/PlugIns/TameScrollWidget.appex
+	            UUID = D7B9D277-78EF-4465-9805-9994FCE31742
+	       Timestamp = 2026-11-12 14:49:24 +0000
+	             SDK = com.apple.widgetkit-extension
+	   Parent Bundle = /Users/runner/Library/Developer/CoreSimulator/Devices/4A57FB15-6E7C-49CC-BE93-450B18BD286E/data/Containers/Bundle/Application/AC5BAEB0-AFCB-407F-88DE-BCAB56537275/tamescroll.app
+	    Display Name = Tame Scroll
+	      Short Name = Tame Scroll
+	     Parent Name = tamescroll
+
+     com.apple.GeneralSettingsIntents(1200.4.1)
+	            Path = /Library/Developer/CoreSimulator/Volumes/iOS_22F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 18.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/ExtensionKit/Extensions/GeneralSettingsIntents.appex
+	            UUID = 1286E898-6130-4A39-848E-BF5CCB5496A8
+	       Timestamp = 2026-11-12 14:48:09 +0000
+	             SDK = com.apple.widgetkit-extension
+	    Display Name = GeneralSettingsIntents
+	      Short Name = GeneralSettingsIntents
+
+     com.apple.Bridge.BridgeWidgetExtension(1.0)
