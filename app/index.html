@@ -241,6 +241,11 @@
               <h2>About</h2>
               <p class="pane-sub">tamescroll is a calm browser: it opens any site, and tames the busy ones.</p>
               <section class="card">
+                <div class="card-title">The tour</div>
+                <p class="card-body">The welcome, the quick tour of the controls, and your blur and look choices, again.</p>
+                <div class="actions"><button type="button" class="btn-ghost" id="replay-tour">Show the tour again</button></div>
+              </section>
+              <section class="card">
                 <p class="card-body">Free and open source, MPL-2.0. No account, no telemetry, no server in the middle. Image blur and keyword filters run on your device.</p>
               </section>
               <section class="card">
@@ -283,7 +288,7 @@
         <header class="bar ob-bar">
           <button type="button" id="ob-back" class="link-btn" hidden>&#8249; Back</button>
           <span class="bar-spacer"></span>
-          <span class="ob-count" id="ob-count" aria-live="polite"></span>
+          <span class="ob-dots" id="ob-dots" role="img"></span>
         </header>
 
         <div class="ob-step" data-step="welcome">
@@ -293,9 +298,9 @@
             <p class="lede">A browser for what you came for. Everything else stays quiet.</p>
             <div class="actions center col narrow-actions">
               <button type="button" class="btn-solid" id="ob-start">Show me</button>
-              <button type="button" class="link-btn center" id="ob-skip-demo">Skip the demo</button>
+              <button type="button" class="link-btn center" id="ob-skip-demo">Skip to setup</button>
             </div>
-            <p class="setting-caption center">Free, open source, no account.</p>
+            <p class="setting-caption center">About a minute. Free, open source, no account.</p>
           </div>
         </div>
 
@@ -320,7 +325,11 @@
               </div>
               <div class="demo-toast"><b>Tamed.</b> Feed gone · pictures blurred · nothing fighting for your attention</div>
             </div>
-            <p class="setting-caption center">Every site gets this. The shield in the top bar shows what's hidden there.</p>
+            <ol class="demo-says" aria-label="What changed">
+              <li><span><b>Feeds and Shorts</b> fold away</span></li>
+              <li><span><b>Pictures</b> blur, by your choice</span></li>
+              <li><span><b>What you came for</b> stays</span></li>
+            </ol>
             <div class="actions center col narrow-actions">
               <button type="button" class="btn-solid" id="ob-demo-next">Next</button>
               <button type="button" class="link-btn center" id="ob-demo-replay">Watch again</button>
@@ -328,16 +337,74 @@
           </div>
         </div>
 
+        <!-- THE TOUR (2026-11-05, his "much better tutorial ... user
+             intuitive"): the three controls a first run never finds on
+             its own, taught by doing. A drawing of the real screens, the
+             glowing spot is a real button, and tapping it does what the
+             real one does. Next always works too, for anyone who would
+             rather read. The bar in the drawing is the native one from
+             MainActivity / TsWebkitPlugin: home, address, shield, dark on
+             every look because sites keep it dark. -->
+        <div class="ob-step" data-step="tour" hidden>
+          <div class="ob-center">
+            <p class="tour-n" id="tour-n" aria-live="polite"></p>
+            <h1 class="display" id="tour-title"></h1>
+            <p class="lede tour-text" id="tour-text"></p>
+            <div class="tphone" id="tour-phone" data-scene="home">
+              <!-- home -->
+              <div class="ts-home" aria-hidden="true">
+                <svg class="ts-mark" viewBox="0 0 48 40"><path d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.6" stroke-linecap="round"/></svg>
+                <span class="ts-q">What are you here for?</span>
+                <span class="ts-search"><span class="ts-typed" id="tour-typed">Search or type a site</span></span>
+                <span class="ts-tiles">
+                  <span class="ts-tile"><i style="--tint:#b8876a">Y</i><em>YouTube</em></span>
+                  <span class="ts-tile ts-new"><i style="--tint:#8f9fb0">W</i><em>Wikipedia</em></span>
+                  <span class="ts-tile ts-add"><i>+</i><em>Add a site</em></span>
+                </span>
+              </div>
+              <!-- a site -->
+              <div class="ts-site" aria-hidden="true">
+                <span class="ts-bar">
+                  <svg class="ts-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="ts-addr">wikipedia.org</span>
+                  <svg class="ts-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#c9a45e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="ts-strip">wikipedia.org</span>
+                <span class="ts-page">
+                  <i class="ts-h"></i><i></i><i></i><i class="short"></i>
+                  <span class="ts-pic"></span>
+                  <i></i><i></i><i class="short"></i><i></i><i></i><i class="short"></i>
+                </span>
+                <span class="ts-sheet">
+                  <span class="ts-grab"></span>
+                  <b>wikipedia.org</b>
+                  <span class="ts-num">12</span>
+                  <span class="ts-sub">ads and trackers stopped on this page.</span>
+                  <span class="ts-btn">Change what's hidden here</span>
+                </span>
+              </div>
+              <!-- The one live control: moved onto whatever the step teaches. -->
+              <button type="button" class="ts-hot" id="tour-hot"></button>
+            </div>
+            <p class="tour-hint" id="tour-hint">Tap the glowing spot</p>
+            <div class="actions center col narrow-actions">
+              <button type="button" class="btn-ghost" id="tour-next">Next</button>
+              <button type="button" class="link-btn center" id="tour-skip">Skip the tour</button>
+            </div>
+          </div>
+        </div>
+
         <div class="ob-step" data-step="blur" hidden>
           <div class="ob-center">
             <h1 class="display">What should be blurred?</h1>
+            <p class="lede">Pick one. You can change it any time.</p>
             <div class="ob-cards col" id="ob-blur-cards">
               <button type="button" class="ob-card wide pick" data-choice="all"><span class="pv" aria-hidden="true"><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Every picture</b><span>The video you open plays normally.</span></span></button>
               <button type="button" class="ob-card wide pick" data-choice="women"><span class="pv" aria-hidden="true"><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Women</b><span>Faces it can't place are blurred too.</span></span></button>
               <button type="button" class="ob-card wide pick" data-choice="men"><span class="pv" aria-hidden="true"><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Men</b><span>Faces it can't place are blurred too.</span></span></button>
               <button type="button" class="ob-card wide pick" data-choice="none"><span class="pv" aria-hidden="true"><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Nothing</b><span>Feeds are still hidden.</span></span></button>
             </div>
-            <p class="setting-caption center">Runs on this device and isn't perfect. No picture leaves your phone. Change it any time in Settings, under Blur.</p>
+            <p class="setting-caption center">Runs on this device and isn't perfect. No picture leaves your phone. It lives in Settings, under Blur.</p>
           </div>
         </div>
         <!-- Make it yours (his 2026-10-28): one tap, the screen changes
@@ -358,13 +425,19 @@
 
         <div class="ob-step" data-step="done" hidden>
           <div class="ob-center">
-            <h1 class="display">That's it.</h1>
-            <ul class="perks left">
-              <li><b>Search or type any site</b> in the box at the top of home.</li>
-              <li><b>Add the sites you use</b> as tiles, so they're one tap away.</li>
-              <li><b>The bar at the top</b> of every site takes you home, searches, or opens that site's settings.</li>
+            <svg class="ob-tick" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke-width="2"/><path d="M15 24.5l6 6 12-13" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h1 class="display">You're set.</h1>
+            <p class="lede">Your choices, and where they live.</p>
+            <dl class="ob-summary" id="ob-summary">
+              <div data-row="blur"><dt>Blur</dt><dd id="ob-sum-blur"></dd><span class="where">Settings › Blur</span></div>
+              <div><dt>Look</dt><dd id="ob-sum-look"></dd><span class="where">Settings › Look</span></div>
+            </dl>
+            <ul class="recap">
+              <li><span class="recap-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/></svg></span><span><b>The box on home</b> searches or opens any site.</span></li>
+              <li><span class="recap-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z"/></svg></span><span><b>The shield</b> shows what was tamed, and changes it.</span></li>
+              <li><span class="recap-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="15.5" cy="8" r="1.8"/><circle cx="9.5" cy="16" r="1.8"/></svg></span><span><b>Settings</b> on home has the rest, and this tour.</span></li>
             </ul>
-            <div class="actions center col">
+            <div class="actions center col narrow-actions">
               <button type="button" class="btn-solid" id="ob-open">Start browsing</button>
             </div>
           </div>
