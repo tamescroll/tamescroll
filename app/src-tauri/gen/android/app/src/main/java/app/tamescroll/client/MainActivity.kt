@@ -800,9 +800,19 @@ class MainActivity : TauriActivity() {
       else -> "none"
     }
     return "{\"state\":\"$state\",\"versionCode\":${info.availableVersionCode()}," +
+      "\"fromPlay\":${installedFromPlay()},\"installed\":${BuildConfig.VERSION_CODE}," +
       "\"immediate\":${info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)}," +
       "\"flexible\":${info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)}}"
   }
+
+  /** Play only answers for a copy Play installed; an APK sideloaded
+   * over a Play install keeps the package but not Play's ownership. */
+  private fun installedFromPlay(): Boolean = try {
+    val src = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+      packageManager.getInstallSourceInfo(packageName).installingPackageName
+    else @Suppress("DEPRECATION") packageManager.getInstallerPackageName(packageName)
+    src == "com.android.vending"
+  } catch (_: Throwable) { false }
 
   private fun openPlayListing() {
     try {
@@ -826,9 +836,9 @@ class MainActivity : TauriActivity() {
         try {
           appUpdateManager.appUpdateInfo
             .addOnSuccessListener { pushStoreUpdate(storeInfoJson(it)) }
-            .addOnFailureListener { pushStoreUpdate("{\"state\":\"none\"}") }
+            .addOnFailureListener { pushStoreUpdate("{\"state\":\"error\",\"fromPlay\":${installedFromPlay()}}") }
         } catch (_: Throwable) {
-          pushStoreUpdate("{\"state\":\"none\"}")
+          pushStoreUpdate("{\"state\":\"error\",\"fromPlay\":${installedFromPlay()}}")
         }
       }
     }
