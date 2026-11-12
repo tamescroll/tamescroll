@@ -228,15 +228,32 @@ test('the whole-frame squash samples where tf.image.resizeBilinear samples', asy
   const draws = [];
   for (const c of FakeOffscreenCanvas.instances || []) if (c._ctx.draws) draws.push(...c._ctx.draws);
   // The canvas is cached per size across tests, so take the LAST squash.
-  const d = draws.filter((x) => x.args.length === 9 && x.args[7] === 256 && x.args[8] === 256).pop();
-  assert.ok(d, 'the squash uses the 9-argument source-rect form');
   const kx = 640 / 256;
   const ky = 360 / 256;
-  assert.equal(d.args[1], -(kx - 1) / 2);
-  assert.equal(d.args[2], -(ky - 1) / 2);
-  assert.equal(d.args[3], 640);
-  assert.equal(d.args[4], 360);
-  assert.deepEqual(d.args.slice(5), [0, 0, 256, 256]);
+  // The shifted source rect (-(k-1)/2, full size) runs off the bitmap by
+  // a fraction of a pixel. It is drawn CLIPPED to the bitmap with the
+  // destination shrunk to match -- the canvas spec's own clipping, so
+  // the samples are the same -- because WebKit draws nothing at all for
+  // a source rect outside the bitmap (iPhone fed the face model blank
+  // frames).
+  const sx = -(kx - 1) / 2;
+  const sy = -(ky - 1) / 2;
+  const fx = 256 / 640;
+  const fy = 256 / 360;
+  const d = draws.filter((x) => x.args.length === 9 && Math.abs(x.args[5] - -sx * fx) < 1e-9).pop();
+  assert.ok(d, 'the squash uses the 9-argument source-rect form');
+  assert.equal(d.args[1], 0, 'source rect starts inside the bitmap');
+  assert.equal(d.args[2], 0, 'source rect starts inside the bitmap');
+  assert.equal(d.args[3], 640 + sx);
+  assert.equal(d.args[4], 360 + sy);
+  assert.ok(Math.abs(d.args[5] - -sx * fx) < 1e-9);
+  assert.ok(Math.abs(d.args[6] - -sy * fy) < 1e-9);
+  assert.ok(Math.abs(d.args[7] - (640 + sx) * fx) < 1e-9);
+  assert.ok(Math.abs(d.args[8] - (360 + sy) * fy) < 1e-9);
+  // Same mapping as the unclipped rect (source x -> (x - sx) * fx), so
+  // the clipped draw still ends on the destination's far edges.
+  assert.ok(Math.abs(d.args[5] + d.args[7] - 256) < 1e-9);
+  assert.ok(Math.abs(d.args[6] + d.args[8] - 256) < 1e-9);
   assert.equal(d.smoothing, true);
   assert.equal(d.quality, 'low');
   void canvas;

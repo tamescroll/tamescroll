@@ -139,7 +139,15 @@ final class TsInfer: NSObject, WKScriptMessageHandlerWithReply {
     // The first few runs say what came back, for the CI log.
     if logged < 8 {
       logged += 1
-      var line = "TsInfer model \(id) \(w)x\(h):"
+      var sum = 0, alpha = 0
+      rgba.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+        for p in stride(from: 0, to: raw.count, by: 4) {
+          sum += Int(raw[p]) + Int(raw[p + 1]) + Int(raw[p + 2])
+          alpha += Int(raw[p + 3])
+        }
+      }
+      let px = max(1, w * h)
+      var line = "TsInfer model \(id) \(w)x\(h) rgbMean=\(sum / (3 * px)) alphaMean=\(alpha / px):"
       for (k, name) in names.enumerated() {
         guard let a = result.featureValue(for: name)?.multiArrayValue, k < outs.count else { continue }
         let o = outs[k]

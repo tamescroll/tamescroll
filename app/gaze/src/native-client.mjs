@@ -353,6 +353,35 @@ export function createNativeClient(port, opts) {
   // downstream (PFF_FRAME_KP_FLOOR, the person score floor) were
   // calibrated on the tensor path, so the native engine must see the
   // pixels that path would have seen.
+  // drawImage with the source rect clipped to the bitmap first, and the
+  // destination shrunk to match -- what the canvas spec does by itself
+  // and Chrome does, so Android's pixels are unchanged. WebKit (iPhone)
+  // instead draws NOTHING when the source rect runs off the bitmap, and
+  // every 256 squash below starts half a pixel outside it: the face
+  // model was fed a blank frame and found no faces on a page full of them.
+  function drawClipped(ctx, bitmap, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
+    var bw = bitmap.width;
+    var bh = bitmap.height;
+    var fx = dWidth / sWidth;
+    var fy = dHeight / sHeight;
+    var x0 = Math.max(sx, 0);
+    var y0 = Math.max(sy, 0);
+    var x1 = Math.min(sx + sWidth, bw);
+    var y1 = Math.min(sy + sHeight, bh);
+    if (!(x1 > x0 && y1 > y0)) return;
+    ctx.drawImage(
+      bitmap,
+      x0,
+      y0,
+      x1 - x0,
+      y1 - y0,
+      dx + (x0 - sx) * fx,
+      dy + (y0 - sy) * fy,
+      (x1 - x0) * fx,
+      (y1 - y0) * fy
+    );
+  }
+
   function drawTo(size, bitmap) {
     var canvas = canvasFor(size);
     var ctx = canvas.getContext('2d');
@@ -363,7 +392,7 @@ export function createNativeClient(port, opts) {
     var sh = bitmap.height;
     var kx = sw / size;
     var ky = sh / size;
-    ctx.drawImage(bitmap, -(kx - 1) / 2, -(ky - 1) / 2, sw, sh, 0, 0, size, size);
+    drawClipped(ctx, bitmap, -(kx - 1) / 2, -(ky - 1) / 2, sw, sh, 0, 0, size, size);
     return ctx.getImageData(0, 0, size, size).data;
   }
 
@@ -384,7 +413,7 @@ export function createNativeClient(port, opts) {
     var sWidth = (sq.x2 - sq.x1) * sw;
     var sHeight = (sq.y2 - sq.y1) * sh;
     if (sWidth > 0 && sHeight > 0) {
-      ctx.drawImage(bitmap, sx, sy, sWidth, sHeight, 0, 0, GENDER_SIZE, GENDER_SIZE);
+      drawClipped(ctx, bitmap, sx, sy, sWidth, sHeight, 0, 0, GENDER_SIZE, GENDER_SIZE);
     }
     return ctx.getImageData(0, 0, GENDER_SIZE, GENDER_SIZE).data;
   }
