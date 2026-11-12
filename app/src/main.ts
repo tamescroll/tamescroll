@@ -1123,8 +1123,8 @@ function renderLinksView() {
 // long-press route still works on most of them, so it is offered.
 const PIN_WORDS: Record<string, string> = {
   pinned: "Already on your home screen.",
-  requested: "Confirm on the dialog that just opened. It's in your app list too, as \"tamescroll video\".",
-  listed: "Added to your app list as \"tamescroll video\". To call it something else, rename it in your launcher (on olauncher: start typing its name in the app list, then tap Rename).",
+  requested: "Confirm on the dialog that just opened. It's in your app list too, as \"tamescroll for YouTube\".",
+  listed: "Added to your app list as \"tamescroll for YouTube\". To call it something else, rename it in your launcher (on olauncher: start typing its name in the app list, then tap Rename).",
   unsupported: "Your launcher doesn't take shortcuts from apps. Long-press the tamescroll icon and drag YouTube out, or pick another launcher.",
   unavailable: "This phone can't add shortcuts.",
   refused: "That didn't work. Try from the home screen instead.",
@@ -1144,23 +1144,23 @@ function renderPinStep() {
   if (nameBox) nameBox.hidden = !!(st.pinned || st.supported === false);
   if (st.pinned) {
     body.textContent = st.listed
-      ? "On your home screen, and in your app list as \"tamescroll video\"."
+      ? "On your home screen, and in your app list as \"tamescroll for YouTube\"."
       : "On your home screen.";
     btn.hidden = true;
   } else if (st.listed && st.supported !== false) {
     // In the app list already; the home icon (with their name) is still on offer.
-    body.textContent = "In your app list as \"tamescroll video\". Add a home screen icon and name it what you like.";
+    body.textContent = "In your app list as \"tamescroll for YouTube\". Add a home screen icon and name it what you like.";
     btn.hidden = false;
   } else if (st.listed) {
     // A launcher that won't pin (olauncher) gets the app-list entry.
-    body.textContent = "In your app list as \"tamescroll video\". Rename it in your launcher if you like.";
+    body.textContent = "In your app list as \"tamescroll for YouTube\". Rename it in your launcher if you like.";
     btn.hidden = true;
   } else if (st.supported === false) {
     // The button still helps here: it switches on the app-list entry.
-    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll video\" to your app list.";
+    body.textContent = "Your launcher won't take a shortcut, so this adds \"tamescroll for YouTube\" to your app list.";
     btn.hidden = false;
   } else {
-    body.textContent = "Adds \"tamescroll video\" to your app list, and a home screen icon you name yourself.";
+    body.textContent = "Adds \"tamescroll for YouTube\" to your app list, and a home screen icon you name yourself.";
     btn.hidden = false;
   }
 }

@@ -87,7 +87,7 @@
              settings step is an entry nobody has.
              MainActivity reads the alias name and opens YouTube, exactly
              like a shortcut tap. Our own glyph and a label that names us,
-             never YouTube's logo or YouTube's name (his ruling 2026-11-07). -->
+             never YouTube's logo. Label "tamescroll for YouTube" (his call 2026-11-12, replacing the 11-07 no-name ruling: people search the drawer for YouTube). -->
         <activity-alias
             android:name=".YouTubeEntry"
             android:targetActivity=".MainActivity"
