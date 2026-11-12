@@ -489,3 +489,8 @@ b { font-weight: 600; }
 .mini.night { --m-bg: #141414; --m-line: #2c2b28; --m-field: #1e1d1b; --m-ink: #e7e5e1; --m-tile: #232321; }
 .mini.paper { --m-bg: #f7f5f0; --m-line: #e1dcd2; --m-field: #ffffff; --m-ink: #1d1c19; --m-tile: #ffffff; }
 .ob-looks { margin: var(--s4) 0 var(--s2); }
+
+/* iPhone home screen steps: in a card and on the welcome screens. */
+.ios-home-steps .steps { margin: var(--s2) 0 0; }
+.ios-home-steps.left { text-align: left; max-width: 420px; margin: var(--s3) auto 0; }
+.ios-home-nudge { margin-top: var(--s4); }

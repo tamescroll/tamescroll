@@ -178,6 +178,38 @@ if (IOS) {
   if (toast) toast.innerHTML = "<b>Tamed.</b> Feed gone · nothing fighting for your attention";
 }
 
+// iPhone: the home screen icon is a widget the person adds. The steps
+// show in Settings -> Sites and once during the welcome screens.
+if (IOS) {
+  const tpl = document.querySelector<HTMLTemplateElement>("#ios-home-steps")!;
+  document.querySelectorAll(".ios-home-steps").forEach((slot) => {
+    slot.appendChild(tpl.content.cloneNode(true));
+  });
+  document.querySelector<HTMLElement>("#ios-home-card")!.hidden = false;
+}
+const IOS_HOME_KEY = "ts.iosHomeNudge";
+const nudge = document.querySelector<HTMLElement>("#ios-home-nudge")!;
+function iosHomeDismissed(): boolean {
+  try { return localStorage.getItem(IOS_HOME_KEY) === "off"; } catch { return false; }
+}
+function dismissIosHome() {
+  try { localStorage.setItem(IOS_HOME_KEY, "off"); } catch { /* shown again next launch */ }
+  nudge.hidden = true;
+}
+nudge.hidden = !IOS || iosHomeDismissed();
+document.querySelector<HTMLButtonElement>("#ios-home-hide")!.addEventListener("click", dismissIosHome);
+document.querySelector<HTMLButtonElement>("#ios-home-added")!.addEventListener("click", () => {
+  dismissIosHome();
+  const card = document.querySelector<HTMLElement>("#ios-home-card")!;
+  card.querySelector<HTMLElement>(".card-body")!.textContent = "Done. Tap it any time to open YouTube here.";
+});
+document.querySelector<HTMLButtonElement>("#ios-home-show")!.addEventListener("click", () => {
+  siteHere.textContent = "";
+  showView("settings");
+  showPane("bringback");
+  document.querySelector<HTMLElement>("#ios-home-card")!.scrollIntoView({ block: "start" });
+});
+
 renderBlurToggle();
 // Sync stored state into Rust at startup too, not just on change —
 // otherwise a relaunch would leave Rust at defaults until first touch.
@@ -1366,7 +1398,13 @@ function runOnboarding(done: () => void) {
   document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
     btn.addEventListener("click", () => finish(btn.dataset.choice as BlurChoice));
   });
-  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () => goto("done"));
+  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () =>
+    goto(IOS ? "home" : "done"));
+  document.querySelector<HTMLButtonElement>("#ob-home-next")!.addEventListener("click", () => {
+    dismissIosHome();
+    goto("done");
+  });
+  document.querySelector<HTMLButtonElement>("#ob-home-later")!.addEventListener("click", () => goto("done"));
 
   document.querySelector<HTMLButtonElement>("#ob-open")!.addEventListener("click", () => done());
 
