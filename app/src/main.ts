@@ -408,7 +408,9 @@ onLauncherShown = maybeShowSheet;
 // not a step forward gives the button back so the user can try again.
 tsWin.__tsUpdateStatus = (m: string) => {
   setUpdateStatus(m);
-  if (!/^(Downloading|Starting)/.test(m)) {
+  // "Starting install…" gives the button back too: the system installer
+  // reports nothing if it is cancelled or refuses, so a retry must stay open.
+  if (!/^Downloading/.test(m)) {
     sheetNow.disabled = false;
     updateBtn.disabled = false;
   }

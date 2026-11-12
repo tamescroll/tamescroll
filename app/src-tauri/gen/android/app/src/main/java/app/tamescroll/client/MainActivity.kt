@@ -707,7 +707,7 @@ class MainActivity : TauriActivity() {
           val got = download(apkUrl, apk) { pct ->
             // Every 5%: often enough to look alive, rare enough that the
             // page is not flooded with evaluateJavascript calls.
-            if (pct >= lastPct + 5) {
+            if (pct >= lastPct + 5 || (pct == 100 && lastPct < 100)) {
               lastPct = pct
               report("Downloading update… $pct%")
             }
