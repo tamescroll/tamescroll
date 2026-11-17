@@ -454,8 +454,9 @@ class MainActivity : TauriActivity() {
     fun pinShortcut(id: String?): String = pin(id, null)
 
     /** 1140: pin with a name THE PERSON typed, the way Chrome's Add to
-     * home screen lets them name it. Blank means "tamescroll". We never
-     * suggest a name: a pre-filled platform name would be our naming.
+     * home screen lets them name it. Blank means the shortcut's own
+     * label, "Y-Tamed" (ZV 2026-11-17): our letter, never the bare
+     * platform name, which would read as the official app.
      * The app-list fallback keeps its fixed label; launchers rename it. */
     @JavascriptInterface
     fun pinNamed(id: String?, name: String?): String = pin(id, name)
@@ -480,10 +481,10 @@ class MainActivity : TauriActivity() {
         if (!sm.isRequestPinShortcutSupported) return listInstead(id)
         val existing = sm.manifestShortcuts.firstOrNull { it.id == id } ?: return "unavailable"
         val label = name?.filter { !it.isISOControl() }?.trim()?.take(24)
-        val info = if (label == null) existing else {
+        val info = if (label.isNullOrEmpty()) existing else {
           android.content.pm.ShortcutInfo.Builder(this@MainActivity, "${id}_named")
-            .setShortLabel(label.ifEmpty { getString(R.string.app_name) })
-            .setLongLabel(label.ifEmpty { getString(R.string.app_name) })
+            .setShortLabel(label)
+            .setLongLabel(label)
             .setIcon(android.graphics.drawable.Icon.createWithResource(
               this@MainActivity,
               resources.getIdentifier("shortcut_$id", "drawable", packageName)
