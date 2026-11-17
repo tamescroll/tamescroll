@@ -391,9 +391,9 @@ b { font-weight: 600; }
 /* The tapped answer is marked before the step moves on, and a replay or
    Back shows the current one. */
 .ob-card.chosen { border-color: var(--ink); }
-.ob-card.pick { position: relative; padding-right: var(--s6); }
+.ob-card.pick { position: relative; }
 .ob-card.chosen::after {
-  content: ""; position: absolute; right: var(--s3); top: 50%; margin-top: -9px;
+  content: ""; position: absolute; right: 10px; top: 10px;
   width: 18px; height: 18px; border-radius: 50%;
   background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23141414' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
 }
@@ -542,9 +542,16 @@ b { font-weight: 600; }
   position: relative; width: 248px; height: 300px; margin: 0 auto; overflow: hidden; text-align: left;
   border-radius: 30px; border: 6px solid var(--line); background: var(--bg); box-shadow: var(--shadow);
 }
-.tphone > .ts-home, .tphone > .ts-site { position: absolute; inset: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
-.tphone[data-scene="home"] .ts-site, .tphone[data-scene="home-added"] .ts-site { opacity: 0; transform: translateX(24px); pointer-events: none; }
-.tphone[data-scene="site"] .ts-home, .tphone[data-scene="folded"] .ts-home { opacity: 0; transform: translateX(-24px); pointer-events: none; }
+.tphone > .ts-home, .tphone > .ts-site { position: absolute; inset: 0; transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s; }
+/* The screen that is not showing is gone once it has faded, so no ghost
+   of it stays under the other (seen on the emulator, 2026-11-17). */
+.tphone[data-scene="home"] .ts-site, .tphone[data-scene="home-added"] .ts-site,
+.tphone[data-scene="site"] .ts-home, .tphone[data-scene="folded"] .ts-home {
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+}
+.tphone[data-scene="home"] .ts-site, .tphone[data-scene="home-added"] .ts-site { transform: translateX(24px); }
+.tphone[data-scene="site"] .ts-home, .tphone[data-scene="folded"] .ts-home { transform: translateX(-24px); }
 
 /* home */
 .ts-home { display: flex; flex-direction: column; padding: 22px 16px 0; }
@@ -665,3 +672,32 @@ b { font-weight: 600; }
 .recap li b { color: var(--ink); }
 .recap-ic { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; border: 1px solid var(--hairline); background: var(--tile-bg); }
 .recap-ic svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- short and narrow phones (emulator run, 2026-11-17) ----------
+   On a 654px-tall screen the demo and the tour pushed Next below the
+   fold. Everything that asks for a tap stays on screen without scrolling. */
+@media (max-height: 760px) {
+  .ob-center { padding: var(--s2) 0 var(--s4); }
+  .ob-center .display { font-size: 24px; }
+  .ob-center .lede { margin-bottom: var(--s3); }
+  .ob-wordmark { width: 140px; }
+  .demo { height: 196px; margin: var(--s2) 0; }
+  .demo-shorts .demo-thumb { height: 70px; }
+  .demo-says { gap: 2px; }
+  .demo-says li { font-size: var(--t-sm); }
+  .tour-text { min-height: 0; margin-bottom: var(--s3); }
+  .tphone { height: 238px; border-width: 5px; border-radius: 26px; }
+  .tour-hint { margin-top: var(--s2); }
+  .ob-center .actions { margin-top: var(--s3); }
+  .ob-center .actions .link-btn { padding: var(--s1) 0; }
+  .ob-cards { margin: var(--s3) 0; gap: var(--s2); }
+  .ob-card { padding: var(--s3) var(--s4); min-height: 0; }
+  .ob-summary > div { padding: var(--s2) var(--s4); }
+  .recap { gap: var(--s2); margin-bottom: var(--s4); }
+  .ob-tick { width: 40px; height: 40px; margin-bottom: var(--s2); }
+}
+@media (max-width: 380px) {
+  .ob-card.pick { gap: var(--s2); padding-left: var(--s3); padding-right: var(--s3); }
+  .pv .pv-tile { width: 28px; height: 38px; }
+  .pv svg { width: 24px; height: 24px; }
+}
