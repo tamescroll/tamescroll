@@ -7,7 +7,9 @@ import UIKit
 /// phrases, and the Shortcuts app can put it on the home screen. It opens
 /// the app through its own tamescroll:// address, the same validated way
 /// in the widgets and quick actions use (launcher_query_for_open in
-/// lib.rs). The symbol is a plain Y, never YouTube's logo.
+/// lib.rs). The symbol is a plain Y, never YouTube's logo, and the
+/// home-screen name is "Y-Tamed", never the bare site name (ZV,
+/// 2026-11-17); the title and phrases still say YouTube so search finds it.
 @available(iOS 16.0, *)
 struct OpenTameYouTube: AppIntent {
   static var title: LocalizedStringResource = "Tame for YouTube"
@@ -33,7 +35,7 @@ struct TameShortcuts: AppShortcutsProvider {
         "Tame YouTube with \(.applicationName)",
         "\(.applicationName) YouTube",
       ],
-      shortTitle: "Tame for YouTube",
+      shortTitle: "Y-Tamed",
       systemImageName: "y.square.fill"
     )
   }

@@ -13,6 +13,10 @@ struct Site {
   let name: String
   let glyph: String
   var link: URL { URL(string: "tamescroll://open/\(id)")! }
+  /// The caption and gallery name: our letter plus "Tamed", never the
+  /// bare site name, so a tile never reads as the official app (ZV,
+  /// 2026-11-17, docs/legal-position.md). Words may still name the site.
+  var label: String { glyph + "-Tamed" }
 }
 
 let sites = [
@@ -56,7 +60,7 @@ struct SiteTile: View {
       Text(site.glyph)
         .font(.system(size: 54, weight: .medium))
         .foregroundColor(cream)
-      Text(site.name)
+      Text(site.label)
         .font(.system(size: 13, weight: .regular))
         .foregroundColor(cream.opacity(0.6))
     }
@@ -70,7 +74,7 @@ func siteWidget(_ site: Site) -> some WidgetConfiguration {
   StaticConfiguration(kind: "site.\(site.id)", provider: StillProvider()) { _ in
     SiteTile(site: site)
   }
-  .configurationDisplayName(site.name)
+  .configurationDisplayName(site.label)
   // A plain String, never an interpolated literal: a literal with \(...)
   // becomes a LocalizedStringKey with arguments, and WidgetKit stopped the
   // extension on it (assertion, EXC_BREAKPOINT at this line), so the
@@ -88,7 +92,7 @@ struct AllSites: View {
             Text(site.glyph)
               .font(.system(size: 36, weight: .medium))
               .foregroundColor(cream)
-            Text(site.name)
+            Text(site.label)
               .font(.system(size: 12))
               .foregroundColor(cream.opacity(0.6))
           }
