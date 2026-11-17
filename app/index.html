@@ -377,7 +377,7 @@
             </div>
             <ol class="demo-says" aria-label="What changed">
               <li><span><b>Feeds and Shorts</b> fold away</span></li>
-              <li><span><b>Pictures</b> blur, the way you choose next</span></li>
+              <li><span><b>Pictures</b> blur, if you want them to</span></li>
               <li><span><b>What you came for</b> stays</span></li>
             </ol>
             <div class="actions center col narrow-actions">
@@ -387,18 +387,32 @@
           </div>
         </div>
 
-        <!-- One tap answers and moves on; the tapped card is marked first. -->
+        <!-- What to blur, made plain (his 2026-11-17: "a bit annoying ...
+             needs to be simplified such that person actually knows whats
+             its asking ... consolidate to 3 options"). Three answers; the
+             middle one holds Women and Men as two buttons, so nobody is
+             asked their own gender (his 2026-10-27) and neither answer is
+             lost. One tap answers and moves on. -->
         <div class="ob-step" data-step="blur" hidden>
           <div class="ob-center">
-            <h1 class="display">What should be blurred?</h1>
-            <p class="lede">Tap one. You can change it any time.</p>
-            <div class="ob-cards col" id="ob-blur-cards">
-              <button type="button" class="ob-card wide pick" data-choice="all"><span class="pv" aria-hidden="true"><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Every picture</b><span>The video you open plays normally.</span></span></button>
-              <button type="button" class="ob-card wide pick" data-choice="women"><span class="pv" aria-hidden="true"><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Women</b><span>Faces it can't place are blurred too.</span></span></button>
-              <button type="button" class="ob-card wide pick" data-choice="men"><span class="pv" aria-hidden="true"><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Men</b><span>Faces it can't place are blurred too.</span></span></button>
-              <button type="button" class="ob-card wide pick" data-choice="none"><span class="pv" aria-hidden="true"><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Nothing</b><span>Feeds are still hidden.</span></span></button>
+            <h1 class="display">Blur pictures as you browse?</h1>
+            <p class="lede">Photos and video previews on the sites you open. The video you choose to watch plays normally.</p>
+            <div class="bq" id="ob-blur-cards">
+              <button type="button" class="bq-opt" data-choice="all">
+                <b>Yes, all of them</b><span>Every photo and preview.</span>
+              </button>
+              <div class="bq-opt bq-gender" data-group="gender">
+                <b>Only people of one gender</b><span>Faces it isn't sure about are blurred too.</span>
+                <span class="bq-pills">
+                  <button type="button" class="bq-pill" data-choice="women">Women</button>
+                  <button type="button" class="bq-pill" data-choice="men">Men</button>
+                </span>
+              </div>
+              <button type="button" class="bq-opt" data-choice="none">
+                <b>No, show pictures</b><span>Feeds still stay hidden.</span>
+              </button>
             </div>
-            <p class="setting-caption center">Runs on this device and isn't perfect. No picture leaves your phone.</p>
+            <p class="setting-caption center">Works on this phone and isn't perfect. Nothing you see leaves it. Change it any time in Settings.</p>
           </div>
         </div>
 

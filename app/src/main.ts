@@ -1586,11 +1586,13 @@ function renderObDots(step: string) {
 }
 
 function markBlurChoice(choice: BlurChoice | null) {
-  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards [data-choice]").forEach((btn) => {
     const on = btn.dataset.choice === choice;
     btn.classList.toggle("chosen", on);
     btn.setAttribute("aria-pressed", String(on));
   });
+  document.querySelector<HTMLElement>("#ob-blur-cards .bq-gender")!
+    .classList.toggle("chosen", choice === "women" || choice === "men");
 }
 
 function playDemo() {
@@ -1792,7 +1794,7 @@ function bindOnboarding() {
   document.querySelector<HTMLButtonElement>("#ob-demo-replay")!.addEventListener("click", playDemo);
 
   // Blur: stored the moment it is tapped, marked, then on.
-  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards [data-choice]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const choice = btn.dataset.choice as BlurChoice;
       setChoice(choice);
