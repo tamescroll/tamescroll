@@ -699,3 +699,27 @@ b { font-weight: 600; }
   font-weight: 600; font-size: var(--t-md); transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 .bq-pill.chosen { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* the live preview (2026-11-17) */
+.bq-preview { display: flex; justify-content: center; gap: var(--s3); margin: var(--s2) 0 var(--s1); }
+.bq-pic { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bq-art {
+  width: 64px; height: 76px; border-radius: 10px; display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(160deg, #b9a58a, #6f7f8c); box-shadow: var(--shadow);
+}
+.bq-pic[data-kind="man"] .bq-art { background: linear-gradient(160deg, #8c9fb0, #6d5a4c); }
+.bq-pic[data-kind="scene"] .bq-art { background: linear-gradient(160deg, #9fb3a0, #c8b48c); }
+.bq-art svg { width: 46px; height: 46px; fill: rgba(255, 255, 255, 0.92); transition: filter 0.35s ease; }
+.bq-pic em { font-style: normal; font-size: var(--t-xs); color: var(--faint); }
+.bq-preview[data-show="all"] .bq-art svg,
+.bq-preview[data-show="women"] [data-kind="woman"] svg,
+.bq-preview[data-show="men"] [data-kind="man"] svg { filter: blur(7px); }
+.bq-opt.showing:not(.chosen) { border-color: var(--muted); background: var(--surface); }
+.bq-pill.showing:not(.chosen) { border-color: var(--muted); }
+@media (max-height: 760px) {
+  .bq-art { width: 54px; height: 62px; }
+  .bq-art svg { width: 38px; height: 38px; }
+  .bq-opt { padding: var(--s2) var(--s4); }
+  .bq-pills { margin-top: var(--s1); }
+  .bq-pill { min-height: 40px; }
+}

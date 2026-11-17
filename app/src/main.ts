@@ -1563,7 +1563,13 @@ function obGoto(step: string, remember = true) {
   renderObDots(step);
   // A first run marks no blur answer, so none is suggested; a replay, or
   // Back after answering, shows the current one.
-  if (step === "blur") markBlurChoice(obReplay || readChosen() !== null ? getChoice() : null);
+  if (step === "blur") {
+    const current = obReplay || readChosen() !== null ? getChoice() : null;
+    markBlurChoice(current);
+    startBlurCycle(current);
+  } else {
+    stopBlurCycle();
+  }
   if (step === "demo") playDemo();
   if (step === "time") renderObTime();
   if (step === "icon") renderObIcon();
@@ -1583,6 +1589,40 @@ function renderObDots(step: string) {
     if (i === at) d.className = "now";
     dots.append(d);
   });
+}
+
+// The preview walks through the answers until one is tapped, lighting
+// the answer it is showing, so each answer is seen before it is chosen.
+const BLUR_CYCLE: BlurChoice[] = ["all", "women", "men", "none"];
+let blurCycleTimer = 0;
+
+function showBlurPreview(c: BlurChoice) {
+  document.querySelector<HTMLElement>("#ob-blur-preview")!.dataset.show = c;
+  document.querySelectorAll<HTMLElement>("#ob-blur-cards [data-choice]").forEach((b) => {
+    b.classList.toggle("showing", b.dataset.choice === c);
+  });
+  document.querySelector<HTMLElement>("#ob-blur-cards .bq-gender")!
+    .classList.toggle("showing", c === "women" || c === "men");
+}
+
+function startBlurCycle(from: BlurChoice | null) {
+  window.clearInterval(blurCycleTimer);
+  if (from) {
+    showBlurPreview(from);
+    return;
+  }
+  let i = 0;
+  showBlurPreview(BLUR_CYCLE[i]);
+  if (REDUCED_MOTION) return;
+  blurCycleTimer = window.setInterval(() => {
+    i = (i + 1) % BLUR_CYCLE.length;
+    showBlurPreview(BLUR_CYCLE[i]);
+  }, 1700);
+}
+
+function stopBlurCycle() {
+  window.clearInterval(blurCycleTimer);
+  document.querySelectorAll<HTMLElement>("#ob-blur-cards .showing").forEach((b) => b.classList.remove("showing"));
 }
 
 function markBlurChoice(choice: BlurChoice | null) {
@@ -1798,8 +1838,11 @@ function bindOnboarding() {
     btn.addEventListener("click", () => {
       const choice = btn.dataset.choice as BlurChoice;
       setChoice(choice);
+      stopBlurCycle();
       markBlurChoice(choice);
-      soon(() => obGoto(obNext("blur")), 300);
+      showBlurPreview(choice);
+      // Long enough to see the preview take the answer.
+      soon(() => obGoto(obNext("blur")), 750);
     });
   });
 

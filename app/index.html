@@ -396,7 +396,16 @@
         <div class="ob-step" data-step="blur" hidden>
           <div class="ob-center">
             <h1 class="display">Blur pictures as you browse?</h1>
-            <p class="lede">Photos and video previews on the sites you open. The video you choose to watch plays normally.</p>
+            <p class="lede">Photos and video previews on the sites you open. The video you choose to watch still plays.</p>
+            <!-- One live preview (his 2026-11-17: "there should still be
+                 some visual"): three pictures that blur the way the
+                 highlighted answer would. It walks through the answers on
+                 its own until one is tapped. -->
+            <div class="bq-preview" id="ob-blur-preview" data-show="none" aria-hidden="true">
+              <span class="bq-pic" data-kind="woman"><span class="bq-art"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><em>A woman</em></span>
+              <span class="bq-pic" data-kind="man"><span class="bq-art"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><em>A man</em></span>
+              <span class="bq-pic" data-kind="scene"><span class="bq-art"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span><em>A view</em></span>
+            </div>
             <div class="bq" id="ob-blur-cards">
               <button type="button" class="bq-opt" data-choice="all">
                 <b>Yes, all of them</b><span>Every photo and preview.</span>
