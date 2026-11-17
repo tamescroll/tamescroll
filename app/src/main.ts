@@ -1522,7 +1522,7 @@ document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("c
 
 // The progress dots count the steps that ask something of you. iPhone
 // has no blur yet (the IOS block above), so it has one dot fewer.
-const OB_FLOW = IOS ? ["demo", "tour", "look"] : ["demo", "tour", "blur", "look"];
+const OB_FLOW = IOS ? ["demo", "tour", "look", "icon"] : ["demo", "tour", "blur", "look", "icon"];
 let obDone: () => void = () => {};
 let obBound = false;
 
@@ -1589,6 +1589,7 @@ function obGoto(step: string, remember = true) {
   // A first run marks nothing, so no answer is suggested; a replay, or
   // Back after answering, shows the current one.
   if (step === "blur") markBlurChoice(readChosen() === null ? null : getChoice());
+  if (step === "icon") renderObIcon();
   if (step === "done") renderObSummary();
   window.scrollTo(0, 0);
 }
@@ -1622,6 +1623,44 @@ function renderObSummary() {
   blurRow.hidden = IOS;
   document.querySelector<HTMLElement>("#ob-sum-blur")!.textContent = choice ? BLUR_SUMMARY[choice] : "Every face";
   document.querySelector<HTMLElement>("#ob-sum-look")!.textContent = readLook() === "paper" ? "Paper" : "Night";
+  const icon = obIconState();
+  document.querySelector<HTMLElement>("#ob-sum-icon")!.textContent =
+    icon.pinned ? "On home screen" : icon.listed ? "In app list" : obPinTried ? "Asked" : "Not yet";
+}
+
+// ---- the home icon step ----
+// Same bridge and same words as Settings -> Sites -> YouTube links, so
+// the two places can never disagree about what the launcher did.
+
+function obIconState(): { supported?: boolean; pinned?: boolean; listed?: boolean } {
+  try {
+    return linksBridge?.pinState ? JSON.parse(linksBridge.pinState("youtube")) : {};
+  } catch {
+    return {};
+  }
+}
+
+let obPinTried = false;
+
+function renderObIcon() {
+  const canPin = !IOS && !!linksBridge;
+  document.querySelector<HTMLElement>(".ob-icon-android")!.hidden = !canPin;
+  document.querySelector<HTMLElement>(".ob-icon-ios")!.hidden = !IOS;
+  const st = obIconState();
+  const btn = document.querySelector<HTMLButtonElement>("#ob-pin")!;
+  const name = document.querySelector<HTMLInputElement>("#ob-pin-name")!;
+  const note = document.querySelector<HTMLElement>("#ob-pin-note")!;
+  const next = document.querySelector<HTMLButtonElement>("#ob-icon-next")!;
+  name.hidden = !!(st.pinned || st.supported === false);
+  btn.hidden = !!st.pinned;
+  if (st.pinned) note.textContent = PIN_WORDS.pinned;
+  else if (st.supported === false) btn.textContent = "Add to app list";
+  // Once it is there, or on iPhone where the steps are the help, the
+  // way on is a plain Continue; otherwise it reads as declining.
+  const settled = obPinTried || !!st.pinned || (st.listed === true && st.supported === false);
+  document.querySelector<HTMLElement>(".ob-icon-later")!.hidden = IOS;
+  next.textContent = settled || IOS ? "Continue" : "Not now";
+  next.className = settled || IOS ? "btn-solid" : "link-btn center";
 }
 
 // ---- the tour ----
@@ -1750,8 +1789,23 @@ function bindOnboarding() {
   document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () => {
     if (IOS && getChoice() === null) setChoice("none");
     writeChosen(readChosen() ?? []);
-    obGoto("done");
+    obGoto("icon");
   });
+
+  document.querySelector<HTMLButtonElement>("#ob-pin")!.addEventListener("click", () => {
+    const note = document.querySelector<HTMLElement>("#ob-pin-note")!;
+    if (!linksBridge) return;
+    try {
+      const name = document.querySelector<HTMLInputElement>("#ob-pin-name")!.value.trim();
+      const r = String(linksBridge.pinNamed ? linksBridge.pinNamed("youtube", name) : linksBridge.pinShortcut("youtube"));
+      obPinTried = true;
+      renderObIcon();
+      note.textContent = PIN_WORDS[r] ?? "";
+    } catch {
+      note.textContent = PIN_WORDS.refused;
+    }
+  });
+  document.querySelector<HTMLButtonElement>("#ob-icon-next")!.addEventListener("click", () => obGoto("done"));
 
   document.querySelector<HTMLButtonElement>("#ob-open")!.addEventListener("click", () => obDone());
 }

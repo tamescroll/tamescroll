@@ -423,6 +423,39 @@
           </div>
         </div>
 
+        <!-- THE HOME ICON (his 2026-11-17: "i wanted tutorial to include
+             how to add icon aswell"). Android adds it right here through
+             the same bridge as Settings -> Sites -> YouTube links; iPhone
+             gets the widget route in words. The icon is OUR glyph, a cream
+             Y on our ink, never YouTube's logo (standing ruling). -->
+        <div class="ob-step" data-step="icon" hidden>
+          <div class="ob-center">
+            <h1 class="display">YouTube on your home screen</h1>
+            <p class="lede">An icon that opens YouTube already calm, so you never reach for the YouTube app.</p>
+            <div class="ihome" aria-hidden="true">
+              <span class="ih-app"></span><span class="ih-app"></span><span class="ih-app"></span><span class="ih-app"></span>
+              <span class="ih-app"></span><span class="ih-ours"><i>Y</i><em>Y-Tamed</em></span><span class="ih-app"></span><span class="ih-app"></span>
+            </div>
+            <div class="ob-icon-android">
+              <input type="text" id="ob-pin-name" class="ob-input pin-name" maxlength="24"
+                     placeholder="Name it (optional)" autocomplete="off" spellcheck="false" aria-label="Name for the icon" />
+              <div class="actions center col narrow-actions">
+                <button type="button" class="btn-solid" id="ob-pin">Add to home screen</button>
+              </div>
+              <p class="ob-icon-note" id="ob-pin-note" role="status"></p>
+            </div>
+            <ol class="ob-icon-ios steps" hidden>
+              <li class="step"><span class="step-num">1</span><div class="grow"><div class="step-title">Touch and hold your home screen</div></div></li>
+              <li class="step"><span class="step-num">2</span><div class="grow"><div class="step-title">Tap <b>Edit</b>, then <b>Add Widget</b></div></div></li>
+              <li class="step"><span class="step-num">3</span><div class="grow"><div class="step-title">Search <b>tamescroll</b>, pick <b>Y-Tamed</b></div></div></li>
+            </ol>
+            <div class="actions center col narrow-actions">
+              <button type="button" class="link-btn center" id="ob-icon-next">Not now</button>
+            </div>
+            <p class="setting-caption center ob-icon-later">Any time later: Settings, Sites, YouTube links.</p>
+          </div>
+        </div>
+
         <div class="ob-step" data-step="done" hidden>
           <div class="ob-center">
             <svg class="ob-tick" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke-width="2"/><path d="M15 24.5l6 6 12-13" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -431,6 +464,7 @@
             <dl class="ob-summary" id="ob-summary">
               <div data-row="blur"><dt>Blur</dt><dd id="ob-sum-blur"></dd><span class="where">Settings › Blur</span></div>
               <div><dt>Look</dt><dd id="ob-sum-look"></dd><span class="where">Settings › Look</span></div>
+              <div><dt>Icon</dt><dd id="ob-sum-icon"></dd><span class="where">Settings › Sites</span></div>
             </dl>
             <ul class="recap">
               <li><span class="recap-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/></svg></span><span><b>The box on home</b> searches or opens any site.</span></li>

@@ -686,7 +686,7 @@ b { font-weight: 600; }
   .demo-says { gap: 2px; }
   .demo-says li { font-size: var(--t-sm); }
   .tour-text { min-height: 0; margin-bottom: var(--s3); }
-  .tphone { height: 238px; border-width: 5px; border-radius: 26px; }
+  .tphone { height: 248px; border-width: 5px; border-radius: 26px; }
   .tour-hint { margin-top: var(--s2); }
   .ob-center .actions { margin-top: var(--s3); }
   .ob-center .actions .link-btn { padding: var(--s1) 0; }
@@ -719,3 +719,28 @@ b { font-weight: 600; }
 @keyframes update-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes update-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .update-scrim, .update-panel { animation: none; } }
+
+/* ---------- the home icon step (2026-11-17) ----------
+   A little home screen: other apps are blank squares, ours is the cream
+   Y on our ink with its label, and it arrives with a small pop. */
+.ihome {
+  display: grid; grid-template-columns: repeat(4, 48px); gap: 14px 16px; justify-content: center;
+  width: 248px; margin: var(--s3) auto var(--s4); padding: 18px 0 16px; border-radius: 26px;
+  border: 5px solid var(--line); background: linear-gradient(160deg, #3a4148, #5a5046);
+}
+.ih-app { width: 48px; height: 48px; border-radius: 13px; background: rgba(255, 255, 255, 0.16); }
+.ih-ours { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ih-ours i {
+  width: 48px; height: 48px; border-radius: 13px; display: grid; place-items: center; font-style: normal;
+  background: #141414; color: #f2e8d5; font-family: var(--font-display); font-size: 26px;
+  box-shadow: 0 0 0 2px var(--gold); animation: ih-pop 0.5s cubic-bezier(0.2, 0, 0, 1.4) 0.3s both;
+}
+.ih-ours em { font-style: normal; font-size: 10px; color: #fff; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+.ih-ours { margin-bottom: -16px; }
+@keyframes ih-pop { from { transform: scale(0.4); opacity: 0; } }
+.ob-icon-android .pin-name { width: 100%; max-width: 320px; margin: 0 auto var(--s2); display: block; text-align: center; }
+.ob-icon-note { color: var(--muted); font-size: var(--t-sm); min-height: 1.5em; margin-top: var(--s2); }
+.ob-icon-ios { text-align: left; max-width: 340px; margin: 0 auto; }
+@media (max-height: 760px) {
+  .ihome { gap: 10px 16px; padding: 12px 0 14px; margin: var(--s2) auto var(--s3); }
+}
