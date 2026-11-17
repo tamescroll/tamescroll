@@ -325,13 +325,15 @@
             <h1 class="display">How long do feeds get you a day?</h1>
             <p class="lede">A rough guess is fine. It stays on this phone.</p>
             <div class="time-opts" id="ob-time-opts" role="radiogroup" aria-label="Time a day">
-              <button type="button" class="time-opt" role="radio" data-min="30">Under an hour</button>
-              <button type="button" class="time-opt" role="radio" data-min="90">1 to 2 hours</button>
-              <button type="button" class="time-opt" role="radio" data-min="150">2 to 3 hours</button>
-              <button type="button" class="time-opt" role="radio" data-min="240">More than 3</button>
+              <button type="button" class="time-opt" role="radio" data-min="30"><span>Under an hour</span><span class="time-bar" aria-hidden="true"><i style="width:12%"></i></span></button>
+              <button type="button" class="time-opt" role="radio" data-min="90"><span>1 to 2 hours</span><span class="time-bar" aria-hidden="true"><i style="width:38%"></i></span></button>
+              <button type="button" class="time-opt" role="radio" data-min="150"><span>2 to 3 hours</span><span class="time-bar" aria-hidden="true"><i style="width:62%"></i></span></button>
+              <button type="button" class="time-opt" role="radio" data-min="240"><span>More than 3</span><span class="time-bar" aria-hidden="true"><i style="width:100%"></i></span></button>
             </div>
             <div class="time-result" id="ob-time-result" hidden aria-live="polite">
               <p class="time-big" id="ob-time-big"></p>
+              <div class="time-year" id="ob-time-year" aria-hidden="true"><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
+              <div class="time-months" aria-hidden="true"><span>Jan</span><span>Dec</span></div>
               <p class="time-small" id="ob-time-small"></p>
             </div>
             <div class="actions center col narrow-actions">
@@ -360,7 +362,7 @@
         <div class="ob-step" data-step="demo" hidden>
           <div class="ob-center">
             <h1 class="display">Here's what changes</h1>
-            <p class="lede">A made-up page, calming down the way real ones will.</p>
+            <p class="lede">A made-up page, calming down.</p>
             <div class="demo" id="ob-demo" aria-hidden="true">
               <div class="demo-bar">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -373,13 +375,13 @@
                 <div class="demo-row"><span class="demo-thumb t4 blur-in"></span><span class="demo-lines"><i></i><i class="short"></i></span></div>
                 <div class="demo-fold"><div class="demo-label">Recommended for you</div><div class="demo-row"><span class="demo-thumb t3"></span><span class="demo-lines"><i></i><i class="short"></i></span></div></div>
               </div>
-              <div class="demo-toast"><b>Tamed.</b> Feed gone · pictures blurred · nothing fighting for your attention</div>
+              <div class="demo-toast"><b>Tamed.</b> Nothing fighting for your attention.</div>
             </div>
-            <ol class="demo-says" aria-label="What changed">
-              <li><span><b>Feeds and Shorts</b> fold away</span></li>
-              <li><span><b>Pictures</b> blur, if you want them to</span></li>
-              <li><span><b>What you came for</b> stays</span></li>
-            </ol>
+<ul class="demo-says" aria-label="What changed">
+              <li><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="4" rx="1.5"/><rect x="4" y="10" width="16" height="4" rx="1.5" opacity=".35"/><rect x="4" y="16" width="16" height="4" rx="1.5" opacity=".35"/><path d="M3 21L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg><span>Feeds gone</span></li>
+              <li><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" opacity=".35"/><circle cx="12" cy="12" r="4" style="filter:blur(1.6px)"/></svg><span>Pictures blurred</span></li>
+              <li><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" opacity=".35"/><path d="M10 9l5 3-5 3z"/></svg><span>Your video stays</span></li>
+            </ul>
             <div class="actions center col narrow-actions">
               <button type="button" class="btn-solid" id="ob-demo-next">Continue</button>
               <button type="button" class="link-btn center" id="ob-demo-replay">Watch again</button>
@@ -387,33 +389,34 @@
           </div>
         </div>
 
-        <!-- What to blur, shown not told (his 2026-11-17: "keep it visual
-             only?? like its getting confusing"). Four picture cards, each
-             the same three pictures (a woman, a man, a view) blurred the
-             way that answer blurs, and one word. Nobody is asked their own
-             gender (his 2026-10-27). One tap answers and moves on. -->
+        <!-- Who to blur, shown on a made-up video frame (his 2026-11-17:
+             visual only; "everyone" kept beside the gender answers, as the
+             legal review asks). Each answer is the same frame,
+             a woman and a man, with a solid blur patch over whoever that
+             answer covers. Nobody is asked their own gender (his
+             2026-10-27). One tap answers and moves on. -->
         <div class="ob-step" data-step="blur" hidden>
           <div class="ob-center">
-            <h1 class="display">What should be blurred?</h1>
-            <div class="bv" id="ob-blur-cards">
-              <button type="button" class="bv-card" data-choice="all" aria-label="Blur: Everything">
-                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s bl"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
-                <b>Everything</b>
+            <h1 class="display">Who should be blurred?</h1>
+            <div class="bp" id="ob-blur-cards">
+              <button type="button" class="bp-card" data-choice="all" aria-label="Blur everyone">
+                <span class="bp-frame" aria-hidden="true"><svg class="bp-p bl" style="left:6%" viewBox="0 0 60 72"><g class="bp-w"><path class="bp-hair" d="M30 7c-11 0-17 8-17 19 0 9 2 16 0 24h34c-2-8 0-15 0-24 0-11-6-19-17-19z"/><circle class="bp-skin" cx="30" cy="25" r="10"/><path class="bp-shirt" d="M9 72c0-14 9-22 21-22s21 8 21 22z"/></g></svg><svg class="bp-p bl" style="left:50%" viewBox="0 0 60 72"><g class="bp-m"><circle class="bp-skin" cx="30" cy="24" r="10.5"/><path class="bp-hair" d="M19.5 22c0-8 4.5-12.5 10.5-12.5S40.5 14 40.5 22c-3-2.6-6.4-3.6-10.5-3.6S22.5 19.4 19.5 22z"/><path class="bp-shirt" d="M5 72c0-15 11-23 25-23s25 8 25 23z"/></g></svg><span class="bp-patch" style="left:4%"></span><span class="bp-patch" style="left:48%"></span></span>
+                <b>Everyone</b>
               </button>
-              <button type="button" class="bv-card" data-choice="women" aria-label="Blur: Women">
-                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
+              <button type="button" class="bp-card" data-choice="women" aria-label="Blur women">
+                <span class="bp-frame" aria-hidden="true"><svg class="bp-p bl" style="left:6%" viewBox="0 0 60 72"><g class="bp-w"><path class="bp-hair" d="M30 7c-11 0-17 8-17 19 0 9 2 16 0 24h34c-2-8 0-15 0-24 0-11-6-19-17-19z"/><circle class="bp-skin" cx="30" cy="25" r="10"/><path class="bp-shirt" d="M9 72c0-14 9-22 21-22s21 8 21 22z"/></g></svg><svg class="bp-p" style="left:50%" viewBox="0 0 60 72"><g class="bp-m"><circle class="bp-skin" cx="30" cy="24" r="10.5"/><path class="bp-hair" d="M19.5 22c0-8 4.5-12.5 10.5-12.5S40.5 14 40.5 22c-3-2.6-6.4-3.6-10.5-3.6S22.5 19.4 19.5 22z"/><path class="bp-shirt" d="M5 72c0-15 11-23 25-23s25 8 25 23z"/></g></svg><span class="bp-patch" style="left:4%"></span></span>
                 <b>Women</b>
               </button>
-              <button type="button" class="bv-card" data-choice="men" aria-label="Blur: Men">
-                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
+              <button type="button" class="bp-card" data-choice="men" aria-label="Blur men">
+                <span class="bp-frame" aria-hidden="true"><svg class="bp-p" style="left:6%" viewBox="0 0 60 72"><g class="bp-w"><path class="bp-hair" d="M30 7c-11 0-17 8-17 19 0 9 2 16 0 24h34c-2-8 0-15 0-24 0-11-6-19-17-19z"/><circle class="bp-skin" cx="30" cy="25" r="10"/><path class="bp-shirt" d="M9 72c0-14 9-22 21-22s21 8 21 22z"/></g></svg><svg class="bp-p bl" style="left:50%" viewBox="0 0 60 72"><g class="bp-m"><circle class="bp-skin" cx="30" cy="24" r="10.5"/><path class="bp-hair" d="M19.5 22c0-8 4.5-12.5 10.5-12.5S40.5 14 40.5 22c-3-2.6-6.4-3.6-10.5-3.6S22.5 19.4 19.5 22z"/><path class="bp-shirt" d="M5 72c0-15 11-23 25-23s25 8 25 23z"/></g></svg><span class="bp-patch" style="left:48%"></span></span>
                 <b>Men</b>
               </button>
-              <button type="button" class="bv-card" data-choice="none" aria-label="Blur: Nothing">
-                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
-                <b>Nothing</b>
+              <button type="button" class="bp-card" data-choice="none" aria-label="Blur nobody">
+                <span class="bp-frame" aria-hidden="true"><svg class="bp-p" style="left:6%" viewBox="0 0 60 72"><g class="bp-w"><path class="bp-hair" d="M30 7c-11 0-17 8-17 19 0 9 2 16 0 24h34c-2-8 0-15 0-24 0-11-6-19-17-19z"/><circle class="bp-skin" cx="30" cy="25" r="10"/><path class="bp-shirt" d="M9 72c0-14 9-22 21-22s21 8 21 22z"/></g></svg><svg class="bp-p" style="left:50%" viewBox="0 0 60 72"><g class="bp-m"><circle class="bp-skin" cx="30" cy="24" r="10.5"/><path class="bp-hair" d="M19.5 22c0-8 4.5-12.5 10.5-12.5S40.5 14 40.5 22c-3-2.6-6.4-3.6-10.5-3.6S22.5 19.4 19.5 22z"/><path class="bp-shirt" d="M5 72c0-15 11-23 25-23s25 8 25 23z"/></g></svg></span>
+                <b>Nobody</b>
               </button>
             </div>
-            <p class="setting-caption center">The video you choose to watch still plays. Change it any time in Settings.</p>
+            <p class="setting-caption center">Change it any time in Settings.</p>
           </div>
         </div>
 
@@ -424,18 +427,16 @@
         <div class="ob-step" data-step="bar" hidden>
           <div class="ob-center">
             <h1 class="display">One bar on every site</h1>
-            <p class="lede">It sits above every page you open.</p>
+            <div class="bz" aria-hidden="true">
+              <div class="bz-bar"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="bx-addr">wikipedia.org</span><svg class="bx-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="bz-tags"><span>Home</span><span>Search</span><span>Tamed</span></div>
+            </div>
             <div class="bx" aria-hidden="true">
-              <div class="bx-bar"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="bx-addr">wikipedia.org</span><svg class="bx-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#c9a45e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="bx-bar"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="bx-addr">wikipedia.org</span><svg class="bx-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
               <div class="bx-strip">wikipedia.org</div>
               <div class="bx-page"><i class="h"></i><i></i><i></i><i class="s"></i><span class="pic"></span><i></i><i></i><i class="s"></i><i></i><i></i></div>
             </div>
-            <ul class="bx-keys">
-              <li><span class="bx-key"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>House</b> takes you back to your sites.</span></li>
-              <li><span class="bx-key bx-key-addr">a.org</span><span><b>The address</b> searches, or opens another site.</span></li>
-              <li><span class="bx-key"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#c9a45e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>The shield</b> shows what was tamed, and what to change.</span></li>
-              <li><span class="bx-key bx-key-strip"></span><span><b>Scroll</b> and it folds to a thin strip. Tap the strip to bring it back.</span></li>
-            </ul>
+            <p class="bz-cap">Scroll and it folds away. Tap the top to bring it back.</p>
             <div class="actions center col narrow-actions">
               <button type="button" class="btn-solid" id="ob-bar-next">Continue</button>
             </div>

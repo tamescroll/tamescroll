@@ -180,7 +180,7 @@ if (IOS) {
   document.querySelector<HTMLElement>('.nav-item[data-pane="blur"]')!.hidden = true;
   document.querySelectorAll(".demo-thumb.blur-in").forEach((t) => t.classList.remove("blur-in"));
   const toast = document.querySelector<HTMLElement>(".demo-toast");
-  if (toast) toast.innerHTML = "<b>Tamed.</b> Feed gone · nothing fighting for your attention";
+  if (toast) toast.innerHTML = "<b>Tamed.</b> Nothing fighting for your attention.";
 }
 
 renderBlurToggle();
@@ -1642,10 +1642,20 @@ function showTimeBack(min: number) {
   });
   const days = Math.round((min * 365) / 60 / 24);
   const weekBack = (min / 3) * 7 / 60;
-  document.querySelector<HTMLElement>("#ob-time-big")!.textContent =
-    `That adds up to about ${days} full days a year.`;
+  const big = document.querySelector<HTMLElement>("#ob-time-big")!;
+  big.innerHTML = "";
+  const n = document.createElement("b");
+  n.textContent = `${days} days`;
+  big.append(n, document.createElement("br"), "a year, on feeds");
+  // Fill the year month by month: 30.4 days to a month.
+  const months = days / (365 / 12);
+  const cells = document.querySelectorAll<HTMLElement>("#ob-time-year i");
+  cells.forEach((c) => { c.style.height = "0"; });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    cells.forEach((c, i) => { c.style.height = `${Math.max(0, Math.min(1, months - i)) * 100}%`; });
+  }));
   document.querySelector<HTMLElement>("#ob-time-small")!.textContent =
-    `Feeds are built to keep you there, so that isn't on you. Win back even a third and that's ${hoursWords(weekBack)} a week, for whatever you'd rather do.`;
+    `Feeds are built to keep you. Win back a third: ${hoursWords(weekBack)} a week.`;
   document.querySelector<HTMLElement>("#ob-time-result")!.hidden = false;
   document.querySelector<HTMLElement>("#ob-time-next")!.hidden = false;
   document.querySelector<HTMLElement>("#ob-time-skip")!.hidden = true;

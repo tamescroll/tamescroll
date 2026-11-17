@@ -393,12 +393,6 @@ b { font-weight: 600; }
    Back shows the current one. */
 .ob-card.chosen { border-color: var(--ink); }
 .ob-card.pick { position: relative; }
-.ob-card.chosen::after {
-  content: ""; position: absolute; right: 10px; top: 10px;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23141414' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
-}
-:root[data-look="paper"] .ob-card.chosen::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23f7f5f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .ob-glyphs { display: flex; gap: var(--s2); justify-content: center; margin: var(--s2) 0 var(--s3); }
 .ob-glyphs .dot {
   width: 44px; height: 44px; border-radius: var(--r-sm);
@@ -427,7 +421,7 @@ b { font-weight: 600; }
   background: var(--page-bg); border: 1px solid var(--line); border-radius: var(--r);
 }
 .demo-bar { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); background: var(--surface); color: var(--faint); font-size: var(--t-sm); }
-.demo-bar svg { width: 16px; height: 16px; color: var(--gold); }
+.demo-bar svg { width: 16px; height: 16px; color: var(--muted); }
 .demo-feed { padding: var(--s3); }
 .demo-row { display: flex; gap: var(--s3); align-items: center; margin-bottom: var(--s3); }
 .demo-lines { flex: 1; display: grid; gap: 6px; }
@@ -488,11 +482,6 @@ b { font-weight: 600; }
 .look.active { border-color: var(--ink); }
 .look b { display: flex; align-items: center; gap: 6px; font-size: var(--t-base); padding: 0 var(--s1); }
 .look .look-sub { color: var(--muted); font-size: var(--t-sm); padding: 0 var(--s1) var(--s1); }
-.look.active b::after {
-  content: ""; width: 16px; height: 16px; border-radius: 50%; margin-left: auto;
-  background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23141414' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
-}
-:root[data-look="paper"] .look.active b::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23f7f5f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .mini {
   display: grid; gap: 6px; padding: 10px; border-radius: 10px; aspect-ratio: 4 / 3; align-content: start;
   background: var(--m-bg); border: 1px solid var(--m-line);
@@ -502,35 +491,27 @@ b { font-weight: 600; }
 .mini .m-s { height: 14px; }
 .mini .m-t { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 2px; }
 .mini .m-t span { aspect-ratio: 1; border-radius: 5px; background: var(--m-tile); border: 1px solid var(--m-line); }
-.mini.night { --m-bg: #141414; --m-line: #2c2b28; --m-field: #1e1d1b; --m-ink: #e7e5e1; --m-tile: #232321; }
+.mini.night { box-shadow: inset 0 0 0 1px #34322e; --m-bg: #141414; --m-line: #2c2b28; --m-field: #1e1d1b; --m-ink: #e7e5e1; --m-tile: #232321; }
 .mini.paper { --m-bg: #f7f5f0; --m-line: #e1dcd2; --m-field: #ffffff; --m-ink: #1d1c19; --m-tile: #ffffff; }
 .ob-looks { margin: var(--s4) 0 var(--s2); }
 
 /* ---------- the demo, narrated (2026-11-05) ----------
    Three lines under the busy page, each lit as its change happens, so
    the demo says what it is showing. Timed with the .play animations. */
-.demo-says { list-style: none; display: grid; gap: 4px; margin: 0 auto var(--s2); max-width: 320px; text-align: left; counter-reset: say; }
+.demo-says { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--s2); margin: var(--s1) auto var(--s3); max-width: 340px; }
 .demo-says li {
-  counter-increment: say; display: flex; align-items: center; gap: var(--s2);
-  color: var(--faint); font-size: var(--t-md); opacity: 0.45;
+  display: grid; justify-items: center; gap: 6px; padding: var(--s2) 4px;
+  border-radius: var(--r); border: 1px solid var(--hairline);
+  color: var(--faint); font-size: var(--t-sm); line-height: 1.2; text-align: center; opacity: 0.4;
 }
-.demo-says li::before {
-  content: counter(say); flex: none; width: 20px; height: 20px; border-radius: 50%;
-  display: inline-grid; place-items: center; font-size: var(--t-xs); font-weight: 600;
-  border: 1px solid var(--line); color: var(--faint); transform: translateY(-1px);
-}
-.demo-says li b { color: var(--muted); font-weight: 600; }
+.demo-says svg { width: 28px; height: 28px; fill: currentColor; }
 .demo-says.play li { animation: say-on 0.4s ease forwards; }
 .demo-says.play li:nth-child(1) { animation-delay: 0.8s; }
 .demo-says.play li:nth-child(2) { animation-delay: 2.4s; }
 .demo-says.play li:nth-child(3) { animation-delay: 3s; }
 .demo-says.play li:last-child:nth-child(2) { animation-delay: 3s; }
-@keyframes say-on { to { opacity: 1; color: var(--muted); } }
-.demo-says.play li::before { animation: say-num 0.4s ease forwards; animation-delay: inherit; }
-@keyframes say-num { to { border-color: var(--gold); color: var(--gold); } }
-.demo-says.play li b { animation: say-ink 0.4s ease forwards; animation-delay: inherit; }
-@keyframes say-ink { to { color: var(--ink); } }
-@media (prefers-reduced-motion: reduce) { .demo-says.play li, .demo-says.play li b { animation-delay: 0s !important; } }
+@keyframes say-on { to { opacity: 1; color: var(--ink); border-color: var(--line); } }
+@media (prefers-reduced-motion: reduce) { .demo-says.play li { animation-delay: 0s !important; } }
 
 /* ---------- short and narrow phones (emulator run, 2026-11-17) ----------
    On a 654px-tall screen every step must keep its buttons on screen
@@ -549,7 +530,7 @@ b { font-weight: 600; }
   .ob-cards { margin: var(--s3) 0; gap: var(--s2); }
   .ob-card { padding: var(--s3) var(--s4); min-height: 0; }
   .bx { height: 112px; margin-bottom: var(--s3); }
-  .bx-keys { gap: var(--s2); }
+  .bz { margin-top: var(--s3); }
   .ihome { gap: 10px 16px; padding: 12px 0 14px; margin: var(--s2) auto var(--s3); }
   .ios-steps { gap: 6px; }
 }
@@ -591,7 +572,7 @@ b { font-weight: 600; }
 .ih-ours i {
   width: 48px; height: 48px; border-radius: 13px; display: grid; place-items: center; font-style: normal;
   background: #141414; color: #f2e8d5; font-family: var(--font-display); font-size: 26px;
-  box-shadow: 0 0 0 2px var(--gold); animation: ih-pop 0.5s cubic-bezier(0.2, 0, 0, 1.4) 0.3s both;
+  box-shadow: 0 0 0 2px var(--ink); animation: ih-pop 0.5s cubic-bezier(0.2, 0, 0, 1.4) 0.3s both;
 }
 .ih-ours em { font-style: normal; font-size: 10px; color: #fff; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
 .ih-ours { margin-bottom: -16px; }
@@ -627,18 +608,18 @@ b { font-weight: 600; }
 @keyframes bx-fold { 0%, 30% { transform: none; } 40%, 75% { transform: translateY(-100%); } 85%, 100% { transform: none; } }
 @keyframes bx-scroll { 0%, 30% { transform: none; } 40%, 75% { transform: translateY(-40px); } 85%, 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .bx-bar, .bx-page { animation: none; } }
-.bx-keys { list-style: none; display: grid; gap: var(--s3); max-width: 360px; margin: 0 auto; text-align: left; }
-.bx-keys li { display: flex; align-items: center; gap: var(--s3); color: var(--muted); font-size: var(--t-md); line-height: 1.35; text-wrap: pretty; }
-.bx-keys li b { color: var(--ink); }
-.bx-key {
-  flex: none; width: 44px; height: 32px; border-radius: 10px; display: grid; place-items: center;
-  background: #141414; color: #e7e5e1; font-size: 10px;
+/* the bar, big and still, each part named under it (2026-11-17) */
+.bz { max-width: 340px; margin: var(--s4) auto var(--s3); }
+.bz-bar {
+  display: flex; align-items: center; gap: 6px; height: 60px; padding: 0 10px;
+  border-radius: 18px; background: #141414; border: 1px solid #34322e; box-shadow: var(--shadow);
 }
-.bx-key .bx-ic { width: 28px; height: 28px; padding: 3px; }
-.bx-key-addr span, .bx-key-addr { letter-spacing: 0; }
-.bx-key-addr { box-shadow: inset 0 0 0 5px #141414; background: #242320; border-radius: 12px; }
-.bx-key-strip { position: relative; background: #ffffff; border: 1px solid var(--line); overflow: hidden; }
-.bx-key-strip::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: #141414; }
+.bz-bar .bx-ic { width: 42px; height: 42px; padding: 6px; }
+.bz-bar .bx-addr { height: 38px; line-height: 38px; border-radius: 19px; font-size: 15px; }
+.bz-tags { display: grid; grid-template-columns: 62px 1fr 62px; margin-top: var(--s2); font-size: var(--t-sm); font-weight: 600; color: var(--ink); text-align: center; }
+.bz-tags span:first-child { text-align: left; padding-left: 8px; }
+.bz-tags span:last-child { white-space: nowrap; text-align: right; }
+.bz-cap { color: var(--muted); font-size: var(--t-md); margin: 0 auto var(--s4); max-width: 320px; text-wrap: balance; }
 
 /* ---------- iPhone icon steps (2026-11-17) ---------- */
 .ios-steps { list-style: none; counter-reset: ios; display: grid; gap: var(--s2); max-width: 340px; margin: 0 auto; text-align: left; }
@@ -654,7 +635,7 @@ b { font-weight: 600; }
    a small card beside it says what it is. */
 .coach { position: fixed; inset: 0; z-index: 60; }
 .coach-hole {
-  position: fixed; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62), 0 0 0 2px var(--gold);
+  position: fixed; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62), 0 0 0 2px rgba(255, 255, 255, 0.9);
   transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease; pointer-events: auto;
 }
 .coach-card {
@@ -671,33 +652,53 @@ b { font-weight: 600; }
    purpose: no red, no alarm, just the number and a modest "if". */
 .time-opts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); max-width: 380px; margin: var(--s3) auto var(--s4); }
 .time-opt {
-  min-height: 52px; padding: var(--s2) var(--s3); border-radius: var(--r);
+  display: grid; gap: 8px; justify-items: center; padding: var(--s2) var(--s3) 10px; border-radius: var(--r);
   background: var(--elev); border: 1.5px solid var(--hairline); box-shadow: var(--shadow);
   font-weight: 500; font-size: var(--t-md); transition: border-color 0.15s ease;
 }
 .time-opt.active { border-color: var(--ink); }
+/* a little day bar per answer: how much of a waking day it is */
+.time-bar { width: 100%; height: 6px; border-radius: 999px; background: var(--hairline); overflow: hidden; }
+.time-bar i { display: block; height: 100%; border-radius: inherit; background: var(--ink); opacity: 0.85; }
 .time-result { max-width: 380px; margin: 0 auto; animation: ts-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both; }
-.time-big { font-family: var(--font-display); font-size: var(--t-xl); line-height: 1.3; color: var(--ink); margin-bottom: var(--s2); }
+.time-big { font-family: var(--font-display); font-size: var(--t-xl); line-height: 1.25; color: var(--ink); }
+.time-big b { font-size: 1.5em; font-weight: 600; }
+/* a year as twelve months, filled by the days it adds up to */
+.time-year { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin: var(--s3) auto var(--s1); max-width: 320px; }
+.time-year span { height: 34px; border-radius: 5px; background: var(--hairline); overflow: hidden; display: flex; align-items: flex-end; }
+.time-year span i { display: block; width: 100%; background: var(--ink); opacity: 0.85; height: 0; transition: height 0.5s cubic-bezier(0.2, 0, 0, 1); }
+.time-months { display: flex; justify-content: space-between; max-width: 320px; margin: 0 auto var(--s3); font-size: var(--t-xs); color: var(--faint); }
 .time-small { color: var(--muted); font-size: var(--t-md); line-height: 1.45; text-wrap: pretty; }
 .ob-center .display { text-wrap: balance; }
 
-/* ---------- what to blur, pictures only (2026-11-17) ----------
-   Four cards in a grid. Each shows the same three pictures blurred the
-   way its answer blurs, with one word under them. */
-.bv { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); max-width: 400px; margin: var(--s4) auto var(--s3); }
-.bv-card {
-  display: grid; justify-items: center; gap: var(--s2); padding: var(--s3) var(--s2) var(--s3);
+/* ---------- who to blur, on a video frame (2026-11-17) ----------
+   Three rows. Each holds the same made-up video frame (a woman and a man)
+   with a solid blur patch over whoever that answer covers. The frame
+   carries its own colours: it is a video, in either look. */
+.bp { display: grid; gap: var(--s2); max-width: 380px; margin: var(--s4) auto var(--s3); }
+.bp-card {
+  display: flex; align-items: center; gap: var(--s4); padding: var(--s2); text-align: left;
   border-radius: var(--r); background: var(--elev); border: 1.5px solid var(--hairline); box-shadow: var(--shadow);
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
-.bv-card:active { transform: scale(0.97); }
-.bv-card b { font-size: var(--t-base); font-weight: 600; color: var(--ink); }
-.bv-card.chosen { border-color: var(--ink); }
-.bv-pics { display: flex; gap: 5px; }
-.bv-pic { width: 40px; height: 52px; border-radius: 8px; display: grid; place-items: center; overflow: hidden; }
-.bv-w { background: linear-gradient(160deg, #b9a58a, #6f7f8c); }
-.bv-m { background: linear-gradient(160deg, #8c9fb0, #6d5a4c); }
-.bv-s { background: linear-gradient(160deg, #9fb3a0, #c8b48c); }
-.bv-pic svg { width: 30px; height: 30px; fill: rgba(255, 255, 255, 0.92); }
-.bv-pic.bl svg { filter: blur(5px); }
-@media (max-width: 360px) { .bv-pic { width: 36px; height: 48px; } .bv { gap: var(--s2); } }
+.bp-card:active { transform: scale(0.98); }
+.bp-card.chosen { border-color: var(--ink); }
+.bp-card b { font-family: var(--font-display); font-size: var(--t-xl); font-weight: 500; color: var(--ink); }
+.bp-frame {
+  position: relative; flex: none; width: 144px; height: 84px; border-radius: 10px; overflow: hidden;
+  background: radial-gradient(120% 90% at 30% 20%, #4b4a45, #2a2926 70%);
+}
+.bp-p { position: absolute; bottom: -2px; width: 44%; height: 96%; }
+.bp-skin { fill: #d9c7b2; }
+.bp-hair { fill: #3d342d; }
+.bp-w .bp-shirt { fill: #8c7a99; }
+.bp-m .bp-shirt { fill: #5f7d8c; }
+.bp-p.bl { filter: blur(6px); }
+/* the patch: solid and soft-edged, the way the app draws one */
+.bp-patch {
+  position: absolute; top: 4%; bottom: -6px; width: 48%; border-radius: 14px;
+  background: rgba(170, 166, 158, 0.30); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.bp-prog { position: absolute; left: 8px; right: 8px; bottom: 6px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.25); }
+.bp-prog i { display: block; width: 38%; height: 100%; border-radius: inherit; background: rgba(255, 255, 255, 0.85); }
+@media (max-height: 700px) { .bp-frame { width: 128px; height: 74px; } .bp { margin-top: var(--s3); } }
