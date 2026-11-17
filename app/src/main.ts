@@ -207,7 +207,7 @@ function renderTermChips() {
     const hint = document.createElement("p");
     hint.className = "section-hint";
     hint.style.textAlign = "left";
-    hint.textContent = "No terms of your own yet.";
+    hint.textContent = "No words added yet.";
     host.append(hint);
     return;
   }
