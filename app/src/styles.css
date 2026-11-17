@@ -650,23 +650,28 @@ b { font-weight: 600; }
 /* ---------- time back (2026-11-17) ----------
    Four plain answers, then their sum in the display face. Calm on
    purpose: no red, no alarm, just the number and a modest "if". */
-.time-opts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); max-width: 380px; margin: var(--s3) auto var(--s4); }
-.time-opt {
-  display: grid; gap: 8px; justify-items: center; padding: var(--s2) var(--s3) 10px; border-radius: var(--r);
-  background: var(--elev); border: 1.5px solid var(--hairline); box-shadow: var(--shadow);
-  font-weight: 500; font-size: var(--t-md); transition: border-color 0.15s ease;
+.time-pick { margin: var(--s2) 0 var(--s2); }
+.time-read { text-align: center; color: var(--muted); font-size: var(--t-md); margin-bottom: 0; }
+.time-read b { font-family: var(--font-display); font-size: 34px; line-height: 1.1; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.time-range {
+  --fill: 13%; -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; margin: 0; touch-action: pan-y;
 }
-.time-opt.active { border-color: var(--ink); }
-/* a little day bar per answer: how much of a waking day it is */
-.time-bar { width: 100%; height: 6px; border-radius: 999px; background: var(--hairline); overflow: hidden; }
-.time-bar i { display: block; height: 100%; border-radius: inherit; background: var(--ink); opacity: 0.85; }
-.time-result { max-width: 380px; margin: 0 auto; animation: ts-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both; }
+.time-range::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: linear-gradient(to right, var(--ink) var(--fill), var(--hairline) var(--fill)); }
+.time-range::-moz-range-track { height: 8px; border-radius: 999px; background: var(--hairline); }
+.time-range::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--ink); }
+.time-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 30px; height: 30px; margin-top: -11px; border-radius: 50%;
+  background: var(--elev); border: 2px solid var(--ink); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.time-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--elev); border: 2px solid var(--ink); }
+.time-scale { display: flex; justify-content: space-between; font-size: var(--t-xs); color: var(--faint); margin-top: -4px; }
+.time-result { max-width: 380px; margin: 0 auto; }
 .time-big { font-family: var(--font-display); font-size: var(--t-xl); line-height: 1.25; color: var(--ink); }
 .time-big b { font-size: 1.5em; font-weight: 600; }
 /* a year as twelve months, filled by the days it adds up to */
 .time-year { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin: var(--s3) auto var(--s1); max-width: 320px; }
 .time-year span { height: 34px; border-radius: 5px; background: var(--hairline); overflow: hidden; display: flex; align-items: flex-end; }
-.time-year span i { display: block; width: 100%; background: var(--ink); opacity: 0.85; height: 0; transition: height 0.5s cubic-bezier(0.2, 0, 0, 1); }
+.time-year span i { display: block; width: 100%; background: var(--ink); opacity: 0.85; height: 0; transition: height 0.2s ease; }
 .time-months { display: flex; justify-content: space-between; max-width: 320px; margin: 0 auto var(--s3); font-size: var(--t-xs); color: var(--faint); }
 .time-small { color: var(--muted); font-size: var(--t-md); line-height: 1.45; text-wrap: pretty; }
 .ob-center .display { text-wrap: balance; }
@@ -689,10 +694,12 @@ b { font-weight: 600; }
   background: radial-gradient(120% 90% at 30% 20%, #4b4a45, #2a2926 70%);
 }
 .bp-p { position: absolute; bottom: -2px; width: 44%; height: 96%; }
-.bp-skin { fill: #d9c7b2; }
-.bp-hair { fill: #3d342d; }
-.bp-w .bp-shirt { fill: #8c7a99; }
-.bp-m .bp-shirt { fill: #5f7d8c; }
+.bp-skin { fill: #dcc5ab; }
+.bp-neck { fill: #c7ad92; }
+.bp-hair { fill: #3f322a; }
+.bp-collar { fill: #ece7de; }
+.bp-w .bp-shirt { fill: #a1788c; }
+.bp-m .bp-shirt { fill: #4f6e80; }
 .bp-p.bl { filter: blur(6px); }
 /* the patch: solid and soft-edged, the way the app draws one */
 .bp-patch {
@@ -728,3 +735,18 @@ b { font-weight: 600; }
 .ob-later svg { width: 15px; height: 15px; flex: none; fill: none; stroke: var(--faint); stroke-width: 1.8; }
 .ob-later b { color: var(--ink); font-weight: 600; }
 @media (max-height: 760px) { .ob-step:not([data-step="welcome"]) .display { font-size: 26px; } }
+
+/* the next fifty years, a square each (2026-11-17) */
+.time-life { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; max-width: 260px; margin: var(--s2) auto var(--s1); }
+.time-life span { aspect-ratio: 1; border-radius: 4px; background: var(--hairline); overflow: hidden; }
+.time-life span i { display: block; height: 100%; width: 0; background: var(--ink); opacity: 0.85; transition: width 0.2s ease; }
+.time-life + .time-months { max-width: 260px; margin-bottom: var(--s2); }
+@media (max-height: 760px) { .time-life { max-width: 210px; gap: 3px; } .time-life + .time-months { max-width: 210px; } .time-read b { font-size: 30px; } .time-big { font-size: var(--t-lg); } }
+@media (max-height: 680px) {
+  .ob-step[data-step="time"] .lede { margin-bottom: var(--s1); }
+  .ob-step[data-step="time"] .time-range { height: 36px; }
+  .ob-step[data-step="time"] .time-life { max-width: 180px; }
+  .ob-step[data-step="time"] .time-life + .time-months { max-width: 180px; }
+  .ob-step[data-step="time"] .actions { padding-top: var(--s2); }
+}
+@media (max-height: 620px) { .ob-step[data-step="time"] .time-life, .ob-step[data-step="time"] .time-life + .time-months { max-width: 150px; } .ob-step[data-step="time"] .display { font-size: 23px; } }

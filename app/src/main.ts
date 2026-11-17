@@ -1633,48 +1633,45 @@ function hoursWords(h: number): string {
   return r <= 1 ? "about an hour" : `about ${r} hours`;
 }
 
+function timeWords(min: number): string {
+  if (min < 60) return `${min} minutes`;
+  const h = Math.floor(min / 60);
+  const q = ["", "¼", "½", "¾"][Math.round((min % 60) / 15)] ?? "";
+  return `${h}${q} ${h === 1 && !q ? "hour" : "hours"}`;
+}
+
+// The sum follows the slider as it moves; it is kept only on Continue.
 function showTimeBack(min: number) {
-  try { localStorage.setItem(TIME_KEY, String(min)); } catch { /* fine, it is only shown */ }
-  document.querySelectorAll<HTMLButtonElement>("#ob-time-opts .time-opt").forEach((b) => {
-    const on = Number(b.dataset.min) === min;
-    b.classList.toggle("active", on);
-    b.setAttribute("aria-checked", String(on));
-  });
+  const range = document.querySelector<HTMLInputElement>("#ob-time-range")!;
+  range.value = String(min);
+  range.style.setProperty("--fill", `${((min - 30) / (720 - 30)) * 100}%`);
+  range.setAttribute("aria-valuetext", `${timeWords(min)} a day`);
+  const read = document.querySelector<HTMLElement>("#ob-time-read")!;
+  read.innerHTML = "";
+  const rb = document.createElement("b");
+  rb.textContent = timeWords(min);
+  read.append(rb, " a day");
+  // The next fifty years, one square each, filled by the share of every
+  // day (all 24 hours, not just waking ones, so the sum never inflates).
   const days = Math.round((min * 365) / 60 / 24);
   const weekBack = (min / 3) * 7 / 60;
+  const years = (min / 1440) * 50;
   const big = document.querySelector<HTMLElement>("#ob-time-big")!;
   big.innerHTML = "";
   const n = document.createElement("b");
-  n.textContent = `${days} days`;
-  big.append(n, document.createElement("br"), "a year, on feeds");
-  // Fill the year month by month: 30.4 days to a month.
-  const months = days / (365 / 12);
-  const cells = document.querySelectorAll<HTMLElement>("#ob-time-year i");
-  cells.forEach((c) => { c.style.height = "0"; });
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    cells.forEach((c, i) => { c.style.height = `${Math.max(0, Math.min(1, months - i)) * 100}%`; });
-  }));
+  n.textContent = `${years < 1 ? years.toFixed(1) : Math.round(years * 2) / 2} years`;
+  big.append(n, document.createElement("br"), "of the next 50, on feeds");
+  document.querySelectorAll<HTMLElement>("#ob-time-life i").forEach((c, i) => {
+    c.style.width = `${Math.max(0, Math.min(1, years - i)) * 100}%`;
+  });
   document.querySelector<HTMLElement>("#ob-time-small")!.textContent =
-    `Feeds are built to keep you. Win back a third: ${hoursWords(weekBack)} a week.`;
-  document.querySelector<HTMLElement>("#ob-time-result")!.hidden = false;
-  document.querySelector<HTMLElement>("#ob-time-next")!.hidden = false;
-  document.querySelector<HTMLElement>("#ob-time-skip")!.hidden = true;
+    `That's ${days} days a year. Win back a third: ${hoursWords(weekBack)} a week.`;
 }
 
 function renderObTime() {
   let min = 0;
   try { min = Number(localStorage.getItem(TIME_KEY)) || 0; } catch { /* none kept */ }
-  if (min) {
-    showTimeBack(min);
-    return;
-  }
-  document.querySelectorAll<HTMLButtonElement>("#ob-time-opts .time-opt").forEach((b) => {
-    b.classList.remove("active");
-    b.setAttribute("aria-checked", "false");
-  });
-  document.querySelector<HTMLElement>("#ob-time-result")!.hidden = true;
-  document.querySelector<HTMLElement>("#ob-time-next")!.hidden = true;
-  document.querySelector<HTMLElement>("#ob-time-skip")!.hidden = false;
+  showTimeBack(min || 120);
 }
 
 // ---- the home icon step ----
@@ -1782,10 +1779,12 @@ function bindOnboarding() {
   document.querySelector<HTMLButtonElement>("#ob-start")!.addEventListener("click", () => obGoto(OB_FLOW[0]));
 
   // Time back: their guess, shown as a plain sum and a modest "if".
-  document.querySelectorAll<HTMLButtonElement>("#ob-time-opts .time-opt").forEach((btn) => {
-    btn.addEventListener("click", () => showTimeBack(Number(btn.dataset.min)));
+  const timeRange = document.querySelector<HTMLInputElement>("#ob-time-range")!;
+  timeRange.addEventListener("input", () => showTimeBack(Number(timeRange.value)));
+  document.querySelector<HTMLButtonElement>("#ob-time-next")!.addEventListener("click", () => {
+    try { localStorage.setItem(TIME_KEY, timeRange.value); } catch { /* fine, it is only shown */ }
+    obGoto(obNext("time"));
   });
-  document.querySelector<HTMLButtonElement>("#ob-time-next")!.addEventListener("click", () => obGoto(obNext("time")));
   document.querySelector<HTMLButtonElement>("#ob-time-skip")!.addEventListener("click", () => {
     try { localStorage.removeItem(TIME_KEY); } catch { /* nothing kept */ }
     obGoto(obNext("time"));
