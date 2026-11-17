@@ -490,6 +490,12 @@ b { font-weight: 600; }
 .mini.paper { --m-bg: #f7f5f0; --m-line: #e1dcd2; --m-field: #ffffff; --m-ink: #1d1c19; --m-tile: #ffffff; }
 .ob-looks { margin: var(--s4) 0 var(--s2); }
 
+/* iPhone home screen steps: in a card and on the welcome screens. */
+.ios-home-steps .steps { margin: var(--s2) 0 0; }
+.ios-home-sub { font-weight: 600; margin-top: var(--s3); }
+.ios-open-shortcuts { margin-top: var(--s2); }
+.ios-home-steps.left { text-align: left; max-width: 420px; margin: var(--s3) auto 0; }
+.ios-home-nudge { margin-top: var(--s4); }
 /* ---------- update prompt (#55) ----------
    A bottom sheet over the launcher: the one surface in the app that
    interrupts, so it is the quietest card that still asks. */

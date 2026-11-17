@@ -214,6 +214,40 @@ fn build_engine_from_lists(lists: &[String]) -> Engine {
     engine
 }
 
+/// iOS NETWORK BLOCKING (#16). WKWebView cannot intercept requests, so
+/// the network half of the engine goes to WebKit as a content-blocker
+/// list instead: the same lists as `ENGINE_LISTS`, minus our scriptlet
+/// list, converted by the adblock crate's own Safari exporter.
+///
+/// Element-hiding rules are dropped. Cosmetics already ride the injected
+/// page payload, and as content-blocker rules they would apply on every
+/// site with no exceptions, where the injected sheet is scoped.
+///
+/// Returns the list as JSON and how many rules it holds. WebKit refuses
+/// a list over `CONTENT_BLOCKER_LIMIT` rules outright, which is why the
+/// count is checked in a test rather than discovered on a phone.
+#[cfg_attr(not(any(target_os = "ios", test)), allow(dead_code))]
+pub(crate) fn content_blocker_json() -> (String, usize) {
+    use adblock::content_blocking::CbType;
+    let mut set = FilterSet::new(true);
+    for list in ENGINE_LISTS.iter().filter(|l| **l != "scriptlets.txt") {
+        set.add_filter_list(crate::ota::rules_text(list), ParseOptions::default());
+    }
+    let rules: Vec<_> = match set.into_content_blocking() {
+        Ok((rules, _unconverted)) => rules
+            .into_iter()
+            .filter(|r| r.action.typ != CbType::CssDisplayNone)
+            .collect(),
+        Err(()) => Vec::new(),
+    };
+    let count = rules.len();
+    (serde_json::to_string(&rules).unwrap_or_else(|_| "[]".into()), count)
+}
+
+/// WebKit's ceiling on rules in one content-blocker list.
+#[cfg_attr(not(any(target_os = "ios", test)), allow(dead_code))]
+pub(crate) const CONTENT_BLOCKER_LIMIT: usize = 150_000;
+
 /// THE COLD START PAID 3-25 SECONDS FOR THIS ON HIS PHONE (queue item h),
 /// and paid it TWICE: the warm-up thread in `run()` and the rebuild after
 /// the OTA cache loads each parse 152k rules from text. The engine can
@@ -729,5 +763,30 @@ mod engine_timing_probe {
         let t = std::time::Instant::now();
         d.use_resources(resources());
         eprintln!("use_res2   {:?}", t.elapsed());
+    }
+}
+
+#[cfg(test)]
+mod content_blocker_tests {
+    use super::*;
+
+    #[test]
+    fn content_blocker_list_fits_webkit_and_blocks_network_only() {
+        let (json, count) = content_blocker_json();
+        // An empty list would mean the conversion failed silently and the
+        // iPhone app would block nothing.
+        assert!(count > 10_000, "only {count} rules converted");
+        assert!(count < CONTENT_BLOCKER_LIMIT, "{count} rules: WebKit refuses the list");
+        let rules: Vec<serde_json::Value> = serde_json::from_str(&json).unwrap();
+        assert_eq!(rules.len(), count);
+        assert!(
+            rules.iter().all(|r| r["action"]["type"] != "css-display-none"),
+            "element hiding must stay in the scoped page payload"
+        );
+        // The pre-roll host Android's interceptor is known to stop.
+        assert!(
+            json.contains("doubleclick"),
+            "the ad network rules did not make it across"
+        );
     }
 }
