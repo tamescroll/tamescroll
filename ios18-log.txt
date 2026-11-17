@@ -1,0 +1,60 @@
+2026-11-17 11:56:13.984 Df tamescroll[47438:21b75] [com.apple.WebKit:ProcessSuspension] 0x11800cd10 - ProcessAssertion() Successfully granted capability
+2026-11-17 11:56:13.991 Df tamescroll[47438:21b60] [com.apple.WebKit:Process] 0x1180080b0 - NetworkProcessProxy::sendXPCEndpointToProcess(0x118000e20) state = 1 has connection = 1 XPC endpoint message = 0x600003d00690
+2026-11-17 11:56:13.991 Df tamescroll[47438:21b60] [com.apple.WebKit:Process] 0x1180080b0 - NetworkProcessProxy::sendXPCEndpointToProcess(0x118002510) state = 1 has connection = 1 XPC endpoint message = 0x600003d00690
+2026-11-17 11:56:14.029 Df tamescroll[47438:21b60] [com.apple.WebKit:ProcessSuspension] 0x118003e60 - [PID=47556, throttler=0x118008140] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'Process initialization'
+2026-11-17 11:56:14.178 Df tamescroll[47438:21b76] [com.apple.xpc:connection] [0x108204480] Re-initialization successful; calling out to event handler with XPC_ERROR_CONNECTION_INTERRUPTED
+2026-11-17 11:56:14.552 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::decidePolicyForNavigationAction: frameID=13, isMainFrame=1, navigationID=29
+2026-11-17 11:56:14.560 A  tamescroll[47438:21b76] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-11-17 11:56:14.564 Df tamescroll[47438:21b76] [com.apple.xpc:connection] [0x600003d01b30] activating connection: mach=true listener=false peer=false name=com.apple.Safari.SafeBrowsing.Service
+2026-11-17 11:56:14.568 Df tamescroll[47438:21b60] [com.apple.WebKit:AppSSO] 0x118000630 - SOAuthorizationCoordinator::tryAuthorize
+2026-11-17 11:56:14.580 A  tamescroll[47438:21b60] (AppSSO) canPerformAuthorizationWithURL
+2026-11-17 11:56:14.582 A  tamescroll[47438:21b60] (AppSSOCore) canPerformAuthorizationWithURL
+2026-11-17 11:56:14.583 A  tamescroll[47438:21b60] (AppSSOCore) canPerformAuthorizationWithURL
+2026-11-17 11:56:14.584 A  tamescroll[47438:21b60] (AppSSOCore) canPerformAuthorizationWithURL
+2026-11-17 11:56:14.584 Df tamescroll[47438:21b60] [com.apple.authkit:siwa] Should process URL called
+2026-11-17 11:56:14.585 Df tamescroll[47438:21b60] [com.apple.authkit:siwa] Fetching native takeover URLs
+2026-11-17 11:56:14.586 Df tamescroll[47438:21b60] [com.apple.xpc:connection] [0x108024a10] activating connection: mach=true listener=false peer=false name=com.apple.ak.authorizationservices.xpc
+2026-11-17 11:56:14.604 Df tamescroll[47438:21b60] [com.apple.authkit:siwa] Native takeover URLs fetched
+2026-11-17 11:56:14.604 Df tamescroll[47438:21b60] [com.apple.authkit:siwa] URL shouldn't be processed
+2026-11-17 11:56:14.605 Df tamescroll[47438:21b60] [com.apple.AppSSO:SOConfigurationClient] -[SOConfigurationClient init]  on <SOConfigurationClient: 0x60000047c2e0>
+2026-11-17 11:56:14.605 Df tamescroll[47438:21b60] [com.apple.xpc:connection] [0x108219dd0] activating connection: mach=true listener=false peer=false name=com.apple.AppSSO.service-xpc
+2026-11-17 11:56:14.605 Df tamescroll[47438:21b60] [com.apple.AppSSO:SOServiceConnection] <SOServiceConnection: 0x60000047c400>: new XPC connection
+2026-11-17 11:56:14.606 Df tamescroll[47438:21b60] [com.apple.AppSSO:SOConfigurationClient] -[SOConfigurationClient _reloadConfig]  on <SOConfigurationClient: 0x60000047c2e0>
+2026-11-17 11:56:14.606 Df tamescroll[47438:21b60] [com.apple.AppSSO:SOClient] -[SOClient configurationWithCompletion:]  on <SOClient: 0x6000000d0520>
+2026-11-17 11:56:15.250 Df tamescroll[47438:21b60] [com.apple.AppSSO:SOClient] configurationWithCompletion: success = YES, error = (null)
+2026-11-17 11:56:15.251 Df tamescroll[47438:21b60] [com.apple.WebKit:AppSSO] 0x118000630 - SOAuthorizationCoordinator::tryAuthorize: The requested URL is not registered for AppSSO handling. No further action needed.
+2026-11-17 11:56:15.253 A  tamescroll[47438:21b60] (libsystem_containermanager.dylib) container_system_group_path_for_identifier
+2026-11-17 11:56:15.253 Df tamescroll[47438:21b60] [com.apple.containermanager:xpc] Requesting container lookup; class = 13, identifier = com.apple.nsurlsessiond, group_identifier = systemgroup.com.apple.nsurlstoragedresources, create = 1, temp = 0, euid = 501, uid = 501
+2026-11-17 11:56:15.253 A  tamescroll[47438:21b60] (libsystem_containermanager.dylib) container_query_t
+2026-11-17 11:56:15.253 Df tamescroll[47438:21b60] [com.apple.containermanager:xpc] Query; euid = 501, uid = 501, class = 13, identifier = [com.apple.nsurlsessiond](1), flags = 900000003
+2026-11-17 11:56:15.255 Df tamescroll[47438:21b60] [com.apple.containermanager:unspecified] container_query_get_single_result: success
+2026-11-17 11:56:15.255 A  tamescroll[47438:21b60] (libsystem_containermanager.dylib) container_copy_object
+2026-11-17 11:56:15.255 Df tamescroll[47438:21b60] [com.apple.containermanager:unspecified] container_system_group_path_for_identifier: success
+2026-11-17 11:56:15.257 Df tamescroll[47438:21b60] [com.apple.WebKit:Process] 0x118000e20 - [PID=47454] WebProcessProxy::didBecomeResponsive:
+2026-11-17 11:56:15.257 Df tamescroll[47438:21b60] [com.apple.WebKit:Process] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::processDidBecomeResponsive:
+2026-11-17 11:56:15.257 Df tamescroll[47438:21b60] [com.apple.WebKit:ProcessSuspension] 0x118002510 - GPUProcessProxy is taking a background assertion because a web process is requesting a connection
+2026-11-17 11:56:15.267 Df tamescroll[47438:21b60] [com.apple.WebKit:Process] 0x118002510 - GPUProcessProxy::didCreateContextForVisibilityPropagation: webPageProxyID: 9, pagePID: 10, contextID: 3399066992
+2026-11-17 11:56:15.270 Df tamescroll[47438:21b60] [com.apple.WebKit:Process] Created visibility propagation interaction <_UIVisibilityPropagationInteraction: 0x600006724240> for process with PID=47494
+2026-11-17 11:56:15.357 Df tamescroll[47438:21b60] [com.apple.WebKit:ViewState] 0x109838600 (pageProxyID=9) -[WKWebView _didCommitLayerTree:] - finally received commit 11.19s after visible content rect update request; transactionID 1
+2026-11-17 11:56:15.753 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::decidePolicyForNavigationAction: listener called: frameID=13, isMainFrame=1, navigationID=29, policyAction=0, safeBrowsingWarning=0, isAppBoundDomain=0, wasNavigationIntercepted=0
+2026-11-17 11:56:15.757 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::receivedNavigationActionPolicyDecision: frameID=13, isMainFrame=1, navigationID=29, policyAction=0
+2026-11-17 11:56:15.758 Df tamescroll[47438:21b60] [com.apple.WebKit:ProcessSwapping] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::decidePolicyForNavigationAction: keep using process 47454 for navigation, reason=Process has not yet committed any provisional loads
+2026-11-17 11:56:15.758 Df tamescroll[47438:21b60] [com.apple.WebKit:Process] 0x118000e20 - [PID=47454] WebProcessProxy::canTerminateAuxiliaryProcess: returns false (pageCount=1, provisionalPageCount=0, suspendedPageCount=0, m_isInProcessCache=0, m_shutdownPreventingScopeCounter=0)
+2026-11-17 11:56:15.764 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::didStartProvisionalLoadForFrame: frameID=13, isMainFrame=1
+2026-11-17 11:56:15.764 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x118000e20 - [PID=47454] WebProcessProxy::didStartProvisionalLoadForMainFrame:
+2026-11-17 11:56:15.797 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::didNavigateWithNavigationDataShared:
+2026-11-17 11:56:15.801 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::didCommitLoadForFrame: frameID=13, isMainFrame=1
+2026-11-17 11:56:16.379 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::didFinishLoadForFrame: frameID=13, isMainFrame=1
+2026-11-17 11:56:16.379 Df tamescroll[47438:21b60] [com.apple.WebKit:ProcessSuspension] 0x1180052b0 - NavigationState will release its process network assertion soon because the page load completed
+2026-11-17 11:56:16.379 Df tamescroll[47438:21b60] [com.apple.WebKit:ProcessSuspension] 0x118003e30 - [PID=47454, throttler=0x118000eb0] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'Client navigation'
+2026-11-17 11:56:16.445 Df tamescroll[47438:21e17] [com.apple.network:path] nw_path_libinfo_path_check [1A7FC058-826F-45CB-9CB1-84B079BDE0BC Hostname#a9e8ff6c:0 tcp, legacy-socket, attribution: developer]
+	libinfo check path: satisfied (Path is satisfied), interface: en0
+2026-11-17 11:56:16.516 Df tamescroll[47438:21b60] [com.apple.WebKit:Loading] 0x109050e18 - [pageProxyID=9, webPageID=10, PID=47454] WebPageProxy::didFinishDocumentLoadForFrame: frameID=13, isMainFrame=1
+2026-11-17 11:56:17.231 Df tamescroll[47438:21b60] [com.apple.runningboard:process] Hit the server for a process handle 15e199960000b94e that resolved to: [app<app.tamescroll.client((null))>:47438]
+2026-11-17 11:56:17.250 Df tamescroll[47438:21b60] [com.apple.WebKit:ViewState] -[WKWebView 0x109838600 _scheduleVisibleContentRectUpdateAfterScrollInView]: hasScheduledVisibleRectUpdate is true but haven't updated visible content rects for 1.45s (last update was 1.87s ago) - valid 1
+2026-11-17 11:56:17.250 Df tamescroll[47438:21b60] [com.apple.WebKit:ViewState] -[WKWebView 0x109838600 _scheduleVisibleContentRectUpdateAfterScrollInView]: hasScheduledVisibleRectUpdate is true but haven't updated visible content rects for 1.45s (last update was 1.87s ago) - valid 1
+2026-11-17 11:56:17.250 Df tamescroll[47438:21b60] [com.apple.WebKit:ViewState] -[WKWebView 0x109838600 _scheduleVisibleContentRectUpdateAfterScrollInView]: hasScheduledVisibleRectUpdate is true but haven't updated visible content rects for 1.45s (last update was 1.87s ago) - valid 1
+2026-11-17 11:56:17.250 Df tamescroll[47438:21b60] [com.apple.WebKit:ViewState] -[WKWebView 0x109838600 _scheduleVisibleContentRectUpdateAfterScrollInView]: hasScheduledVisibleRectUpdate is true but haven't updated visible content rects for 1.45s (last update was 1.87s ago) - valid 1
+2026-11-17 11:56:17.254 Df tamescroll[47438:21b60] [com.apple.WebKit:ViewState] 0x109838600 -[WKWebView _updateVisibleContentRects:] finally ran 1.45s after being scheduled
+2026-11-17 11:56:19.381 Df tamescroll[47438:21b60] [com.apple.WebKit:ProcessSuspension] 0x1180052b0 NavigationState is releasing background process assertion because a page load completed
+2026-11-17 11:56:19.382 Df tamescroll[47438:21b60] [com.apple.WebKit:ProcessSuspension] 0x118003ec0 - [PID=47454, throttler=0x118000eb0] ProcessThrottler::Activity::invalidate: Ending background activity / 'Page Load'
