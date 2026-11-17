@@ -681,45 +681,23 @@ b { font-weight: 600; }
 .time-small { color: var(--muted); font-size: var(--t-md); line-height: 1.45; text-wrap: pretty; }
 .ob-center .display { text-wrap: balance; }
 
-/* ---------- what to blur, plain (2026-11-17) ----------
-   Three answers in words, no pictures to decode. The middle answer holds
-   Women and Men as two buttons. */
-.bq { display: grid; gap: var(--s2); max-width: 400px; margin: var(--s3) auto var(--s3); text-align: left; }
-.bq-opt {
-  position: relative; display: grid; gap: 2px; padding: var(--s3) var(--s4); border-radius: var(--r);
-  background: var(--elev); border: 1.5px solid var(--hairline); box-shadow: var(--shadow); text-align: left;
-  transition: border-color 0.15s ease;
+/* ---------- what to blur, pictures only (2026-11-17) ----------
+   Four cards in a grid. Each shows the same three pictures blurred the
+   way its answer blurs, with one word under them. */
+.bv { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); max-width: 400px; margin: var(--s4) auto var(--s3); }
+.bv-card {
+  display: grid; justify-items: center; gap: var(--s2); padding: var(--s3) var(--s2) var(--s3);
+  border-radius: var(--r); background: var(--elev); border: 1.5px solid var(--hairline); box-shadow: var(--shadow);
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
-.bq-opt b { font-size: var(--t-base); font-weight: 600; color: var(--ink); }
-.bq-opt > span:not(.bq-pills) { color: var(--muted); font-size: var(--t-md); }
-.bq-opt.chosen { border-color: var(--ink); }
-.bq-pills { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s2); }
-.bq-pill {
-  min-height: 44px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--bg);
-  font-weight: 600; font-size: var(--t-md); transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.bq-pill.chosen { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-
-/* the live preview (2026-11-17) */
-.bq-preview { display: flex; justify-content: center; gap: var(--s3); margin: var(--s2) 0 var(--s1); }
-.bq-pic { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.bq-art {
-  width: 64px; height: 76px; border-radius: 10px; display: grid; place-items: center; overflow: hidden;
-  background: linear-gradient(160deg, #b9a58a, #6f7f8c); box-shadow: var(--shadow);
-}
-.bq-pic[data-kind="man"] .bq-art { background: linear-gradient(160deg, #8c9fb0, #6d5a4c); }
-.bq-pic[data-kind="scene"] .bq-art { background: linear-gradient(160deg, #9fb3a0, #c8b48c); }
-.bq-art svg { width: 46px; height: 46px; fill: rgba(255, 255, 255, 0.92); transition: filter 0.35s ease; }
-.bq-pic em { font-style: normal; font-size: var(--t-xs); color: var(--faint); }
-.bq-preview[data-show="all"] .bq-art svg,
-.bq-preview[data-show="women"] [data-kind="woman"] svg,
-.bq-preview[data-show="men"] [data-kind="man"] svg { filter: blur(7px); }
-.bq-opt.showing:not(.chosen) { border-color: var(--muted); background: var(--surface); }
-.bq-pill.showing:not(.chosen) { border-color: var(--muted); }
-@media (max-height: 760px) {
-  .bq-art { width: 54px; height: 62px; }
-  .bq-art svg { width: 38px; height: 38px; }
-  .bq-opt { padding: var(--s2) var(--s4); }
-  .bq-pills { margin-top: var(--s1); }
-  .bq-pill { min-height: 40px; }
-}
+.bv-card:active { transform: scale(0.97); }
+.bv-card b { font-size: var(--t-base); font-weight: 600; color: var(--ink); }
+.bv-card.chosen { border-color: var(--ink); }
+.bv-pics { display: flex; gap: 5px; }
+.bv-pic { width: 40px; height: 52px; border-radius: 8px; display: grid; place-items: center; overflow: hidden; }
+.bv-w { background: linear-gradient(160deg, #b9a58a, #6f7f8c); }
+.bv-m { background: linear-gradient(160deg, #8c9fb0, #6d5a4c); }
+.bv-s { background: linear-gradient(160deg, #9fb3a0, #c8b48c); }
+.bv-pic svg { width: 30px; height: 30px; fill: rgba(255, 255, 255, 0.92); }
+.bv-pic.bl svg { filter: blur(5px); }
+@media (max-width: 360px) { .bv-pic { width: 36px; height: 48px; } .bv { gap: var(--s2); } }

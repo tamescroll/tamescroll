@@ -387,41 +387,33 @@
           </div>
         </div>
 
-        <!-- What to blur, made plain (his 2026-11-17: "a bit annoying ...
-             needs to be simplified such that person actually knows whats
-             its asking ... consolidate to 3 options"). Three answers; the
-             middle one holds Women and Men as two buttons, so nobody is
-             asked their own gender (his 2026-10-27) and neither answer is
-             lost. One tap answers and moves on. -->
+        <!-- What to blur, shown not told (his 2026-11-17: "keep it visual
+             only?? like its getting confusing"). Four picture cards, each
+             the same three pictures (a woman, a man, a view) blurred the
+             way that answer blurs, and one word. Nobody is asked their own
+             gender (his 2026-10-27). One tap answers and moves on. -->
         <div class="ob-step" data-step="blur" hidden>
           <div class="ob-center">
-            <h1 class="display">Blur pictures as you browse?</h1>
-            <p class="lede">Photos and video previews on the sites you open. The video you choose to watch still plays.</p>
-            <!-- One live preview (his 2026-11-17: "there should still be
-                 some visual"): three pictures that blur the way the
-                 highlighted answer would. It walks through the answers on
-                 its own until one is tapped. -->
-            <div class="bq-preview" id="ob-blur-preview" data-show="none" aria-hidden="true">
-              <span class="bq-pic" data-kind="woman"><span class="bq-art"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><em>A woman</em></span>
-              <span class="bq-pic" data-kind="man"><span class="bq-art"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><em>A man</em></span>
-              <span class="bq-pic" data-kind="scene"><span class="bq-art"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span><em>A view</em></span>
-            </div>
-            <div class="bq" id="ob-blur-cards">
-              <button type="button" class="bq-opt" data-choice="all">
-                <b>Yes, all of them</b><span>Every photo and preview.</span>
+            <h1 class="display">What should be blurred?</h1>
+            <div class="bv" id="ob-blur-cards">
+              <button type="button" class="bv-card" data-choice="all" aria-label="Blur: Everything">
+                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s bl"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
+                <b>Everything</b>
               </button>
-              <div class="bq-opt bq-gender" data-group="gender">
-                <b>Only people of one gender</b><span>Faces it isn't sure about are blurred too.</span>
-                <span class="bq-pills">
-                  <button type="button" class="bq-pill" data-choice="women">Women</button>
-                  <button type="button" class="bq-pill" data-choice="men">Men</button>
-                </span>
-              </div>
-              <button type="button" class="bq-opt" data-choice="none">
-                <b>No, show pictures</b><span>Feeds still stay hidden.</span>
+              <button type="button" class="bv-card" data-choice="women" aria-label="Blur: Women">
+                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
+                <b>Women</b>
+              </button>
+              <button type="button" class="bv-card" data-choice="men" aria-label="Blur: Men">
+                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
+                <b>Men</b>
+              </button>
+              <button type="button" class="bv-card" data-choice="none" aria-label="Blur: Nothing">
+                <span class="bv-pics" aria-hidden="true"><span class="bv-pic bv-w"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="bv-pic bv-m"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="bv-pic bv-s"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span>
+                <b>Nothing</b>
               </button>
             </div>
-            <p class="setting-caption center">Works on this phone and isn't perfect. Nothing you see leaves it. Change it any time in Settings.</p>
+            <p class="setting-caption center">The video you choose to watch still plays. Change it any time in Settings.</p>
           </div>
         </div>
 
