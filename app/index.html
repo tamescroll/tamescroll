@@ -242,7 +242,7 @@
               <p class="pane-sub">tamescroll is a calm browser: it opens any site, and tames the busy ones.</p>
               <section class="card">
                 <div class="card-title">The tour</div>
-                <p class="card-body">The welcome, the quick tour of the controls, and your blur and look choices, again.</p>
+                <p class="card-body">The welcome, your look and blur choices, the bar, the home icon and the tips on home, again.</p>
                 <div class="actions"><button type="button" class="btn-ghost" id="replay-tour">Show the tour again</button></div>
               </section>
               <section class="card">
@@ -284,11 +284,21 @@
       </section>
 
       <!-- ================= Onboarding ================= -->
+      <!-- REDONE 2026-11-17 (his "the flow feels unnatural ... redo it
+           fully and make it perfect"). The order follows what a person
+           wants to do: say what this is, let them shape it (look first,
+           so every later screen already wears it), show the change, ask
+           the one question that matters, explain the one control they
+           will meet on every site, offer the home icon, and then teach
+           home ON home, with three tips over the real screen instead of
+           a quiz on a drawing. Android and iPhone share every step but
+           the icon one, whose steps differ. -->
       <section id="view-onboard" hidden>
         <header class="bar ob-bar">
           <button type="button" id="ob-back" class="link-btn" hidden>&#8249; Back</button>
           <span class="bar-spacer"></span>
           <span class="ob-dots" id="ob-dots" role="img"></span>
+          <button type="button" id="ob-skip" class="link-btn ob-skip" hidden>Skip</button>
         </header>
 
         <div class="ob-step" data-step="welcome">
@@ -297,20 +307,60 @@
             <h1 class="display">The web, without the feeds.</h1>
             <p class="lede">A browser for what you came for. Everything else stays quiet.</p>
             <div class="actions center col narrow-actions">
-              <button type="button" class="btn-solid" id="ob-start">Show me</button>
-              <button type="button" class="link-btn center" id="ob-skip-demo">Skip to setup</button>
+              <button type="button" class="btn-solid" id="ob-start">Get started</button>
+              <button type="button" class="link-btn center" id="ob-skip-all">Skip, keep the defaults</button>
             </div>
-            <p class="setting-caption center">About a minute. Free, open source, no account.</p>
+            <p class="setting-caption center">Takes a minute. Free, open source, no account.</p>
+          </div>
+        </div>
+
+        <!-- TIME BACK (his 2026-11-17: "ask the user how much time he
+             spends on the social media ... give like a result of how much
+             would be saved ... make the user realize as well while not
+             feeling overwhelmed"). Their own guess, a plain sum, and a
+             modest "if": no promise of a number we can't measure, no
+             guilt. Kept on this phone only; "Rather not say" moves on. -->
+        <div class="ob-step" data-step="time" hidden>
+          <div class="ob-center">
+            <h1 class="display">How long do feeds get you a day?</h1>
+            <p class="lede">A rough guess is fine. It stays on this phone.</p>
+            <div class="time-opts" id="ob-time-opts" role="radiogroup" aria-label="Time a day">
+              <button type="button" class="time-opt" role="radio" data-min="30">Under an hour</button>
+              <button type="button" class="time-opt" role="radio" data-min="90">1 to 2 hours</button>
+              <button type="button" class="time-opt" role="radio" data-min="150">2 to 3 hours</button>
+              <button type="button" class="time-opt" role="radio" data-min="240">More than 3</button>
+            </div>
+            <div class="time-result" id="ob-time-result" hidden aria-live="polite">
+              <p class="time-big" id="ob-time-big"></p>
+              <p class="time-small" id="ob-time-small"></p>
+            </div>
+            <div class="actions center col narrow-actions">
+              <button type="button" class="btn-solid" id="ob-time-next" hidden>Continue</button>
+              <button type="button" class="link-btn center" id="ob-time-skip">Rather not say</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- One tap picks it and moves on: the screen changes under the
+             finger, so the choice is made by eye. -->
+        <div class="ob-step" data-step="look" hidden>
+          <div class="ob-center">
+            <h1 class="display">Dark or light?</h1>
+            <p class="lede">Tap one. You can switch any time.</p>
+            <div class="looks ob-looks" role="radiogroup" aria-label="Look">
+                <button type="button" class="look" role="radio" data-look="night"><span class="mini night" aria-hidden="true"><i class="m-h"></i><i class="m-s"></i><span class="m-t"><span></span><span></span><span></span><span></span></span></span><b>Night</b><span class="look-sub">Dark and calm</span></button>
+                <button type="button" class="look" role="radio" data-look="paper"><span class="mini paper" aria-hidden="true"><i class="m-h"></i><i class="m-s"></i><span class="m-t"><span></span><span></span><span></span><span></span></span></span><b>Paper</b><span class="look-sub">Light, bigger text</span></button>
+              </div>
           </div>
         </div>
 
         <!-- The calm-down, shown rather than described (his 2026-10-27):
-             a made-up page, never a real site or its logo, so it works
-             offline and shows nobody's content. -->
+             a made-up page, never a real site or its logo. It plays on
+             arrival; the lines under it say what each change was. -->
         <div class="ob-step" data-step="demo" hidden>
           <div class="ob-center">
-            <h1 class="display">Watch a busy page calm down</h1>
-            <p class="lede">A made-up page, so you can see what happens before you open a real one.</p>
+            <h1 class="display">Here's what changes</h1>
+            <p class="lede">A made-up page, calming down the way real ones will.</p>
             <div class="demo" id="ob-demo" aria-hidden="true">
               <div class="demo-bar">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -327,107 +377,62 @@
             </div>
             <ol class="demo-says" aria-label="What changed">
               <li><span><b>Feeds and Shorts</b> fold away</span></li>
-              <li><span><b>Pictures</b> blur, by your choice</span></li>
+              <li><span><b>Pictures</b> blur, the way you choose next</span></li>
               <li><span><b>What you came for</b> stays</span></li>
             </ol>
             <div class="actions center col narrow-actions">
-              <button type="button" class="btn-solid" id="ob-demo-next">Next</button>
+              <button type="button" class="btn-solid" id="ob-demo-next">Continue</button>
               <button type="button" class="link-btn center" id="ob-demo-replay">Watch again</button>
             </div>
           </div>
         </div>
 
-        <!-- THE TOUR (2026-11-05, his "much better tutorial ... user
-             intuitive"): the three controls a first run never finds on
-             its own, taught by doing. A drawing of the real screens, the
-             glowing spot is a real button, and tapping it does what the
-             real one does. Next always works too, for anyone who would
-             rather read. The bar in the drawing is the native one from
-             MainActivity / TsWebkitPlugin: home, address, shield, dark on
-             every look because sites keep it dark. -->
-        <div class="ob-step" data-step="tour" hidden>
-          <div class="ob-center">
-            <p class="tour-n" id="tour-n" aria-live="polite"></p>
-            <h1 class="display" id="tour-title"></h1>
-            <p class="lede tour-text" id="tour-text"></p>
-            <div class="tphone" id="tour-phone" data-scene="home">
-              <!-- home -->
-              <div class="ts-home" aria-hidden="true">
-                <svg class="ts-mark" viewBox="0 0 48 40"><path d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.6" stroke-linecap="round"/></svg>
-                <span class="ts-q">What are you here for?</span>
-                <span class="ts-search"><span class="ts-typed" id="tour-typed">Search or type a site</span></span>
-                <span class="ts-tiles">
-                  <span class="ts-tile"><i style="--tint:#b8876a">Y</i><em>YouTube</em></span>
-                  <span class="ts-tile ts-new"><i style="--tint:#8f9fb0">W</i><em>Wikipedia</em></span>
-                  <span class="ts-tile ts-add"><i>+</i><em>Add a site</em></span>
-                </span>
-              </div>
-              <!-- a site -->
-              <div class="ts-site" aria-hidden="true">
-                <span class="ts-bar">
-                  <svg class="ts-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <span class="ts-addr">wikipedia.org</span>
-                  <svg class="ts-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#c9a45e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
-                <span class="ts-strip">wikipedia.org</span>
-                <span class="ts-page">
-                  <i class="ts-h"></i><i></i><i></i><i class="short"></i>
-                  <span class="ts-pic"></span>
-                  <i></i><i></i><i class="short"></i><i></i><i></i><i class="short"></i>
-                </span>
-                <span class="ts-sheet">
-                  <span class="ts-grab"></span>
-                  <b>wikipedia.org</b>
-                  <span class="ts-num">12</span>
-                  <span class="ts-sub">ads and trackers stopped on this page.</span>
-                  <span class="ts-btn">Change what's hidden here</span>
-                </span>
-              </div>
-              <!-- The one live control: moved onto whatever the step teaches. -->
-              <button type="button" class="ts-hot" id="tour-hot"></button>
-            </div>
-            <p class="tour-hint" id="tour-hint">Tap the glowing spot</p>
-            <div class="actions center col narrow-actions">
-              <button type="button" class="btn-ghost" id="tour-next">Next</button>
-              <button type="button" class="link-btn center" id="tour-skip">Skip the tour</button>
-            </div>
-          </div>
-        </div>
-
+        <!-- One tap answers and moves on; the tapped card is marked first. -->
         <div class="ob-step" data-step="blur" hidden>
           <div class="ob-center">
             <h1 class="display">What should be blurred?</h1>
-            <p class="lede">Pick one. You can change it any time.</p>
+            <p class="lede">Tap one. You can change it any time.</p>
             <div class="ob-cards col" id="ob-blur-cards">
               <button type="button" class="ob-card wide pick" data-choice="all"><span class="pv" aria-hidden="true"><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Every picture</b><span>The video you open plays normally.</span></span></button>
               <button type="button" class="ob-card wide pick" data-choice="women"><span class="pv" aria-hidden="true"><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Women</b><span>Faces it can't place are blurred too.</span></span></button>
               <button type="button" class="ob-card wide pick" data-choice="men"><span class="pv" aria-hidden="true"><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile bl"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Men</b><span>Faces it can't place are blurred too.</span></span></button>
               <button type="button" class="ob-card wide pick" data-choice="none"><span class="pv" aria-hidden="true"><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><path d="M12 10l-5 10h10z"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="3"/><rect x="8" y="10" width="8" height="10" rx="2"/></svg></span><span class="pv-tile"><svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="2.5"/><path d="M3 20l6-8 4 5 3-3 5 6z"/></svg></span></span><span class="pick-txt"><b>Nothing</b><span>Feeds are still hidden.</span></span></button>
             </div>
-            <p class="setting-caption center">Runs on this device and isn't perfect. No picture leaves your phone. It lives in Settings, under Blur.</p>
+            <p class="setting-caption center">Runs on this device and isn't perfect. No picture leaves your phone.</p>
           </div>
         </div>
-        <!-- Make it yours (his 2026-10-28): one tap, the screen changes
-             under your finger. Night is already picked. -->
-        <div class="ob-step" data-step="look" hidden>
+
+        <!-- The one control a person meets on every site is the native
+             bar (MainActivity.installTopBar / TsWebkitPlugin): house,
+             address, shield. Drawn as it is, dark on every look, with
+             each part named beside it. A short loop shows the fold. -->
+        <div class="ob-step" data-step="bar" hidden>
           <div class="ob-center">
-            <h1 class="display">Make it yours</h1>
-            <p class="lede">Pick a look. You can switch any time in Settings.</p>
-            <div class="looks ob-looks" role="radiogroup" aria-label="Look">
-                <button type="button" class="look" role="radio" data-look="night"><span class="mini night" aria-hidden="true"><i class="m-h"></i><i class="m-s"></i><span class="m-t"><span></span><span></span><span></span><span></span></span></span><b>Night</b><span class="look-sub">Dark and calm</span></button>
-                <button type="button" class="look" role="radio" data-look="paper"><span class="mini paper" aria-hidden="true"><i class="m-h"></i><i class="m-s"></i><span class="m-t"><span></span><span></span><span></span><span></span></span></span><b>Paper</b><span class="look-sub">Light, bigger text</span></button>
-              </div>
+            <h1 class="display">One bar on every site</h1>
+            <p class="lede">It sits above every page you open.</p>
+            <div class="bx" aria-hidden="true">
+              <div class="bx-bar"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="bx-addr">wikipedia.org</span><svg class="bx-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#c9a45e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="bx-strip">wikipedia.org</div>
+              <div class="bx-page"><i class="h"></i><i></i><i></i><i class="s"></i><span class="pic"></span><i></i><i></i><i class="s"></i><i></i><i></i></div>
+            </div>
+            <ul class="bx-keys">
+              <li><span class="bx-key"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M4 11L12 4.5L20 11M6.5 9.5V19.5H10V14.5H14V19.5H17.5V9.5" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>House</b> takes you back to your sites.</span></li>
+              <li><span class="bx-key bx-key-addr">a.org</span><span><b>The address</b> searches, or opens another site.</span></li>
+              <li><span class="bx-key"><svg class="bx-ic" viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z" fill="none" stroke="#e7e5e1" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12L11.2 14.2L15.2 10" fill="none" stroke="#c9a45e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>The shield</b> shows what was tamed, and what to change.</span></li>
+              <li><span class="bx-key bx-key-strip"></span><span><b>Scroll</b> and it folds to a thin strip. Tap the strip to bring it back.</span></li>
+            </ul>
             <div class="actions center col narrow-actions">
-              <button type="button" class="btn-solid" id="ob-look-next">Continue</button>
+              <button type="button" class="btn-solid" id="ob-bar-next">Continue</button>
             </div>
           </div>
         </div>
 
-        <!-- THE HOME ICON (his 2026-11-17: "i wanted tutorial to include
-             how to add icon aswell"). Android adds it right here through
-             the same bridge as Settings -> Sites -> YouTube links; iPhone
-             gets the widget route in words. The icon is OUR glyph, a cream
-             Y on our ink, never YouTube's logo (standing ruling). -->
+        <!-- THE HOME ICON (his 2026-11-17). Our shortcut, Y-Tamed: a cream
+             Y on our ink, never YouTube's logo, YouTube named only in
+             plain words (PR 69). Android adds it right here through the
+             TsLinks bridge Settings uses. iPhone has no way for an app to
+             place an icon, so it gets Apple's Shortcuts route, the same
+             steps as the iPhone branch, with the button that opens it. -->
         <div class="ob-step" data-step="icon" hidden>
           <div class="ob-center">
             <h1 class="display">Add Y-Tamed to your home screen</h1>
@@ -436,7 +441,7 @@
               <span class="ih-app"></span><span class="ih-app"></span><span class="ih-app"></span><span class="ih-app"></span>
               <span class="ih-app"></span><span class="ih-ours"><i>Y</i><em>Y-Tamed</em></span><span class="ih-app"></span><span class="ih-app"></span>
             </div>
-            <div class="ob-icon-android">
+            <div class="ob-icon-android" hidden>
               <input type="text" id="ob-pin-name" class="ob-input pin-name" maxlength="24"
                      placeholder="Name it (optional)" autocomplete="off" spellcheck="false" aria-label="Name for the icon" />
               <div class="actions center col narrow-actions">
@@ -444,39 +449,38 @@
               </div>
               <p class="ob-icon-note" id="ob-pin-note" role="status"></p>
             </div>
-            <ol class="ob-icon-ios steps" hidden>
-              <li class="step"><span class="step-num">1</span><div class="grow"><div class="step-title">Touch and hold your home screen</div></div></li>
-              <li class="step"><span class="step-num">2</span><div class="grow"><div class="step-title">Tap <b>Edit</b>, then <b>Add Widget</b></div></div></li>
-              <li class="step"><span class="step-num">3</span><div class="grow"><div class="step-title">Search <b>tamescroll</b>, pick <b>Y-Tamed</b></div></div></li>
-            </ol>
+            <div class="ob-icon-ios" hidden>
+              <ol class="ios-steps">
+                <li><span><b>Open Shortcuts</b> with the button below</span></li>
+                <li><span>Tap <b>Add Action</b>, search <b>Tame for YouTube</b>, tap it</span></li>
+                <li><span>Tap the name at the top, then <b>Add to Home Screen</b></span></li>
+                <li><span>Name it <b>Y-Tamed</b>, tap <b>Add</b></span></li>
+              </ol>
+              <div class="actions center col narrow-actions">
+                <button type="button" class="btn-solid" id="ob-shortcuts">Open Shortcuts</button>
+              </div>
+            </div>
             <div class="actions center col narrow-actions">
               <button type="button" class="link-btn center" id="ob-icon-next">Not now</button>
             </div>
-            <p class="setting-caption center ob-icon-later">It only adds a shortcut to this app. Any time later: Settings, Sites, YouTube links.</p>
-          </div>
-        </div>
-
-        <div class="ob-step" data-step="done" hidden>
-          <div class="ob-center">
-            <svg class="ob-tick" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke-width="2"/><path d="M15 24.5l6 6 12-13" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <h1 class="display">You're set.</h1>
-            <p class="lede">Your choices, and where they live.</p>
-            <dl class="ob-summary" id="ob-summary">
-              <div data-row="blur"><dt>Blur</dt><dd id="ob-sum-blur"></dd><span class="where">Settings › Blur</span></div>
-              <div><dt>Look</dt><dd id="ob-sum-look"></dd><span class="where">Settings › Look</span></div>
-              <div><dt>Icon</dt><dd id="ob-sum-icon"></dd><span class="where">Settings › Sites</span></div>
-            </dl>
-            <ul class="recap">
-              <li><span class="recap-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/></svg></span><span><b>The box on home</b> searches or opens any site.</span></li>
-              <li><span class="recap-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z"/></svg></span><span><b>The shield</b> shows what was tamed, and changes it.</span></li>
-              <li><span class="recap-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="15.5" cy="8" r="1.8"/><circle cx="9.5" cy="16" r="1.8"/></svg></span><span><b>Settings</b> on home has the rest, and this tour.</span></li>
-            </ul>
-            <div class="actions center col narrow-actions">
-              <button type="button" class="btn-solid" id="ob-open">Start browsing</button>
-            </div>
+            <p class="setting-caption center ob-icon-later">It only adds a shortcut to this app. Later: Settings, Sites.</p>
           </div>
         </div>
       </section>
+
+      <!-- Tips over the real home screen, after the steps above (and on a
+           replay): a dimmed page with a hole over one thing at a time. -->
+      <div class="coach" id="coach" hidden>
+        <div class="coach-hole" id="coach-hole"></div>
+        <div class="coach-card" id="coach-card" role="dialog" aria-live="polite">
+          <p class="coach-n" id="coach-n"></p>
+          <p class="coach-text" id="coach-text"></p>
+          <div class="coach-actions">
+            <button type="button" class="link-btn" id="coach-skip">Skip</button>
+            <button type="button" class="btn-solid small" id="coach-next">Next</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Update prompt (#55, his 2026-11-07: "directly give the update
