@@ -354,7 +354,7 @@ b { font-weight: 600; }
 .ob-dots { display: inline-flex; gap: 6px; align-items: center; padding-right: var(--s1); }
 .ob-dots i { display: block; width: 6px; height: 6px; border-radius: 999px; background: var(--line); transition: width 0.25s ease, background-color 0.25s ease; }
 .ob-dots i.past { background: var(--faint); }
-.ob-dots i.now { width: 20px; background: var(--gold); }
+.ob-dots i.now { width: 20px; background: var(--ink); }
 .ob-step { flex: 1; display: flex; align-items: center; justify-content: center; }
 .ob-center { width: 100%; max-width: 460px; padding: var(--s5) 0 var(--s6); text-align: center; }
 .ob-center .display { margin-bottom: var(--s2); }
@@ -702,3 +702,29 @@ b { font-weight: 600; }
 .bp-prog { position: absolute; left: 8px; right: 8px; bottom: 6px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.25); }
 .bp-prog i { display: block; width: 38%; height: 100%; border-radius: inherit; background: rgba(255, 255, 255, 0.85); }
 @media (max-height: 700px) { .bp-frame { width: 128px; height: 74px; } .bp { margin-top: var(--s3); } }
+
+/* ---------- question layout, after Hijri First (2026-11-17) ----------
+   Every step after the welcome reads the same way: the picture, then the
+   question set left under it, and the way on pinned to the bottom, so the
+   button never jumps between steps. Ink for the chosen and the primary;
+   gold only on the wordmark. */
+.ob-step:not([data-step="welcome"]) { align-items: stretch; }
+.ob-step:not([data-step="welcome"]) .ob-center {
+  display: flex; flex-direction: column; text-align: left; margin: 0 auto;
+  padding: var(--s3) 0 var(--s3);
+}
+.ob-step:not([data-step="welcome"]) .ob-center > * { width: 100%; }
+.ob-step:not([data-step="welcome"]) .display { font-size: 30px; line-height: 1.15; text-wrap: balance; }
+.ob-step:not([data-step="welcome"]) .lede { margin-left: 0; margin-right: 0; }
+.ob-step:not([data-step="welcome"]) .actions { margin-top: auto; padding-top: var(--s3); max-width: none; width: 100%; }
+.ob-step:not([data-step="welcome"]) .actions .link-btn { align-self: center; }
+.ob-step:not([data-step="welcome"]) .time-result { text-align: center; }
+.ob-step:not([data-step="welcome"]) .ob-icon-later { text-align: center; }
+.ob-later {
+  display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2);
+  padding: 10px 12px; border-radius: 10px; background: var(--surface);
+  color: var(--muted); font-size: var(--t-sm);
+}
+.ob-later svg { width: 15px; height: 15px; flex: none; fill: none; stroke: var(--faint); stroke-width: 1.8; }
+.ob-later b { color: var(--ink); font-weight: 600; }
+@media (max-height: 760px) { .ob-step:not([data-step="welcome"]) .display { font-size: 26px; } }
