@@ -1385,7 +1385,9 @@ function obGoto(step: string, remember = true) {
   });
   document.querySelector<HTMLButtonElement>("#ob-back")!.hidden = step === "welcome" || step === "done";
   renderObDots(step);
-  if (step === "tour") tourShow(0);
+  // Forward starts the tour at its first stop; Back from the questions
+  // returns to its last one.
+  if (step === "tour") tourShow(remember ? 0 : TOUR.length - 1);
   // A first run marks nothing, so no answer is suggested; a replay, or
   // Back after answering, shows the current one.
   if (step === "blur") markBlurChoice(readChosen() === null ? null : getChoice());
@@ -1441,8 +1443,14 @@ function tourShow(i: number) {
   document.querySelector<HTMLElement>("#tour-n")!.textContent = `Quick tour · ${i + 1} of ${TOUR.length}`;
   document.querySelector<HTMLElement>("#tour-title")!.textContent = stop.title;
   document.querySelector<HTMLElement>("#tour-text")!.textContent = stop.text;
-  document.querySelector<HTMLElement>("#tour-hint")!.textContent = `${stop.label}, or press Next`;
-  document.querySelector<HTMLElement>("#tour-next")!.textContent = i === TOUR.length - 1 ? "Continue" : "Next";
+  const nextLabel = i === TOUR.length - 1 ? "Continue" : "Next";
+  document.querySelector<HTMLElement>("#tour-hint")!.textContent = `${stop.label}, or press ${nextLabel}`;
+  document.querySelector<HTMLElement>("#tour-next")!.textContent = nextLabel;
+  // The ring jumps to its new place and fades in there, never sliding
+  // across the new screen from the old one.
+  hot.classList.remove("fresh");
+  void hot.offsetWidth;
+  hot.classList.add("fresh");
 }
 
 function tourAdvance() {
