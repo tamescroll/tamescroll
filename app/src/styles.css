@@ -1028,11 +1028,3 @@ b { font-weight: 600; }
 .ln .ln-neck { stroke-width: 2; }
 .bs-who.on svg.ln { filter: blur(10px); }
 .bs .bs-who.bs-w, .bs .bs-who.bs-m { filter: none; left: auto; right: auto; }
-/* minimal outlines (2026-11-20): head, shoulders, one hair contour, nothing else */
-.ln path, .ln circle { fill: none; stroke: rgba(236, 231, 222, 0.92); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.ln .ln-fill { fill: #222120; }
-.ln .ln-body { fill: rgba(236, 231, 222, 0.05); }
-.ln .ln-hair { fill: rgba(236, 231, 222, 0.14); }
-.bs-who svg.ln { width: 80%; height: 86%; }
-.ln .ln-hair { fill: rgba(236, 231, 222, 0.16); }
-.ln .ln-part { fill:none; stroke-opacity:.55; stroke-width:1.4 }
