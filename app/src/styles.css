@@ -1020,3 +1020,4 @@ b { font-weight: 600; }
 .bs-who.on .bs-tag { background: #ece7de; color: #141414; }
 .bs-who.on .bs-tag::before { border: 0; background: #141414 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23ece7de' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat; }
 .bs::after { z-index: 7; height: 18%; }
+.ob-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); margin: 0 0 6px; }

@@ -1601,7 +1601,7 @@ function markBlurChoice(choice: BlurChoice | null) {
     btn.setAttribute("aria-pressed", String(on));
   });
   document.querySelector<HTMLElement>("#ob-blur-say")!.textContent =
-    choice === null ? "Tap both to blur everyone, or neither for none." : BLUR_SAY[c];
+    choice === null ? "What you see stays your choice. Tap both for everyone, or neither for none." : BLUR_SAY[c];
 }
 
 // The welcome picture plays on arrival and again every few seconds while
