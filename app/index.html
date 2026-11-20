@@ -186,7 +186,6 @@
               <p class="group-head">Always hidden</p>
               <section class="group" aria-label="Always hidden">
                 <div class="row">
-                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
                   <div class="grow"><div class="row-title">Sign-in and app-install nags</div></div>
                   <span class="row-end">Always</span>
                 </div>
@@ -202,7 +201,6 @@
               </div>
               <section class="group">
                 <div class="row">
-                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z"/><path d="M9 12L11.2 14.2L15.2 10"/></svg></span>
                   <div class="grow">
                     <div class="row-title">Built-in words</div>
                     <p class="row-sub">460+ words often used on revealing posts, including misspelled versions. Updates with the app.</p>
@@ -236,11 +234,11 @@
                    (HaramBlur, Haya Shield, Tahir Browser): what to blur,
                    never the user's own gender. Each answer is a stored
                    mode + gender pair; coverage is unchanged. -->
-              <div class="bseg" id="blur-toggle" role="radiogroup" aria-label="What to blur">
-                <button type="button" class="bseg-opt" role="radio" data-value="all">Every picture</button>
-                <button type="button" class="bseg-opt" role="radio" data-value="women">Women</button>
-                <button type="button" class="bseg-opt" role="radio" data-value="men">Men</button>
-                <button type="button" class="bseg-opt" role="radio" data-value="none">Nothing</button>
+              <div class="group radio-list" id="blur-toggle" role="radiogroup" aria-label="What to blur">
+                <button type="button" class="row radio" role="radio" data-value="all"><span class="grow row-title">Every picture</span><span class="check" aria-hidden="true"></span></button>
+                <button type="button" class="row radio" role="radio" data-value="women"><span class="grow row-title">Women</span><span class="check" aria-hidden="true"></span></button>
+                <button type="button" class="row radio" role="radio" data-value="men"><span class="grow row-title">Men</span><span class="check" aria-hidden="true"></span></button>
+                <button type="button" class="row radio" role="radio" data-value="none"><span class="grow row-title">Nothing</span><span class="check" aria-hidden="true"></span></button>
               </div>
               <p class="setting-caption center" id="blur-caption"></p>
               <div id="blur-strength-row" hidden>
@@ -254,7 +252,6 @@
               </div>
               <section class="group spaced">
                 <div class="row">
-                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
                   <div class="grow">
                     <div class="row-title">Runs on this phone</div>
                     <p class="row-sub">Nothing you view leaves it.</p>
@@ -290,7 +287,6 @@
               </div>
               <section class="group" id="app-update-card" hidden>
                 <div class="row">
-                  <span class="row-ic gold" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4.5v10M7.5 10l4.5 4.5 4.5-4.5M5.5 19.5h13"/></svg></span>
                   <div class="grow">
                     <div class="row-title">App update</div>
                     <p class="row-sub" id="app-update-notes"></p>
@@ -301,13 +297,11 @@
               </section>
               <section class="group">
                 <button type="button" class="row row-btn" id="replay-tour">
-                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.8h3.8"/></svg></span>
                   <span class="grow"><span class="row-title">Show the tour again</span><span class="row-sub">The welcome, the blur question, the bar, the home icon and the tips on home.</span></span>
                   <svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
                 </button>
                 <form id="rules-refresh-form" class="row-form">
                   <button type="submit" class="row row-btn" id="rules-refresh">
-                    <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v3.8h-3.8"/></svg></span>
                     <span class="grow"><span class="row-title">Check for filter updates</span><span class="row-sub">Rules refresh by themselves when a site changes its layout.</span></span>
                     <svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
                   </button>
@@ -327,14 +321,12 @@
               </section>
               <section class="group" aria-label="Credits">
                 <div class="row">
-                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
                   <div class="grow">
                     <div class="row-title">Private by design</div>
                     <p class="row-sub">No account, no telemetry, no server in the middle. Blur and word filters run on your device.</p>
                   </div>
                 </div>
                 <div class="row">
-                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 7.5L4 12l4.5 4.5M15.5 7.5L20 12l-4.5 4.5"/></svg></span>
                   <div class="grow">
                     <div class="row-title">Free and open source</div>
                     <p class="row-sub">MPL-2.0</p>
@@ -342,7 +334,6 @@
                 </div>
                 <details class="row-details">
                   <summary class="row row-btn">
-                    <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/></svg></span>
                     <span class="grow"><span class="row-title">Built on</span></span>
                     <svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
                   </summary>
