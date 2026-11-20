@@ -974,3 +974,7 @@ b { font-weight: 600; }
 @media (max-height: 620px) { .ob-stage { height: 168px; } }
 .ob-step .ob-center > .ob-stage { width: auto; }
 .bs .bs-ui { display: none; } .bs .bs-scene { inset: 8% 4% 14%; } .tl .time-big { line-height: 1.25; }
+/* the glow fades in on every edge, so the picture has no hard top line */
+.ob-stage, :root:not([data-look="paper"]) .ob-stage:not(.bs):not(.sb):not(.ih) { background: radial-gradient(farthest-side at 50% 60%, #2e2d2a 0%, #1c1c1b 55%, var(--bg) 100%); }
+:root[data-look="paper"] .ob-stage { background: radial-gradient(farthest-side at 50% 60%, #ffffff 0%, #f1ede6 55%, var(--bg) 100%); }
+.bs { background: radial-gradient(farthest-side at 60% 55%, #3a3934 0%, #1d1c1a 60%, var(--bg) 100%); }
