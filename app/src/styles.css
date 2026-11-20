@@ -1667,3 +1667,117 @@ html[data-look="paper"], html[data-look="paper"] body { background: #ffffff; }
   background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); transition: background-color 0.15s ease, box-shadow 0.15s ease; }
 #blur-toggle .radio.active .check { background: var(--btn-ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4.5 9.5l3 3 6-6.5' fill='none' stroke='%23191919' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat; box-shadow: none; }
 :root[data-look="paper"] #blur-toggle .radio.active .check { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4.5 9.5l3 3 6-6.5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+
+/* ======================================================================
+   Warm and easy to read (his 2026-11-20: "too bland ... make it so that
+   even elders and all ages can use it freely"). The clean layout stays;
+   on top: soft colour on every icon (Notion's tag palette), Spectral
+   back on titles, bigger type, higher contrast, rows and switches big
+   enough for any thumb.
+   ====================================================================== */
+:root:not([data-look="paper"]) {
+  --ink: rgba(255, 255, 255, 0.92); --muted: rgba(255, 255, 255, 0.66); --faint: rgba(255, 255, 255, 0.5);
+}
+:root[data-look="paper"] { --ink: #2f2e2a; --muted: rgba(47, 46, 42, 0.72); --faint: rgba(47, 46, 42, 0.56); }
+:root { --t-base: 16.5px; --t-md: 15.5px; --t-sm: 14px; --t-xs: 12.5px; }
+:root[data-look="paper"] { --t-base: 17px; --t-md: 16px; --t-sm: 14.5px; }
+:root[data-text="large"] { --t-base: 19px; --t-md: 18px; --t-sm: 16px; --t-xs: 14px; }
+
+/* the tint family: a soft background and a clear foreground */
+.t-blue   { --tbg: #e7f3f8; --tfg: #2f77a6; }
+.t-green  { --tbg: #e9f3ec; --tfg: #3f7f58; }
+.t-orange { --tbg: #fbecdd; --tfg: #c4670c; }
+.t-purple { --tbg: #f1ecf7; --tfg: #845aa8; }
+.t-pink   { --tbg: #f9eaf1; --tfg: #b8457f; }
+.t-brown  { --tbg: #f3ece8; --tfg: #93624b; }
+.t-yellow { --tbg: #fbf3db; --tfg: #a8761c; }
+.t-grey   { --tbg: #efefed; --tfg: #6b6a66; }
+:root:not([data-look="paper"]) .t-blue   { --tbg: #1e3445; --tfg: #7cbbe6; }
+:root:not([data-look="paper"]) .t-green  { --tbg: #213a2c; --tfg: #7fca98; }
+:root:not([data-look="paper"]) .t-orange { --tbg: #45301f; --tfg: #f0a466; }
+:root:not([data-look="paper"]) .t-purple { --tbg: #352a44; --tfg: #bea0de; }
+:root:not([data-look="paper"]) .t-pink   { --tbg: #432636; --tfg: #e88dbd; }
+:root:not([data-look="paper"]) .t-brown  { --tbg: #3b2d26; --tfg: #d3a58c; }
+:root:not([data-look="paper"]) .t-yellow { --tbg: #41361d; --tfg: #e8c06a; }
+:root:not([data-look="paper"]) .t-grey   { --tbg: #2e2e2e; --tfg: #b4b4b1; }
+
+/* titles: Spectral again, the app's own voice */
+.home-q, .pane h2, .pane-hero .display, .about-hero h2 {
+  font-family: var(--font-display); font-weight: 500; letter-spacing: -0.015em; line-height: 1.12;
+}
+.home-q { font-size: 34px; margin-bottom: var(--s5); }
+.pane h2 { font-size: 32px; margin-bottom: var(--s2); }
+.about-hero h2 { font-size: 28px; }
+.pane-sub { font-size: var(--t-md); color: var(--muted); line-height: 1.5; }
+
+/* icons: soft tinted squares */
+.row-ic, .glyph { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--tbg, var(--row-ic)); color: var(--tfg, var(--ink)); }
+.row-ic svg { width: 21px; height: 21px; stroke-width: 1.8; }
+.glyph { font-family: var(--font-display); font-size: 20px; font-weight: 600; border: 0 !important; box-shadow: none !important; }
+:root[data-look="paper"] .glyph { background: var(--tbg); }
+
+/* rows: big enough for any thumb */
+.row { min-height: 64px; padding: 14px 0; gap: 14px; }
+.row-title { font-size: var(--t-base); font-weight: 500; }
+.row-sub { font-size: var(--t-sm); color: var(--muted); margin-top: 3px; }
+.rows .row { padding-left: 54px; min-height: 60px; }
+.rows .row + .row { background-size: calc(100% - 54px) 1px; }
+.row-more { border-left: 0; margin-left: 0; }
+.platform-settings summary.row { min-height: 72px; }
+.group-head { font-size: var(--t-base); font-weight: 600; margin: var(--s6) 0 var(--s2); }
+.group-foot { font-size: var(--t-sm); color: var(--faint); }
+
+/* switch: full size, green when on, so on and off read without words */
+.switch, :root[data-look="paper"] .switch { width: 52px; height: 32px; background: var(--line); }
+:root[data-look="paper"] .switch { background: rgba(47, 46, 42, 0.2); }
+.switch::after { top: 3px; left: 3px; width: 26px; height: 26px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+.switch[aria-checked="true"], :root[data-look="paper"] .switch[aria-checked="true"] { background: #3f9a62; }
+.switch[aria-checked="true"]::after, :root[data-look="paper"] .switch[aria-checked="true"]::after { transform: translateX(20px); background: #fff; }
+.switch:active::after { width: 30px; }
+.switch[aria-checked="true"]:active::after { transform: translateX(16px); }
+
+/* checkbox rows (blur) */
+#blur-toggle .row { min-height: 64px; }
+#blur-toggle .check { width: 26px; height: 26px; border-radius: 7px; box-shadow: inset 0 0 0 2px var(--line); }
+#blur-toggle .radio.active .check, :root[data-look="paper"] #blur-toggle .radio.active .check { background-color: #3f9a62; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4.5 9.5l3 3 6-6.5' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: 18px; }
+.radio .row-title, .radio.active .row-title { font-weight: 500; }
+
+/* segmented + tabs: larger */
+.seg-opt { min-height: 42px; font-size: var(--t-md); }
+.settings-nav .nav-item { min-height: 48px; font-size: var(--t-md); }
+.btn-solid, .btn-ghost { min-height: 48px; font-size: var(--t-md); }
+.btn-solid.small, .btn-ghost.small { min-height: 40px; font-size: var(--t-sm); padding: 0 14px; }
+.icon-btn, .back-btn { width: 44px; height: 44px; }
+
+/* home: warm site rows and a green callout */
+.home-hero { padding: var(--s6) 0 var(--s5); }
+.open-link, :root[data-look="paper"] .open-link { height: 54px; border-radius: 10px; padding-left: 44px; }
+.open-link-ic { left: 15px; width: 20px; height: 20px; margin-top: -10px; }
+.open-link input { font-size: var(--t-base); }
+.go-btn, .open-link:focus-within .go-btn { width: 44px; height: 44px; border-radius: 8px; }
+.tiles-head { font-size: var(--t-base); font-weight: 600; color: var(--ink); margin: var(--s6) 0 var(--s2); }
+.tile, #tiles .tile { grid-template-columns: 44px 1fr; column-gap: 14px; padding: 10px 8px; margin: 0 -8px; width: calc(100% + 16px); border-radius: 10px; }
+.tile .dot, :root[data-look="paper"] .tile .dot { width: 44px; height: 44px; border-radius: 11px; font-family: var(--font-display); font-size: 22px; font-weight: 600; background: var(--tbg, var(--row-ic)); color: var(--tfg, var(--ink)) !important; }
+.tile.add .dot, :root[data-look="paper"] .tile.add .dot { width: 44px; height: 44px; border-radius: 11px; border: 1.5px dashed var(--line); font-size: 22px; }
+.tile .name { font-size: var(--t-base); }
+.tile .note { font-size: var(--t-sm); color: var(--muted); }
+.today { padding: 16px 18px; border-radius: 12px; gap: 14px; background: var(--tbg); color: var(--tfg); }
+.today { --tbg: #e9f3ec; --tfg: #3f7f58; }
+:root:not([data-look="paper"]) .today { --tbg: #1f3528; --tfg: #7fca98; }
+.today-ic svg { stroke: var(--tfg); }
+.today-line, .today-text { font-size: var(--t-base); color: var(--ink); }
+.today-num { font-size: var(--t-base); color: var(--tfg); }
+.today-sub { font-size: var(--t-sm); color: var(--muted); }
+
+/* blur drawing: a warm card */
+.pane-stage.bs, :root[data-look="paper"] .pane-stage.bs { background: #f3efe8; border-radius: 12px; height: 170px; }
+:root:not([data-look="paper"]) .pane-stage.bs { background: #262524; }
+
+/* look + filters */
+.chip { min-height: 36px; font-size: var(--t-md); padding: 0 4px 0 12px; border-radius: 8px; }
+.chip button { width: 30px; height: 30px; font-size: 18px; }
+.term-form, :root[data-look="paper"] .term-form { height: 50px; border-radius: 10px; }
+.term-form input { font-size: var(--t-base); padding: 0 14px; }
+.term-form .go-btn { width: 40px; height: 40px; }
+.look .look-sub { font-size: var(--t-sm); }
+.look b { font-size: var(--t-base); }
