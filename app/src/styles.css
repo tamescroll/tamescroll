@@ -978,3 +978,45 @@ b { font-weight: 600; }
 .ob-stage, :root:not([data-look="paper"]) .ob-stage:not(.bs):not(.sb):not(.ih) { background: radial-gradient(farthest-side at 50% 60%, #2e2d2a 0%, #1c1c1b 55%, var(--bg) 100%); }
 :root[data-look="paper"] .ob-stage { background: radial-gradient(farthest-side at 50% 60%, #ffffff 0%, #f1ede6 55%, var(--bg) 100%); }
 .bs { background: radial-gradient(farthest-side at 60% 55%, #3a3934 0%, #1d1c1a 60%, var(--bg) 100%); }
+
+/* ---------- time, in colour (2026-11-20) ----------
+   --heat comes from paintHeat(): sage, amber, coral, red as the hours grow.
+   The dots, the slider, the number and the picture's glow all take it. */
+.ob-step[data-step="time"] { --heat: hsl(145 38% 62%); --heat-ink: hsl(145 38% 40%); --heat-glow: hsl(145 38% 55% / 0.22); }
+.ob-step[data-step="time"] .tl { background: radial-gradient(farthest-side at 50% 45%, var(--heat-glow) 0%, transparent 70%), radial-gradient(farthest-side at 50% 60%, #2e2d2a 0%, #1c1c1b 55%, var(--bg) 100%); transition: background 0.3s ease; }
+:root[data-look="paper"] .ob-step[data-step="time"] .tl { background: radial-gradient(farthest-side at 50% 45%, var(--heat-glow) 0%, transparent 70%), radial-gradient(farthest-side at 50% 60%, #ffffff 0%, #f1ede6 55%, var(--bg) 100%); }
+.tl .time-big b { color: var(--heat); transition: color 0.3s ease; }
+:root[data-look="paper"] .tl .time-big b { color: var(--heat-ink); }
+.tl .time-life span i { background: var(--heat); opacity: 1; box-shadow: 0 0 12px var(--heat-glow); transition: width 0.2s ease, background-color 0.3s ease; }
+:root[data-look="paper"] .tl .time-life span i { background: var(--heat-ink); }
+.time-track { position: relative; }
+.ob-step[data-step="time"] .time-range::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--heat) var(--fill), var(--hairline) var(--fill)); }
+.ob-step[data-step="time"] .time-range::-moz-range-progress { background: var(--heat); }
+.ob-step[data-step="time"] .time-range::-webkit-slider-thumb { border-color: var(--heat); box-shadow: 0 0 0 6px var(--heat-glow), 0 2px 8px rgba(0, 0, 0, 0.3); transition: transform 0.12s ease; }
+.ob-step[data-step="time"] .time-range:active::-webkit-slider-thumb { transform: scale(1.15); }
+.time-avg { position: absolute; left: calc(16.7% + 4px); top: 30px; transform: translateX(-50%); font-size: 10px; color: var(--faint); display: grid; justify-items: center; gap: 1px; pointer-events: none; }
+.time-avg i { width: 1.5px; height: 6px; background: var(--faint); border-radius: 1px; }
+.time-mood { font-size: var(--t-sm); color: var(--muted); min-height: 1.4em; margin: 2px 0 0; text-align: center; }
+.time-mood.pop { animation: mood-pop 0.35s cubic-bezier(0.2, 0, 0, 1); }
+@keyframes mood-pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.ob-step[data-step="time"] .time-scale { margin-top: 10px; }
+
+/* ---------- blur: tap the person (2026-11-20) ---------- */
+.bs .bs-scene { position: absolute; inset: 6% 5% 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4%; align-items: end; z-index: 6; }
+.bs-who { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; border-radius: 24px 24px 0 0; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.bs-who svg { width: 92%; height: 92%; transition: filter 0.4s ease, transform 0.4s cubic-bezier(0.2, 0, 0, 1); filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45)); }
+.bs-who:active svg { transform: scale(0.97); }
+.bs-who .bs-patch { position: absolute; inset: 4% 3% -12px; width: auto; top: 4%; border-radius: 24px; opacity: 0; transform: scale(0.92); }
+.bs-who.on .bs-patch { opacity: 1; transform: none; }
+.bs-who.on svg { filter: blur(11px); }
+.bs-tag {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2;
+  padding: 5px 12px 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+  color: #ece7de; background: rgba(20, 20, 19, 0.55); border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.bs-tag::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(236, 231, 222, 0.7); box-sizing: border-box; transition: all 0.2s ease; }
+.bs-who.on .bs-tag { background: #ece7de; color: #141414; }
+.bs-who.on .bs-tag::before { border: 0; background: #141414 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23ece7de' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.bs::after { z-index: 7; height: 18%; }
