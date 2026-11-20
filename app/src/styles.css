@@ -122,7 +122,7 @@ b { font-weight: 600; }
 .bar .wordmark { height: 26px; width: auto; color: var(--ink); }
 .wordmark .mark, .ob-wordmark .mark { stroke: currentColor; }
 .ob-wordmark { color: var(--ink); }
-.ob-wordmark .mark { stroke: var(--gold); }
+.ob-wordmark .mark { stroke: var(--ink); }
 .bar-title { font-weight: 600; font-size: var(--t-base); }
 .bar-spacer { min-width: 44px; }
 .link-btn { color: var(--muted); font-size: var(--t-md); padding: var(--s2) 0; min-width: 44px; text-align: left; }
@@ -762,7 +762,7 @@ b { font-weight: 600; }
 .ob-hero .demo-toast { left: var(--s3); right: var(--s3); bottom: var(--s3); }
 .ob-brand { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 600; font-size: 17px; color: var(--ink); margin-bottom: var(--s1); }
 .ob-brand svg { width: 26px; height: 20px; }
-.ob-brand .mark { stroke: var(--gold); }
+.ob-brand .mark { stroke: var(--ink); }
 
 /* time: the next fifty years fill the stage */
 .tl { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--s4); }
