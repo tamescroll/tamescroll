@@ -1524,7 +1524,8 @@ document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("c
 // reruns it with the current answers marked.
 
 // One dot per step after the welcome.
-const OB_FLOW = IOS ? ["time", "look", "bar", "icon"] : ["time", "look", "blur", "bar", "icon"];
+// No "look" step (his 2026-11-20): Night is the default, Paper stays in Settings.
+const OB_FLOW = IOS ? ["time", "bar", "icon"] : ["time", "blur", "bar", "icon"];
 let obDone: () => void = () => {};
 let obBound = false;
 let obReplay = false;
