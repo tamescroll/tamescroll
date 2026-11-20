@@ -1669,7 +1669,9 @@ function showTimeBack(min: number) {
   const big = document.querySelector<HTMLElement>("#ob-time-big")!;
   big.innerHTML = "";
   const n = document.createElement("b");
-  n.textContent = `${years < 1 ? years.toFixed(1) : Math.round(years * 2) / 2} years`;
+  const yearsShown = years < 1 ? Number(years.toFixed(1)) : Math.round(years * 2) / 2;
+  n.textContent = `${yearsShown} years`;
+  n.dataset.years = String(yearsShown);
   big.append(n, document.createElement("br"), "of the next 50, on feeds");
   document.querySelectorAll<HTMLElement>("#ob-time-life i").forEach((c, i) => {
     c.style.width = `${Math.max(0, Math.min(1, years - i)) * 100}%`;
@@ -1682,6 +1684,36 @@ function renderObTime() {
   let min = 0;
   try { min = Number(localStorage.getItem(TIME_KEY)) || 0; } catch { /* none kept */ }
   showTimeBack(min || 120);
+  countUp();
+}
+
+// On arrival the years count up and the squares fill one after another,
+// so the sum lands rather than sits there.
+function countUp() {
+  if (REDUCED_MOTION) return;
+  const b = document.querySelector<HTMLElement>("#ob-time-big b");
+  const to = Number(b?.dataset.years ?? 0);
+  if (!b || !to) return;
+  const cells = [...document.querySelectorAll<HTMLElement>("#ob-time-life i")];
+  const widths = cells.map((c) => c.style.width);
+  cells.forEach((c) => { c.style.transition = "none"; c.style.width = "0"; });
+  const t0 = performance.now();
+  const dur = 1100;
+  const tick = (t: number) => {
+    const k = Math.min(1, (t - t0) / dur);
+    const e = 1 - Math.pow(1 - k, 3);
+    const v = to * e;
+    b.textContent = `${k < 1 ? (to < 10 ? v.toFixed(1) : Math.round(v)) : to} years`;
+    cells.forEach((c, i) => { c.style.width = `${Math.max(0, Math.min(1, v - i)) * 100}%`; });
+    if (k < 1) requestAnimationFrame(tick);
+    else cells.forEach((c, i) => { c.style.transition = ""; c.style.width = widths[i]; });
+  };
+  requestAnimationFrame(tick);
+}
+
+// A light tick under the finger on a choice, where the phone has one.
+function tick() {
+  try { navigator.vibrate?.(8); } catch { /* no motor */ }
 }
 
 // ---- the home icon step ----
@@ -1799,7 +1831,10 @@ function bindOnboarding() {
 
   // Look: one tap applies it and moves on.
   document.querySelectorAll<HTMLButtonElement>("#view-onboard .look").forEach((btn) => {
-    btn.addEventListener("click", () => soon(() => obGoto(obNext("look")), 450));
+    btn.addEventListener("click", () => {
+      tick();
+      soon(() => obGoto(obNext("look")), 450);
+    });
   });
 
 
@@ -1810,6 +1845,7 @@ function bindOnboarding() {
       const choice = btn.dataset.choice as BlurChoice;
       setChoice(choice);
       markBlurChoice(choice);
+      tick();
     });
   });
   document.querySelector<HTMLButtonElement>("#ob-blur-next")!.addEventListener("click", () => obGoto(obNext("blur")));

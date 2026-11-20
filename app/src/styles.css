@@ -860,3 +860,25 @@ b { font-weight: 600; }
   .ob-step[data-step="time"] .time-scale { display: none; }
   .tl .time-life, .tl .time-months { max-width: 150px; }
 }
+
+/* ---------- finish (2026-11-20, after Opal, one sec, Headspace) ----------
+   Each step arrives in three beats (picture, words, controls), the way
+   those apps stage a screen; buttons are full pills; progress is a thin
+   segmented line; the stage has a soft light. */
+.ob-step:not([hidden]) .ob-center > * { animation: ob-in 0.55s cubic-bezier(0.2, 0, 0, 1) both; }
+.ob-step:not([hidden]) .ob-center > :nth-child(2) { animation-delay: 0.07s; }
+.ob-step:not([hidden]) .ob-center > :nth-child(3) { animation-delay: 0.12s; }
+.ob-step:not([hidden]) .ob-center > :nth-child(n+4) { animation-delay: 0.17s; }
+@keyframes ob-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ob-step:not([hidden]) .ob-center > * { animation: none; } }
+.ob-step .btn-solid { min-height: 54px; border-radius: 999px; font-size: 16px; font-weight: 600; letter-spacing: 0.01em; }
+.ob-step .display { letter-spacing: -0.015em; }
+.ob-dots { gap: 4px; }
+.ob-dots i { width: 18px; height: 3px; border-radius: 2px; }
+.ob-dots i.now { width: 18px; background: var(--ink); }
+.ob-dots i.past { background: var(--muted); }
+:root:not([data-look="paper"]) .ob-stage:not(.bs):not(.sb):not(.ih) { background: radial-gradient(120% 90% at 50% 0%, #232321 0%, var(--surface) 70%); }
+.tl .time-big b { font-variant-numeric: tabular-nums; }
+.bseg-opt:active, .look:active { transform: scale(0.97); }
+.bseg-opt { transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease; }
+@media (max-height: 620px) { .ob-step[data-step="time"] .time-small { display: none; } }
