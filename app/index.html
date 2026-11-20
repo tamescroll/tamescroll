@@ -234,11 +234,9 @@
                    (HaramBlur, Haya Shield, Tahir Browser): what to blur,
                    never the user's own gender. Each answer is a stored
                    mode + gender pair; coverage is unchanged. -->
-              <div class="group radio-list" id="blur-toggle" role="radiogroup" aria-label="What to blur">
-                <button type="button" class="row radio" role="radio" data-value="all"><span class="grow row-title">Every picture</span><span class="check" aria-hidden="true"></span></button>
-                <button type="button" class="row radio" role="radio" data-value="women"><span class="grow row-title">Women</span><span class="check" aria-hidden="true"></span></button>
-                <button type="button" class="row radio" role="radio" data-value="men"><span class="grow row-title">Men</span><span class="check" aria-hidden="true"></span></button>
-                <button type="button" class="row radio" role="radio" data-value="none"><span class="grow row-title">Nothing</span><span class="check" aria-hidden="true"></span></button>
+              <div class="group radio-list" id="blur-toggle" role="group" aria-label="Who to blur">
+                <button type="button" class="row radio" role="checkbox" data-value="women"><span class="grow row-title">Women</span><span class="check" aria-hidden="true"></span></button>
+                <button type="button" class="row radio" role="checkbox" data-value="men"><span class="grow row-title">Men</span><span class="check" aria-hidden="true"></span></button>
               </div>
               <p class="setting-caption center" id="blur-caption"></p>
               <div id="blur-strength-row" hidden>

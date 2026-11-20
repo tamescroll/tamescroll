@@ -138,10 +138,10 @@ function setChoice(c: BlurChoice) {
 }
 
 const CAPTIONS: Record<BlurChoice, string> = {
-  all: "Blurs every picture and preview on the pages you browse.",
+  all: "Both ticked: every picture and preview is blurred.",
   women: "Blurs women in pictures and previews. Faces it can't place stay covered.",
   men: "Blurs men in pictures and previews. Faces it can't place stay covered.",
-  none: "",
+  none: "Nothing ticked: nothing is blurred.",
 };
 
 // A segmented control's thumb slides under the chosen option (2026-11-20).
@@ -179,8 +179,10 @@ function renderBlurToggle() {
     blurHero.dataset.show = choice ?? "all";
     blurHero.style.setProperty("--bpx", HERO_BLUR[getStrength()] ?? "9px");
   }
+  // Two ticks (his 2026-11-20): Women, Men. Both is everyone, neither is
+  // nobody, so the four stored answers map onto two boxes.
   blurToggle.querySelectorAll<HTMLButtonElement>("[data-value]").forEach((btn) => {
-    const active = btn.dataset.value === choice;
+    const active = choice === "all" || btn.dataset.value === choice;
     btn.classList.toggle("active", active);
     btn.classList.toggle("chosen", active);
     btn.setAttribute("aria-checked", String(active));
@@ -189,7 +191,7 @@ function renderBlurToggle() {
   // PLAYER_VIDEO_BLUR); the pane's own line says so.
   blurCaption.textContent = choice
     ? CAPTIONS[choice]
-    : "Every face is blurred until you choose. Pick one above to change it.";
+    : "Every face is blurred until you choose. Tick who to blur.";
   const px = getStrength();
   strengthRow.hidden = mode === "off";
   strengthToggle.querySelectorAll<HTMLButtonElement>(".seg-opt").forEach((btn) => {
@@ -201,7 +203,14 @@ function renderBlurToggle() {
 }
 
 blurToggle.querySelectorAll<HTMLButtonElement>("[data-value]").forEach((btn) => {
-  btn.addEventListener("click", () => setChoice(btn.dataset.value as BlurChoice));
+  btn.addEventListener("click", () => {
+    const c = getChoice();
+    let women = c === "all" || c === "women";
+    let men = c === "all" || c === "men";
+    if (btn.dataset.value === "women") women = !women;
+    else men = !men;
+    setChoice(women && men ? "all" : women ? "women" : men ? "men" : "none");
+  });
 });
 strengthToggle.querySelectorAll<HTMLButtonElement>(".seg-opt").forEach((btn) => {
   btn.addEventListener("click", () => setStrength(Number(btn.dataset.value)));
