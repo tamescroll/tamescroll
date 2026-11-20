@@ -42,6 +42,15 @@ const bringBack = document.querySelector<HTMLElement>("#bring-back")!;
 const strengthRow = document.querySelector<HTMLElement>("#blur-strength-row")!;
 const strengthToggle = document.querySelector<HTMLElement>("#blur-strength")!;
 
+// Design tints (board 1A): muted warm letter glyphs, never platform
+// brand colors. Falls back to the Rust-side tint for new platforms.
+const DESIGN_TINTS: Record<string, string> = {
+  youtube: "var(--tint-yt)",
+  reddit: "var(--tint-rd)",
+  x: "var(--tint-x)",
+  instagram: "var(--tint-ig)",
+  tiktok: "var(--tint-tt)",
+};
 
 // Per-platform launcher captions (board 1A). Fallback: "Cleaned".
 const TILE_NOTES: Record<string, string> = {
@@ -804,8 +813,9 @@ function surfaceRow(platformId: string, surface: SurfaceInfo, onChange: () => vo
 // A site's letter on its own small tile, as on home.
 function siteGlyph(letter: string, tint?: string): HTMLElement {
   const g = document.createElement("span");
-  g.className = `glyph ${tintFor(tint ?? letter)}`;
+  g.className = "glyph";
   g.setAttribute("aria-hidden", "true");
+  if (tint) g.style.color = tint;
   g.textContent = letter;
   return g;
 }
@@ -846,7 +856,7 @@ async function renderBringBack(readyPlatforms: Platform[]) {
       chev.setAttribute("viewBox", "0 0 24 24");
       chev.setAttribute("class", "row-chev");
       chev.innerHTML = '<path d="M9.5 5.5L16 12l-6.5 6.5"/>';
-      summary.append(siteGlyph(platform.name.charAt(0), platform.name), text, chev);
+      summary.append(siteGlyph(platform.name.charAt(0), DESIGN_TINTS[platform.id] ?? platform.tint), text, chev);
       details.append(summary);
       const body = document.createElement("div");
       body.className = "row-more rows";
@@ -942,21 +952,11 @@ function addSite(site: Site) {
   if (!sites.some((s) => s.host === site.host)) writeSites([...sites, site]);
 }
 
-// A soft colour per site, picked from its name so it never changes
-// (2026-11-20, after Notion's tag colours): enough warmth to tell rows
-// apart at a glance, never a site's own brand colour.
-const TINTS = ["t-blue", "t-green", "t-orange", "t-purple", "t-pink", "t-brown", "t-yellow"] as const;
-function tintFor(name: string): string {
-  let h = 0;
-  for (const ch of name.toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TINTS[h % TINTS.length];
-}
-
 function siteTile(site: Site): HTMLButtonElement {
   const el = document.createElement("button");
   el.className = "tile";
   const dot = document.createElement("span");
-  dot.className = `dot ${tintFor(site.name)}`;
+  dot.className = "dot";
   dot.textContent = site.name.charAt(0);
   const name = document.createElement("span");
   name.className = "name";
@@ -975,7 +975,8 @@ function siteTile(site: Site): HTMLButtonElement {
 
 function glyphFor(platform: Platform): HTMLElement {
   const dot = document.createElement("span");
-  dot.className = `dot ${tintFor(platform.name)}`;
+  dot.className = "dot";
+  dot.style.color = DESIGN_TINTS[platform.id] ?? platform.tint;
   dot.textContent = platform.name.charAt(0);
   return dot;
 }
@@ -1233,7 +1234,7 @@ function siteRow(site: Site, onAdd: () => void): HTMLElement {
   const row = document.createElement("div");
   row.className = "match-row";
   const dot = document.createElement("span");
-  dot.className = `dot ${tintFor(site.name)}`;
+  dot.className = "dot";
   dot.textContent = site.name.charAt(0);
   const grow = document.createElement("span");
   grow.className = "grow";
@@ -1267,7 +1268,6 @@ function renderManage(platforms: Platform[]) {
   const summary = document.createElement("summary");
   summary.className = "row row-btn";
   summary.innerHTML =
-    '<span class="row-ic t-pink" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7.5h14M10 7.5V5.5h4v2M7 7.5l.8 11.5h8.4L17 7.5"/></svg></span>' +
     '<span class="grow"><span class="row-title">Remove a site</span></span>' +
     '<svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>';
   details.append(summary);
@@ -1289,7 +1289,7 @@ function renderManage(platforms: Platform[]) {
       onRemove();
       refreshAll();
     });
-    el.append(siteGlyph(text.charAt(0).toUpperCase(), text), label, remove);
+    el.append(siteGlyph(text.charAt(0).toUpperCase()), label, remove);
     body.append(el);
   };
   platforms
