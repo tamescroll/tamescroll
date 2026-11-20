@@ -882,3 +882,4 @@ b { font-weight: 600; }
 .bseg-opt:active, .look:active { transform: scale(0.97); }
 .bseg-opt { transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease; }
 @media (max-height: 620px) { .ob-step[data-step="time"] .time-small { display: none; } }
+@media (max-height: 620px) { .ob-step[data-step="icon"] .lede { font-size: var(--t-sm); } .ob-step[data-step="icon"] .actions { padding-top: var(--s2); } }
