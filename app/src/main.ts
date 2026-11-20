@@ -1524,7 +1524,7 @@ document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("c
 // reruns it with the current answers marked.
 
 // One dot per step after the welcome.
-const OB_FLOW = IOS ? ["time", "look", "demo", "bar", "icon"] : ["time", "look", "demo", "blur", "bar", "icon"];
+const OB_FLOW = IOS ? ["time", "look", "bar", "icon"] : ["time", "look", "blur", "bar", "icon"];
 let obDone: () => void = () => {};
 let obBound = false;
 let obReplay = false;
@@ -1564,7 +1564,7 @@ function obGoto(step: string, remember = true) {
   // A first run marks no blur answer, so none is suggested; a replay, or
   // Back after answering, shows the current one.
   if (step === "blur") markBlurChoice(obReplay || readChosen() !== null ? getChoice() : null);
-  if (step === "demo") playDemo();
+  if (step === "welcome") playDemo(); else stopDemo();
   if (step === "time") renderObTime();
   if (step === "icon") renderObIcon();
   window.scrollTo(0, 0);
@@ -1589,18 +1589,28 @@ function markBlurChoice(choice: BlurChoice | null) {
   document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards [data-choice]").forEach((btn) => {
     const on = btn.dataset.choice === choice;
     btn.classList.toggle("chosen", on);
-    btn.setAttribute("aria-pressed", String(on));
+    btn.setAttribute("aria-checked", String(on));
   });
+  document.querySelector<HTMLElement>("#ob-blur-stage")!.dataset.show = choice ?? "none";
+  document.querySelector<HTMLButtonElement>("#ob-blur-next")!.disabled = choice === null;
 }
 
+// The welcome picture plays on arrival and again every few seconds while
+// it is on screen, so the calm-down is seen whenever someone looks up.
+let demoTimer = 0;
 function playDemo() {
   const demo = document.querySelector<HTMLElement>("#ob-demo")!;
-  const says = document.querySelector<HTMLElement>(".demo-says")!;
-  demo.classList.remove("play");
-  says.classList.remove("play");
-  void demo.offsetWidth;
-  demo.classList.add("play");
-  says.classList.add("play");
+  const run = () => {
+    demo.classList.remove("play");
+    void demo.offsetWidth;
+    demo.classList.add("play");
+  };
+  window.clearInterval(demoTimer);
+  run();
+  if (!REDUCED_MOTION) demoTimer = window.setInterval(run, 6500);
+}
+function stopDemo() {
+  window.clearInterval(demoTimer);
 }
 
 // The answers are committed when the person leaves the bar step, so a
@@ -1767,11 +1777,6 @@ function bindOnboarding() {
   if (obBound) return;
   obBound = true;
 
-  if (IOS) {
-    // No blur on iPhone yet: the demo's line about pictures goes with it.
-    document.querySelector<HTMLElement>(".demo-says li:nth-child(2)")?.remove();
-  }
-
   document.querySelector<HTMLButtonElement>("#ob-back")!.addEventListener("click", () => {
     const prev = obTrail.pop();
     if (prev) obGoto(prev, false);
@@ -1797,18 +1802,17 @@ function bindOnboarding() {
     btn.addEventListener("click", () => soon(() => obGoto(obNext("look")), 450));
   });
 
-  document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", () => obGoto(obNext("demo")));
-  document.querySelector<HTMLButtonElement>("#ob-demo-replay")!.addEventListener("click", playDemo);
 
-  // Blur: stored the moment it is tapped, marked, then on.
+  // Blur: stored the moment it is tapped and shown on the still; the
+  // person moves on when they have seen it.
   document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards [data-choice]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const choice = btn.dataset.choice as BlurChoice;
       setChoice(choice);
       markBlurChoice(choice);
-      soon(() => obGoto(obNext("blur")), 350);
     });
   });
+  document.querySelector<HTMLButtonElement>("#ob-blur-next")!.addEventListener("click", () => obGoto(obNext("blur")));
 
   document.querySelector<HTMLButtonElement>("#ob-bar-next")!.addEventListener("click", () => {
     obCommit();
