@@ -1268,6 +1268,7 @@ function renderManage(platforms: Platform[]) {
   const summary = document.createElement("summary");
   summary.className = "row row-btn";
   summary.innerHTML =
+    '<span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7.5h14M10 7.5V5.5h4v2M7 7.5l.8 11.5h8.4L17 7.5"/></svg></span>' +
     '<span class="grow"><span class="row-title">Remove a site</span></span>' +
     '<svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>';
   details.append(summary);
