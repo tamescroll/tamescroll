@@ -1317,3 +1317,57 @@ details[open] > .row-more > * { animation: ui-in 0.35s cubic-bezier(0.2, 0, 0, 1
 :root[data-look="paper"] .bs-hair { fill: #d9d4ca; stroke: #1d1c19; }
 :root[data-look="paper"] .bs-line { stroke: #1d1c19; }
 :root[data-look="paper"] .bs-patch { background: rgba(120, 110, 95, 0.14); box-shadow: inset 0 0 0 1px rgba(40, 32, 20, 0.08); }
+
+/* ======================================================================
+   Cleaner (his 2026-11-20 "too cringe ... keep it professional and still
+   nice and not gloomy"). No glows, no icon medallions, no vignettes:
+   a lighter charcoal, flat surfaces, titles set left like a phone's own
+   settings, the drawing in a plain card.
+   ====================================================================== */
+:root:not([data-look="paper"]) {
+  --bg: #1c1c1b; --surface: #262625; --elev: #252524; --row-ic: #303030;
+  --hairline: rgba(255, 255, 255, 0.07); --line: #3b3b39; --sheet: #262625;
+}
+html:not([data-look="paper"]), html:not([data-look="paper"]) body { background: #1c1c1b; }
+
+.home-hero { text-align: left; padding: var(--s5) 0 var(--s4); }
+.greet { color: var(--faint); }
+.home-q { font-size: 30px; max-width: none; margin: 0 0 var(--s4); }
+:root[data-text="large"] .home-q { font-size: 34px; }
+.open-link { height: 52px; box-shadow: none; background: var(--elev); border-color: var(--hairline); }
+:root[data-look="paper"] .open-link { box-shadow: 0 1px 2px rgba(40, 32, 20, 0.06); background: #fff; border-color: var(--line); }
+.go-btn { width: 40px; height: 40px; }
+.tiles-head { margin: var(--s5) 0 var(--s3); }
+.tile .dot { width: 60px; height: 60px; border-radius: 18px; background: var(--elev); border-color: var(--hairline); box-shadow: none; font-size: 26px; }
+:root[data-look="paper"] .tile .dot { box-shadow: 0 1px 2px rgba(40, 32, 20, 0.06); }
+.tile.is-tamed .dot::after { border-color: var(--bg); }
+.today { background: var(--elev); margin-top: var(--s5); padding: var(--s4); }
+.today-ic { width: 44px; height: 44px; background: var(--row-ic); }
+.today-ic svg { width: 22px; height: 22px; }
+.today-num { font-size: 34px; }
+
+.settings-top { background: var(--bg); }
+.pane-hero, .pane-hero.tight { text-align: left; padding: var(--s5) var(--s1) var(--s4); }
+.pane h2, .pane-hero h2, .pane-hero .display { font-size: 28px; margin: 0 0 var(--s1); max-width: none; }
+.pane-sub, .pane-hero .lede { max-width: none; margin: 0; text-wrap: pretty; }
+.group-head { margin-left: var(--s1); }
+.group-foot { margin-left: var(--s1); margin-right: var(--s1); }
+.seg-thumb { box-shadow: none; }
+.row-ic { background: var(--row-ic); }
+
+.pane-stage { margin: var(--s4) 0 0; height: 196px; border-radius: var(--r-xl); border: 1px solid var(--hairline) !important; }
+.pane-stage::after { content: none; }
+.pane-stage.bs { background: #2b2b29; }
+:root[data-look="paper"] .pane-stage.bs { background: #ffffff; }
+.blur-hero .bs-scene { inset: 12% 16% -2px; }
+#pane-blur .pane-hero.tight { padding-top: var(--s4); }
+#blur-caption { text-align: left; margin-left: var(--s1); }
+
+.about-hero { display: grid; grid-template-columns: auto 1fr; column-gap: var(--s4); align-items: center; }
+.about-mark { grid-row: span 2; width: 64px; height: 64px; border-radius: 18px; margin: 0; box-shadow: none; background: #141414; }
+.about-mark svg { width: 40px; height: 30px; }
+.about-hero h2 { align-self: end; }
+.about-ver { align-self: start; margin: 0; }
+.about-hero .pane-sub { grid-column: 1 / -1; margin-top: var(--s4); }
+
+.update-panel { box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.25); }
