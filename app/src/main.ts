@@ -1689,7 +1689,9 @@ function renderObTime() {
 
 // On arrival the years count up and the squares fill one after another,
 // so the sum lands rather than sits there.
+let countRun = 0;
 function countUp() {
+  const run = ++countRun;
   if (REDUCED_MOTION) return;
   const b = document.querySelector<HTMLElement>("#ob-time-big b");
   const to = Number(b?.dataset.years ?? 0);
@@ -1700,6 +1702,7 @@ function countUp() {
   const t0 = performance.now();
   const dur = 1100;
   const tick = (t: number) => {
+    if (run !== countRun) return;
     const k = Math.min(1, (t - t0) / dur);
     const e = 1 - Math.pow(1 - k, 3);
     const v = to * e;
@@ -1817,7 +1820,12 @@ function bindOnboarding() {
 
   // Time back: their guess, shown as a plain sum and a modest "if".
   const timeRange = document.querySelector<HTMLInputElement>("#ob-time-range")!;
-  timeRange.addEventListener("input", () => showTimeBack(Number(timeRange.value)));
+  timeRange.addEventListener("input", () => {
+    // A drag mid count-up takes over: stop it and restore the transitions.
+    countRun++;
+    document.querySelectorAll<HTMLElement>("#ob-time-life i").forEach((c) => { c.style.transition = ""; });
+    showTimeBack(Number(timeRange.value));
+  });
   document.querySelector<HTMLButtonElement>("#ob-time-next")!.addEventListener("click", () => {
     try { localStorage.setItem(TIME_KEY, timeRange.value); } catch { /* fine, it is only shown */ }
     obGoto(obNext("time"));
