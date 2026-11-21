@@ -173,6 +173,16 @@ strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) 
   btn.addEventListener("click", () => setStrength(Number(btn.dataset.value)));
 });
 
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+if (IOS) {
+  // No blur on iPhone yet: no Blur pane, and the demo must not promise it.
+  document.querySelector<HTMLElement>('.nav-item[data-pane="blur"]')!.hidden = true;
+  document.querySelectorAll(".demo-thumb.blur-in").forEach((t) => t.classList.remove("blur-in"));
+  const toast = document.querySelector<HTMLElement>(".demo-toast");
+  if (toast) toast.innerHTML = "<b>Tamed.</b> Nothing fighting for your attention.";
+}
+
 renderBlurToggle();
 // Sync stored state into Rust at startup too, not just on change —
 // otherwise a relaunch would leave Rust at defaults until first touch.
@@ -1497,67 +1507,508 @@ document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("c
   showView("launcher");
 });
 
-// ---------- onboarding (his 2026-10-27, #35: three steps) ----------
-// Welcome, the demo (skippable), what to blur, the look, done. The blur step asks what to blur (his
-// 2026-10-27), never the user's own gender: no fourth step. No
-// platform picker: the home screen's "Add a site" is where sites come in,
-// so the first thing the app teaches is the browser, not one platform.
-// The YouTube links and home-icon offers live in Settings -> Sites.
+// ---------- onboarding (redone 2026-11-17) ----------
+// His 2026-11-17: "the flow feels unnatural of the tutorial, like redo it
+// fully and make it perfect and it needs to work in ios too".
+//
+// Welcome -> look -> demo -> blur -> the bar -> home icon -> home, with
+// three tips over the real home screen. Choices come first and each is
+// one tap that moves on; the look comes first of all so every later
+// screen already wears it. Nothing is a quiz: the bar is shown and named,
+// home is taught on home. The blur step asks what to blur (his
+// 2026-10-27), never the user's own gender; iPhone has no blur yet and
+// skips it. The icon step differs per platform: Android adds it here,
+// iPhone gets Apple's Shortcuts route.
+//
+// Listeners are bound ONCE; Settings -> About -> "Show the tour again"
+// reruns it with the current answers marked.
 
-function runOnboarding(done: () => void) {
+// One dot per step after the welcome.
+// No "look" step (his 2026-11-20): Night is the default, Paper stays in Settings.
+const OB_FLOW = IOS ? ["time", "why", "bar", "icon"] : ["time", "why", "blur", "bar", "icon"];
+let obDone: () => void = () => {};
+let obBound = false;
+let obReplay = false;
+const obTrail: string[] = [];
+const REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+const soon = (fn: () => void, ms: number) => window.setTimeout(fn, REDUCED_MOTION ? 0 : ms);
+
+function runOnboarding(done: () => void, replay = false) {
+  obDone = done;
+  obReplay = replay;
+  obPinTried = false;
   showView("onboard");
-  const steps = document.querySelectorAll<HTMLElement>(".ob-step");
+  bindOnboarding();
+  obGoto("welcome", false);
+}
 
-  const count = document.querySelector<HTMLElement>("#ob-count")!;
-  const back = document.querySelector<HTMLButtonElement>("#ob-back")!;
-  const trail: string[] = [];
+function obNext(from: string) {
+  const i = OB_FLOW.indexOf(from);
+  return i < 0 ? OB_FLOW[0] : OB_FLOW[i + 1] ?? "end";
+}
 
-  function goto(step: string, remember = true) {
-    const current = [...steps].find((el) => !el.hidden)?.dataset.step;
-    if (remember && current) trail.push(current);
-    steps.forEach((el) => {
-      el.hidden = el.dataset.step !== step;
-    });
-    count.textContent = "";
-    back.hidden = step === "welcome" || step === "done";
+function obGoto(step: string, remember = true) {
+  if (step === "end") {
+    obFinish();
+    return;
   }
-
-  back.addEventListener("click", () => {
-    const prev = trail.pop();
-    if (prev) goto(prev, false);
+  const steps = document.querySelectorAll<HTMLElement>(".ob-step");
+  const current = [...steps].find((el) => !el.hidden)?.dataset.step;
+  if (remember && current && current !== step) obTrail.push(current);
+  if (!remember && step === "welcome") obTrail.length = 0;
+  steps.forEach((el) => {
+    el.hidden = el.dataset.step !== step;
   });
-  // The demo replays from its busy state each time it is shown.
+  document.querySelector<HTMLButtonElement>("#ob-back")!.hidden = step === "welcome";
+  document.querySelector<HTMLButtonElement>("#ob-skip")!.hidden = step === "welcome";
+  renderObDots(step);
+  // A first run marks no blur answer, so none is suggested; a replay, or
+  // Back after answering, shows the current one.
+  if (step === "blur") markBlurChoice(obReplay || readChosen() !== null ? getChoice() : null);
+  if (step === "welcome") playDemo(); else stopDemo();
+  if (step === "time") renderObTime();
+  if (step === "why") renderObWhy();
+  if (step === "icon") renderObIcon();
+  window.scrollTo(0, 0);
+}
+
+function renderObDots(step: string) {
+  const dots = document.querySelector<HTMLElement>("#ob-dots")!;
+  const at = OB_FLOW.indexOf(step);
+  dots.textContent = "";
+  dots.hidden = at < 0;
+  if (at < 0) return;
+  dots.setAttribute("aria-label", `Step ${at + 1} of ${OB_FLOW.length}`);
+  OB_FLOW.forEach((_, i) => {
+    const d = document.createElement("i");
+    if (i < at) d.className = "past";
+    if (i === at) d.className = "now";
+    dots.append(d);
+  });
+}
+
+const BLUR_SAY: Record<BlurChoice, string> = {
+  all: "Everyone in videos is blurred.",
+  women: "Women in videos are blurred.",
+  men: "Men in videos are blurred.",
+  none: "Nothing blurred. Tap a person to blur them.",
+};
+function markBlurChoice(choice: BlurChoice | null) {
+  const c = choice ?? "none";
+  document.querySelector<HTMLElement>("#ob-blur-stage")!.dataset.show = c;
+  document.querySelectorAll<HTMLButtonElement>("#ob-blur-stage [data-who]").forEach((btn) => {
+    const on = c === "all" || c === btn.dataset.who;
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", String(on));
+  });
+  document.querySelector<HTMLElement>("#ob-blur-say")!.textContent =
+    choice === null ? "What you see stays your choice. Tap both for everyone, or neither for none." : BLUR_SAY[c];
+}
+
+// The welcome picture plays on arrival and again every few seconds while
+// it is on screen, so the calm-down is seen whenever someone looks up.
+let demoTimer = 0;
+function playDemo() {
   const demo = document.querySelector<HTMLElement>("#ob-demo")!;
-  function playDemo() {
+  const run = () => {
     demo.classList.remove("play");
     void demo.offsetWidth;
     demo.classList.add("play");
-  }
-  document.querySelector<HTMLButtonElement>("#ob-start")!.addEventListener("click", () => {
-    goto("demo");
-    playDemo();
-  });
-  document.querySelector<HTMLButtonElement>("#ob-skip-demo")!.addEventListener("click", () => goto("blur"));
-  document.querySelector<HTMLButtonElement>("#ob-demo-next")!.addEventListener("click", () => goto("blur"));
-  document.querySelector<HTMLButtonElement>("#ob-demo-replay")!.addEventListener("click", playDemo);
-
-  // COMMIT ON REACHING "done", not on its button, so a reload there
-  // (an Android link arrival navigates the webview) does not start over.
-  function finish(choice: BlurChoice) {
-    writeChosen(readChosen() ?? []);
-    setChoice(choice);
-    goto("look");
-  }
-
-  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards .ob-card").forEach((btn) => {
-    btn.addEventListener("click", () => finish(btn.dataset.choice as BlurChoice));
-  });
-  document.querySelector<HTMLButtonElement>("#ob-look-next")!.addEventListener("click", () => goto("done"));
-
-  document.querySelector<HTMLButtonElement>("#ob-open")!.addEventListener("click", () => done());
-
-  goto("welcome", false);
+  };
+  window.clearInterval(demoTimer);
+  run();
+  if (!REDUCED_MOTION) demoTimer = window.setInterval(run, 6500);
 }
+function stopDemo() {
+  window.clearInterval(demoTimer);
+}
+
+// The answers are committed when the person leaves the bar step, so a
+// reload on the icon step (an Android link arrival navigates the
+// webview) lands on home instead of starting over.
+function obCommit() {
+  if (IOS && getChoice() === null) setChoice("none");
+  writeChosen(readChosen() ?? []);
+}
+
+// Skip is always one tap away (Apple HIG: onboarding should be "fast,
+// fun, and optional"): it keeps whatever is already chosen or the
+// defaults, lands on home, and shows no tips. Settings -> About has the
+// tour for later.
+function obFinish(tips = true) {
+  obCommit();
+  obDone();
+  // Let home paint, then teach it in place.
+  if (tips) soon(startCoach, 350);
+}
+
+// ---- why ----
+// One forward-looking question after the years. Kept on this phone only.
+const WHY_KEY = "tamescroll.why";
+const WHY_WORDS: Record<string, string> = {
+  family: "family", prayer: "prayer", sleep: "sleep",
+  learning: "learning", health: "your health", making: "making things",
+};
+function readWhy(): string[] {
+  try { return (JSON.parse(localStorage.getItem(WHY_KEY) || "[]") as string[]).filter((w) => w in WHY_WORDS); } catch { return []; }
+}
+function pickedWhy(): string[] {
+  return [...document.querySelectorAll<HTMLButtonElement>("#ob-why-opts .why-opt.on")].map((b) => b.dataset.why!);
+}
+function renderObWhy(picked = readWhy()) {
+  document.querySelectorAll<HTMLButtonElement>("#ob-why-opts .why-opt").forEach((b) => {
+    const on = picked.includes(b.dataset.why!);
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  document.querySelector<HTMLButtonElement>("#ob-why-next")!.disabled = picked.length === 0;
+  let min = 0;
+  try { min = Number(localStorage.getItem(TIME_KEY)) || 0; } catch { /* none kept */ }
+  const big = document.querySelector<HTMLElement>("#ob-why-big")!;
+  big.textContent = "";
+  const n = document.createElement("b");
+  n.textContent = min ? `${Math.max(1, Math.round((min / 3) * 7 / 60))} hours` : "Time";
+  const words = picked.map((w) => WHY_WORDS[w]);
+  const what = words.length === 0 ? "what matters to you"
+    : words.length <= 2 ? words.join(" and ")
+    : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+  const em = document.createElement("em");
+  em.textContent = what;
+  big.append(n, document.createElement("br"), min ? "a week back for " : "back for ", em);
+  big.classList.remove("pop");
+  void big.offsetWidth;
+  if (picked.length) big.classList.add("pop");
+}
+
+// ---- time back ----
+// The sums are theirs: their own guess, times a year. The only claim we
+// make is an "if", because we cannot measure what they will win back.
+
+const TIME_KEY = "tamescroll.feedMinutes";
+
+function hoursWords(h: number): string {
+  const r = Math.round(h);
+  return r <= 1 ? "about an hour" : `about ${r} hours`;
+}
+
+function timeWords(min: number): string {
+  if (min < 60) return `${min} minutes`;
+  const h = Math.floor(min / 60);
+  const q = ["", "¼", "½", "¾"][Math.round((min % 60) / 15)] ?? "";
+  return `${h}${q} ${h === 1 && !q ? "hour" : "hours"}`;
+}
+
+// The sum follows the slider as it moves; it is kept only on Continue.
+function showTimeBack(min: number) {
+  const range = document.querySelector<HTMLInputElement>("#ob-time-range")!;
+  range.value = String(min);
+  paintHeat(min);
+  range.style.setProperty("--fill", `${((min - 30) / (720 - 30)) * 100}%`);
+  range.setAttribute("aria-valuetext", `${timeWords(min)} a day`);
+  const read = document.querySelector<HTMLElement>("#ob-time-read")!;
+  read.innerHTML = "";
+  const rb = document.createElement("b");
+  rb.textContent = timeWords(min);
+  read.append(rb, " a day");
+  // The next fifty years, one square each, filled by the share of every
+  // day (all 24 hours, not just waking ones, so the sum never inflates).
+  const days = Math.round((min * 365) / 60 / 24);
+  const weekBack = (min / 3) * 7 / 60;
+  const years = (min / 1440) * 50;
+  const big = document.querySelector<HTMLElement>("#ob-time-big")!;
+  big.innerHTML = "";
+  const n = document.createElement("b");
+  const yearsShown = years < 1 ? Number(years.toFixed(1)) : Math.round(years * 2) / 2;
+  n.textContent = `${yearsShown} years`;
+  n.dataset.years = String(yearsShown);
+  big.append(n, document.createElement("br"), "of the next 50, on feeds");
+  document.querySelectorAll<HTMLElement>("#ob-time-life i").forEach((c, i) => {
+    c.style.width = `${Math.max(0, Math.min(1, years - i)) * 100}%`;
+  });
+  document.querySelector<HTMLElement>("#ob-time-small")!.textContent =
+    `That's ${days} days a year. Win back a third: ${hoursWords(weekBack)} a week.`;
+}
+
+function renderObTime() {
+  let min = 0;
+  try { min = Number(localStorage.getItem(TIME_KEY)) || 0; } catch { /* none kept */ }
+  showTimeBack(min || 120);
+  countUp();
+}
+
+// The screen warms as the hours grow: sage under an hour, amber around
+// the average, coral past five, deep red near the top. Kind words with it,
+// never a scold.
+const MOODS: [number, string][] = [
+  [60, "Pretty light. Nice."],
+  [135, "Around what most people do."],
+  [240, "That adds up quietly."],
+  [360, "A big slice of every day."],
+  [540, "More than a workday's worth of evenings."],
+  [721, "Most of the time you're awake and free."],
+];
+let lastMood = "";
+function paintHeat(min: number) {
+  const k = Math.min(1, Math.max(0, (min - 30) / (480 - 30)));
+  // Hue 145 (sage) down to 4 (red); a touch more colour as it climbs.
+  const hue = Math.round(145 - 141 * Math.pow(k, 0.85));
+  const sat = Math.round(38 + 30 * k);
+  const step = document.querySelector<HTMLElement>('.ob-step[data-step="time"]')!;
+  step.style.setProperty("--heat", `hsl(${hue} ${sat}% 62%)`);
+  step.style.setProperty("--heat-ink", `hsl(${hue} ${sat}% 40%)`);
+  step.style.setProperty("--heat-glow", `hsl(${hue} ${sat}% 55% / 0.22)`);
+  const mood = (MOODS.find(([m]) => min <= m) ?? MOODS[MOODS.length - 1])[1];
+  const el = document.querySelector<HTMLElement>("#ob-time-mood")!;
+  if (mood !== lastMood) {
+    lastMood = mood;
+    el.textContent = mood;
+    el.classList.remove("pop");
+    void el.offsetWidth;
+    el.classList.add("pop");
+  }
+}
+
+// On arrival the years count up and the squares fill one after another,
+// so the sum lands rather than sits there.
+let countRun = 0;
+function countUp() {
+  const run = ++countRun;
+  if (REDUCED_MOTION) return;
+  const b = document.querySelector<HTMLElement>("#ob-time-big b");
+  const to = Number(b?.dataset.years ?? 0);
+  if (!b || !to) return;
+  const cells = [...document.querySelectorAll<HTMLElement>("#ob-time-life i")];
+  const widths = cells.map((c) => c.style.width);
+  cells.forEach((c) => { c.style.transition = "none"; c.style.width = "0"; });
+  const t0 = performance.now();
+  const dur = 1100;
+  const tick = (t: number) => {
+    if (run !== countRun) return;
+    const k = Math.min(1, (t - t0) / dur);
+    const e = 1 - Math.pow(1 - k, 3);
+    const v = to * e;
+    b.textContent = `${k < 1 ? (to < 10 ? v.toFixed(1) : Math.round(v)) : to} years`;
+    cells.forEach((c, i) => { c.style.width = `${Math.max(0, Math.min(1, v - i)) * 100}%`; });
+    if (k < 1) requestAnimationFrame(tick);
+    else cells.forEach((c, i) => { c.style.transition = ""; c.style.width = widths[i]; });
+  };
+  requestAnimationFrame(tick);
+}
+
+// A light tick under the finger on a choice, where the phone has one.
+function tick() {
+  try { navigator.vibrate?.(8); } catch { /* no motor */ }
+}
+
+// ---- the home icon step ----
+// Same bridge and same words as Settings -> Sites -> YouTube links, so
+// the two places can never disagree about what the launcher did.
+
+let obPinTried = false;
+
+function obIconState(): { supported?: boolean; pinned?: boolean; listed?: boolean } {
+  try {
+    return linksBridge?.pinState ? JSON.parse(linksBridge.pinState("youtube")) : {};
+  } catch {
+    return {};
+  }
+}
+
+function renderObIcon() {
+  // Android without the bridge (a desktop build) shows the drawing only.
+  document.querySelector<HTMLElement>(".ob-icon-android")!.hidden = IOS || !linksBridge;
+  document.querySelector<HTMLElement>(".ob-icon-ios")!.hidden = !IOS;
+  const st = obIconState();
+  const btn = document.querySelector<HTMLButtonElement>("#ob-pin")!;
+  const name = document.querySelector<HTMLInputElement>("#ob-pin-name")!;
+  const note = document.querySelector<HTMLElement>("#ob-pin-note")!;
+  const next = document.querySelector<HTMLButtonElement>("#ob-icon-next")!;
+  name.hidden = !!(st.pinned || st.supported === false);
+  btn.hidden = !!st.pinned;
+  btn.textContent = st.supported === false ? "Add to app list" : "Add to home screen";
+  if (st.pinned) note.textContent = PIN_WORDS.pinned;
+  // After an attempt, or once it is there, the way on is a plain
+  // Continue; before that, the quiet "Not now" declines.
+  const settled = obPinTried || !!st.pinned || (st.listed === true && st.supported === false);
+  next.textContent = settled ? "Continue" : "Not now";
+  next.className = settled ? "btn-solid" : "link-btn center";
+}
+
+// ---- tips on home ----
+// Three things home has, pointed at on the real screen. Tap Next, or
+// anywhere on the dimmed page, to move on.
+
+type Tip = { el: string; text: string };
+const TIPS: Tip[] = [
+  { el: "#open-link", text: "Search privately, or type any site, like wikipedia.org. It opens calm." },
+  { el: "#tiles", text: "Your sites live here. Tap + to add the ones you use, so they're one tap away." },
+  { el: "#open-settings", text: "Settings: blur, look, each site's switches, and this tour again." },
+];
+let tipAt = -1;
+
+function startCoach() {
+  if (views.launcher.hidden) return;
+  tipAt = 0;
+  document.querySelector<HTMLElement>("#coach")!.hidden = false;
+  placeTip();
+}
+
+function endCoach() {
+  tipAt = -1;
+  document.querySelector<HTMLElement>("#coach")!.hidden = true;
+}
+
+function placeTip() {
+  if (tipAt < 0) return;
+  const tip = TIPS[tipAt];
+  const target = document.querySelector<HTMLElement>(tip.el);
+  if (!target) return nextTip();
+  target.scrollIntoView({ block: "center", behavior: "instant" as ScrollBehavior });
+  const r = target.getBoundingClientRect();
+  const pad = 8;
+  const hole = document.querySelector<HTMLElement>("#coach-hole")!;
+  hole.style.left = `${r.left - pad}px`;
+  hole.style.top = `${r.top - pad}px`;
+  hole.style.width = `${r.width + pad * 2}px`;
+  hole.style.height = `${r.height + pad * 2}px`;
+  const card = document.querySelector<HTMLElement>("#coach-card")!;
+  document.querySelector<HTMLElement>("#coach-n")!.textContent = `Tip ${tipAt + 1} of ${TIPS.length}`;
+  document.querySelector<HTMLElement>("#coach-text")!.textContent = tip.text;
+  document.querySelector<HTMLElement>("#coach-next")!.textContent = tipAt === TIPS.length - 1 ? "Done" : "Next";
+  // Below the hole when there is room, else above it.
+  const below = r.bottom + pad + 12;
+  card.style.top = "";
+  card.style.bottom = "";
+  if (below + 150 < window.innerHeight) card.style.top = `${below}px`;
+  else card.style.bottom = `${window.innerHeight - (r.top - pad - 12)}px`;
+}
+
+function nextTip() {
+  if (tipAt >= TIPS.length - 1) return endCoach();
+  tipAt += 1;
+  placeTip();
+}
+
+function bindOnboarding() {
+  if (obBound) return;
+  obBound = true;
+
+  document.querySelector<HTMLButtonElement>("#ob-back")!.addEventListener("click", () => {
+    const prev = obTrail.pop();
+    if (prev) obGoto(prev, false);
+  });
+  document.querySelector<HTMLButtonElement>("#ob-start")!.addEventListener("click", () => obGoto(OB_FLOW[0]));
+
+  // Time back: their guess, shown as a plain sum and a modest "if".
+  const timeRange = document.querySelector<HTMLInputElement>("#ob-time-range")!;
+  let lastTick = Number(timeRange.value);
+  timeRange.addEventListener("input", () => {
+    // A drag mid count-up takes over: stop it and restore the transitions.
+    countRun++;
+    document.querySelectorAll<HTMLElement>("#ob-time-life i").forEach((c) => { c.style.transition = ""; });
+    const v = Number(timeRange.value);
+    if (Math.floor(v / 30) !== Math.floor(lastTick / 30)) tick();
+    lastTick = v;
+    showTimeBack(v);
+  });
+  document.querySelector<HTMLButtonElement>("#ob-time-next")!.addEventListener("click", () => {
+    try { localStorage.setItem(TIME_KEY, timeRange.value); } catch { /* fine, it is only shown */ }
+    obGoto(obNext("time"));
+  });
+  document.querySelector<HTMLButtonElement>("#ob-time-skip")!.addEventListener("click", () => {
+    try { localStorage.removeItem(TIME_KEY); } catch { /* nothing kept */ }
+    obGoto(obNext("time"));
+  });
+  document.querySelectorAll<HTMLButtonElement>("#ob-why-opts .why-opt").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("on");
+      tick();
+      renderObWhy(pickedWhy());
+    });
+  });
+  document.querySelector<HTMLButtonElement>("#ob-why-next")!.addEventListener("click", () => {
+    try { localStorage.setItem(WHY_KEY, JSON.stringify(pickedWhy())); } catch { /* fine, it is only shown */ }
+    obGoto(obNext("why"));
+  });
+  document.querySelector<HTMLButtonElement>("#ob-why-skip")!.addEventListener("click", () => {
+    try { localStorage.removeItem(WHY_KEY); } catch { /* nothing kept */ }
+    obGoto(obNext("why"));
+  });
+  document.querySelector<HTMLButtonElement>("#ob-skip-all")!.addEventListener("click", () => obFinish(false));
+  document.querySelector<HTMLButtonElement>("#ob-skip")!.addEventListener("click", () => obFinish(false));
+
+  // Look: one tap applies it and moves on.
+  document.querySelectorAll<HTMLButtonElement>("#view-onboard .look").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tick();
+      soon(() => obGoto(obNext("look")), 450);
+    });
+  });
+
+
+  // Blur: each person in the still is a switch. Both on is everyone.
+  document.querySelectorAll<HTMLButtonElement>("#ob-blur-stage [data-who]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const w = document.querySelector<HTMLElement>('#ob-blur-stage [data-who="women"]')!;
+      const m = document.querySelector<HTMLElement>('#ob-blur-stage [data-who="men"]')!;
+      const wOn = btn === w ? !w.classList.contains("on") : w.classList.contains("on");
+      const mOn = btn === m ? !m.classList.contains("on") : m.classList.contains("on");
+      const choice: BlurChoice = wOn && mOn ? "all" : wOn ? "women" : mOn ? "men" : "none";
+      setChoice(choice);
+      markBlurChoice(choice);
+      tick();
+    });
+  });
+  document.querySelector<HTMLButtonElement>("#ob-blur-next")!.addEventListener("click", () => {
+    // Moving on without a tap is an answer too: no blur.
+    if (getChoice() === null) setChoice("none");
+    obGoto(obNext("blur"));
+  });
+
+  document.querySelector<HTMLButtonElement>("#ob-bar-next")!.addEventListener("click", () => {
+    obCommit();
+    obGoto(obNext("bar"));
+  });
+
+  document.querySelector<HTMLButtonElement>("#ob-pin")!.addEventListener("click", () => {
+    const note = document.querySelector<HTMLElement>("#ob-pin-note")!;
+    if (!linksBridge) return;
+    try {
+      const name = document.querySelector<HTMLInputElement>("#ob-pin-name")!.value.trim();
+      const r = String(linksBridge.pinNamed ? linksBridge.pinNamed("youtube", name) : linksBridge.pinShortcut("youtube"));
+      obPinTried = true;
+      renderObIcon();
+      note.textContent = PIN_WORDS[r] ?? "";
+    } catch {
+      note.textContent = PIN_WORDS.refused;
+    }
+  });
+  // iPhone: Apple's Shortcuts app opens on a new shortcut through the
+  // iPhone shell's tsShortcuts handler (absent elsewhere, then a no-op).
+  document.querySelector<HTMLButtonElement>("#ob-shortcuts")!.addEventListener("click", () => {
+    const w = window as unknown as {
+      webkit?: { messageHandlers?: { tsShortcuts?: { postMessage(m: string): void } } };
+    };
+    try { w.webkit?.messageHandlers?.tsShortcuts?.postMessage("create"); } catch { /* no Shortcuts bridge */ }
+    obPinTried = true;
+    renderObIcon();
+  });
+  document.querySelector<HTMLButtonElement>("#ob-icon-next")!.addEventListener("click", () => obGoto("end"));
+
+  document.querySelector<HTMLButtonElement>("#coach-next")!.addEventListener("click", nextTip);
+  document.querySelector<HTMLButtonElement>("#coach-skip")!.addEventListener("click", endCoach);
+  document.querySelector<HTMLElement>("#coach")!.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget || e.target === document.querySelector("#coach-hole")) nextTip();
+  });
+  window.addEventListener("resize", placeTip);
+}
+
+document.querySelector<HTMLButtonElement>("#replay-tour")!.addEventListener("click", () => {
+  runOnboarding(() => {
+    showView("launcher");
+    refreshAll();
+  }, true);
+});
 
 // ---------- startup ----------
 
