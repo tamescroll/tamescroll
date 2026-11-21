@@ -185,7 +185,8 @@ function renderBlurToggle() {
     const active = choice === "all" || btn.dataset.value === choice;
     btn.classList.toggle("active", active);
     btn.classList.toggle("chosen", active);
-    btn.setAttribute("aria-checked", String(active));
+    btn.classList.toggle("on", active);
+    btn.setAttribute("aria-pressed", String(active));
   });
   // The watch player is not blurred (his 2026-10-27 ruling, gaze
   // PLAYER_VIDEO_BLUR); the pane's own line says so.
@@ -1685,14 +1686,22 @@ function renderObDots(step: string) {
   });
 }
 
+const BLUR_SAY: Record<BlurChoice, string> = {
+  all: "Everyone in videos is blurred.",
+  women: "Women in videos are blurred.",
+  men: "Men in videos are blurred.",
+  none: "Nothing blurred. Tap a person to blur them.",
+};
 function markBlurChoice(choice: BlurChoice | null) {
-  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards [data-choice]").forEach((btn) => {
-    const on = btn.dataset.choice === choice;
-    btn.classList.toggle("chosen", on);
-    btn.setAttribute("aria-checked", String(on));
+  const c = choice ?? "none";
+  document.querySelector<HTMLElement>("#ob-blur-stage")!.dataset.show = c;
+  document.querySelectorAll<HTMLButtonElement>("#ob-blur-stage [data-who]").forEach((btn) => {
+    const on = c === "all" || c === btn.dataset.who;
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", String(on));
   });
-  document.querySelector<HTMLElement>("#ob-blur-stage")!.dataset.show = choice ?? "none";
-  document.querySelector<HTMLButtonElement>("#ob-blur-next")!.disabled = choice === null;
+  document.querySelector<HTMLElement>("#ob-blur-say")!.textContent =
+    choice === null ? "What you see stays your choice. Tap both for everyone, or neither for none." : BLUR_SAY[c];
 }
 
 // The welcome picture plays on arrival and again every few seconds while
@@ -1754,6 +1763,7 @@ function timeWords(min: number): string {
 function showTimeBack(min: number) {
   const range = document.querySelector<HTMLInputElement>("#ob-time-range")!;
   range.value = String(min);
+  paintHeat(min);
   range.style.setProperty("--fill", `${((min - 30) / (720 - 30)) * 100}%`);
   range.setAttribute("aria-valuetext", `${timeWords(min)} a day`);
   const read = document.querySelector<HTMLElement>("#ob-time-read")!;
@@ -1785,6 +1795,38 @@ function renderObTime() {
   try { min = Number(localStorage.getItem(TIME_KEY)) || 0; } catch { /* none kept */ }
   showTimeBack(min || 120);
   countUp();
+}
+
+// The screen warms as the hours grow: sage under an hour, amber around
+// the average, coral past five, deep red near the top. Kind words with it,
+// never a scold.
+const MOODS: [number, string][] = [
+  [60, "Pretty light. Nice."],
+  [135, "Around what most people do."],
+  [240, "That adds up quietly."],
+  [360, "A big slice of every day."],
+  [540, "More than a workday's worth of evenings."],
+  [721, "Most of the time you're awake and free."],
+];
+let lastMood = "";
+function paintHeat(min: number) {
+  const k = Math.min(1, Math.max(0, (min - 30) / (480 - 30)));
+  // Hue 145 (sage) down to 4 (red); a touch more colour as it climbs.
+  const hue = Math.round(145 - 141 * Math.pow(k, 0.85));
+  const sat = Math.round(38 + 30 * k);
+  const step = document.querySelector<HTMLElement>('.ob-step[data-step="time"]')!;
+  step.style.setProperty("--heat", `hsl(${hue} ${sat}% 62%)`);
+  step.style.setProperty("--heat-ink", `hsl(${hue} ${sat}% 40%)`);
+  step.style.setProperty("--heat-glow", `hsl(${hue} ${sat}% 55% / 0.22)`);
+  const mood = (MOODS.find(([m]) => min <= m) ?? MOODS[MOODS.length - 1])[1];
+  const el = document.querySelector<HTMLElement>("#ob-time-mood")!;
+  if (mood !== lastMood) {
+    lastMood = mood;
+    el.textContent = mood;
+    el.classList.remove("pop");
+    void el.offsetWidth;
+    el.classList.add("pop");
+  }
 }
 
 // On arrival the years count up and the squares fill one after another,
@@ -1920,11 +1962,15 @@ function bindOnboarding() {
 
   // Time back: their guess, shown as a plain sum and a modest "if".
   const timeRange = document.querySelector<HTMLInputElement>("#ob-time-range")!;
+  let lastTick = Number(timeRange.value);
   timeRange.addEventListener("input", () => {
     // A drag mid count-up takes over: stop it and restore the transitions.
     countRun++;
     document.querySelectorAll<HTMLElement>("#ob-time-life i").forEach((c) => { c.style.transition = ""; });
-    showTimeBack(Number(timeRange.value));
+    const v = Number(timeRange.value);
+    if (Math.floor(v / 30) !== Math.floor(lastTick / 30)) tick();
+    lastTick = v;
+    showTimeBack(v);
   });
   document.querySelector<HTMLButtonElement>("#ob-time-next")!.addEventListener("click", () => {
     try { localStorage.setItem(TIME_KEY, timeRange.value); } catch { /* fine, it is only shown */ }
@@ -1946,17 +1992,24 @@ function bindOnboarding() {
   });
 
 
-  // Blur: stored the moment it is tapped and shown on the still; the
-  // person moves on when they have seen it.
-  document.querySelectorAll<HTMLButtonElement>("#ob-blur-cards [data-choice]").forEach((btn) => {
+  // Blur: each person in the still is a switch. Both on is everyone.
+  document.querySelectorAll<HTMLButtonElement>("#ob-blur-stage [data-who]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const choice = btn.dataset.choice as BlurChoice;
+      const w = document.querySelector<HTMLElement>('#ob-blur-stage [data-who="women"]')!;
+      const m = document.querySelector<HTMLElement>('#ob-blur-stage [data-who="men"]')!;
+      const wOn = btn === w ? !w.classList.contains("on") : w.classList.contains("on");
+      const mOn = btn === m ? !m.classList.contains("on") : m.classList.contains("on");
+      const choice: BlurChoice = wOn && mOn ? "all" : wOn ? "women" : mOn ? "men" : "none";
       setChoice(choice);
       markBlurChoice(choice);
       tick();
     });
   });
-  document.querySelector<HTMLButtonElement>("#ob-blur-next")!.addEventListener("click", () => obGoto(obNext("blur")));
+  document.querySelector<HTMLButtonElement>("#ob-blur-next")!.addEventListener("click", () => {
+    // Moving on without a tap is an answer too: no blur.
+    if (getChoice() === null) setChoice("none");
+    obGoto(obNext("blur"));
+  });
 
   document.querySelector<HTMLButtonElement>("#ob-bar-next")!.addEventListener("click", () => {
     obCommit();

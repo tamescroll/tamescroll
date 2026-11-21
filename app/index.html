@@ -225,21 +225,23 @@
             <section class="pane" id="pane-blur" hidden>
               <!-- The tutorial's still, live: it shows the answer and the
                    strength as they are tapped. Drawn, never a photo. -->
-              <div class="pane-stage bs blur-hero" id="blur-hero" data-show="none" aria-hidden="true">
-                <div class="bs-scene"><svg class="bs-p bs-w" viewBox="0 0 120 140"><path class="bs-body" d="M14 140c0-28 20-43 46-43s46 15 46 43"/><path class="bs-hair" d="M37 60c-2-24 8-38 23-38s25 14 23 38c-1 13 2 24 8 33-10 4-20 5-31 3-11 2-21 1-31-3 6-9 9-20 8-33z"/><circle class="bs-head" cx="60" cy="56" r="19"/><path class="bs-line" d="M41.5 52c8-2 15-9 18.5-18 4 9 11 15 18.5 17"/></svg><svg class="bs-p bs-m" viewBox="0 0 120 140"><path class="bs-body" d="M8 140c0-30 22-45 52-45s52 15 52 45"/><path class="bs-line" d="M47 96l13 15 13-15"/><path class="bs-line" d="M53 80v15M67 80v15"/><g transform="translate(0 8)"><circle class="bs-head" cx="60" cy="54" r="20"/><path class="bs-hair" d="M39.5 51c0-15 8.5-24 20.5-24s20.5 9 20.5 24c-4-5-11-8.5-20.5-8.5S43.5 46 39.5 51z"/></g></svg><span class="bs-patch bs-pw"></span><span class="bs-patch bs-pm"></span></div>
+              <!-- The tutorial's still (PR 49, his pick 2026-11-21): tap the woman
+                   or the man to blur them; both is everyone, neither is nobody. -->
+              <div class="pane-stage bs blur-hero" id="blur-hero" data-show="none">
+                <div class="bs-scene" id="blur-toggle" role="group" aria-label="Who to blur">
+                <button type="button" class="bs-who bs-w" data-value="women" aria-pressed="false" aria-label="Blur women"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M16 150c0-27 19-42 44-42s44 15 44 42"/><path d="M48 109.5c4 5.5 8 8 12 8s8-2.5 12-8"/><path d="M29 100c6-9 8-21 7-34-2-26 9-42 24-42s26 16 24 42c-1 13 1 25 7 34"/><path class="ln-neck" d="M54 86v22M66 86v22"/><ellipse class="ln-fill" cx="60" cy="63" rx="17.5" ry="21"/><path d="M42.5 59c7-1 13.5-6 17.5-14 4 8 10.5 13 17.5 14"/></svg><span class="bs-patch"></span><span class="bs-tag">Women</span></button>
+                <button type="button" class="bs-who bs-m" data-value="men" aria-pressed="false" aria-label="Blur men"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M10 150c0-29 22-44 50-44s50 15 50 44"/><path d="M48 106l12 13 12-13"/><path class="ln-neck" d="M53 84v21M67 84v21"/><path d="M41.5 58c-3 0-4.5 2.2-4.5 5s1.5 5.5 4.5 5.5M78.5 58c3 0 4.5 2.2 4.5 5s-1.5 5.5-4.5 5.5"/><ellipse class="ln-fill" cx="60" cy="61" rx="18.5" ry="22"/><path class="ln-fill" d="M41.7 61C39 42 48 31.5 60.5 31.5S81.5 41 78.3 59C76 51 70 45.5 63 44 57 50.5 50 56.5 41.7 61Z"/></svg><span class="bs-patch"></span><span class="bs-tag">Men</span></button>
+                </div>
               </div>
               <div class="pane-hero tight">
                 <h2>Blur</h2>
-                <p class="pane-sub">Tick who to blur in pictures and video previews. The video you choose to watch plays normally.</p>
+                <p class="pane-sub">Tap who to blur in pictures and previews. Both for everyone, neither for none.</p>
               </div>
               <!-- One question, asked the way the stores already accept it
                    (HaramBlur, Haya Shield, Tahir Browser): what to blur,
                    never the user's own gender. Each answer is a stored
                    mode + gender pair; coverage is unchanged. -->
-              <div class="bseg two" id="blur-toggle" role="group" aria-label="Who to blur">
-                <button type="button" class="bseg-opt" role="checkbox" data-value="women"><span class="tick-box" aria-hidden="true"></span>Women</button>
-                <button type="button" class="bseg-opt" role="checkbox" data-value="men"><span class="tick-box" aria-hidden="true"></span>Men</button>
-              </div>
+              
               <p class="setting-caption center" id="blur-caption"></p>
               <div id="blur-strength-row" hidden>
                 <p class="group-head">Strength</p>
@@ -415,7 +417,12 @@
             <h1 class="display">How long do feeds get you a day?</h1>
             <div class="time-pick">
               <p class="time-read" id="ob-time-read" aria-hidden="true"><b>2 hours</b> a day</p>
-              <input type="range" class="time-range" id="ob-time-range" min="30" max="720" step="15" value="120" aria-label="Time on feeds a day">
+              <p class="time-mood" id="ob-time-mood" aria-live="polite"></p>
+              <div class="time-track">
+                <input type="range" class="time-range" id="ob-time-range" min="30" max="720" step="15" value="120" aria-label="Time on feeds a day">
+                <!-- Statista's worldwide average, 145 minutes a day (2019-2020). -->
+                <span class="time-avg" aria-hidden="true"><i></i>avg</span>
+              </div>
               <div class="time-scale" aria-hidden="true"><span>30m</span><span>3h</span><span>6h</span><span>9h</span><span>12h</span></div>
             </div>
             <p class="time-small" id="ob-time-small"></p>
@@ -441,7 +448,10 @@
           </div>
         </div>
 
-        <!-- Who to blur (his 2026-11-20: the clip-art cards looked cheap).
+        <!-- Who to blur (his 2026-11-20: "4 options are just annoying ...
+             they can tick 2"). The two people in the still are the switches:
+             tap one to blur them, both for everyone, neither for none, so
+             blurring everyone stays exactly as easy as either gender.
              One large still from a made-up video, drawn in line, and four
              plain answers under it; the still shows each answer as it is
              tapped, then Continue. "Everyone" stays beside the gender
@@ -449,20 +459,18 @@
              Nobody is asked their own gender (his 2026-10-27). -->
         <div class="ob-step" data-step="blur" hidden>
           <div class="ob-center">
-            <div class="ob-stage bs" id="ob-blur-stage" data-show="none" aria-hidden="true">
-              <div class="bs-scene"><svg class="bs-p bs-w" viewBox="0 0 120 140"><path class="bs-body" d="M14 140c0-28 20-43 46-43s46 15 46 43"/><path class="bs-hair" d="M37 60c-2-24 8-38 23-38s25 14 23 38c-1 13 2 24 8 33-10 4-20 5-31 3-11 2-21 1-31-3 6-9 9-20 8-33z"/><circle class="bs-head" cx="60" cy="56" r="19"/><path class="bs-line" d="M41.5 52c8-2 15-9 18.5-18 4 9 11 15 18.5 17"/></svg><svg class="bs-p bs-m" viewBox="0 0 120 140"><path class="bs-body" d="M8 140c0-30 22-45 52-45s52 15 52 45"/><path class="bs-line" d="M47 96l13 15 13-15"/><path class="bs-line" d="M53 80v15M67 80v15"/><g transform="translate(0 8)"><circle class="bs-head" cx="60" cy="54" r="20"/><path class="bs-hair" d="M39.5 51c0-15 8.5-24 20.5-24s20.5 9 20.5 24c-4-5-11-8.5-20.5-8.5S43.5 46 39.5 51z"/></g></svg><span class="bs-patch bs-pw"></span><span class="bs-patch bs-pm"></span></div>
-              <div class="bs-ui"><span class="bs-play"></span><span class="bs-prog"><i></i></span><span class="bs-time">2:14</span></div>
+            <div class="ob-stage bs" id="ob-blur-stage" data-show="none">
+              <div class="bs-scene">
+                <button type="button" class="bs-who bs-w" data-who="women" aria-pressed="false" aria-label="Blur women"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M16 150c0-27 19-42 44-42s44 15 44 42"/><path d="M48 109.5c4 5.5 8 8 12 8s8-2.5 12-8"/><path d="M29 100c6-9 8-21 7-34-2-26 9-42 24-42s26 16 24 42c-1 13 1 25 7 34"/><path class="ln-neck" d="M54 86v22M66 86v22"/><ellipse class="ln-fill" cx="60" cy="63" rx="17.5" ry="21"/><path d="M42.5 59c7-1 13.5-6 17.5-14 4 8 10.5 13 17.5 14"/></svg><span class="bs-patch"></span><span class="bs-tag">Women</span></button>
+                <button type="button" class="bs-who bs-m" data-who="men" aria-pressed="false" aria-label="Blur men"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M10 150c0-29 22-44 50-44s50 15 50 44"/><path d="M48 106l12 13 12-13"/><path class="ln-neck" d="M53 84v21M67 84v21"/><path d="M41.5 58c-3 0-4.5 2.2-4.5 5s1.5 5.5 4.5 5.5M78.5 58c3 0 4.5 2.2 4.5 5s-1.5 5.5-4.5 5.5"/><ellipse class="ln-fill" cx="60" cy="61" rx="18.5" ry="22"/><path class="ln-fill" d="M41.7 61C39 42 48 31.5 60.5 31.5S81.5 41 78.3 59C76 51 70 45.5 63 44 57 50.5 50 56.5 41.7 61Z"/></svg><span class="bs-patch"></span><span class="bs-tag">Men</span></button>
+              </div>
             </div>
-            <h1 class="display">Who should be blurred?</h1>
-            <div class="bseg" id="ob-blur-cards" role="radiogroup" aria-label="Who to blur">
-              <button type="button" class="bseg-opt" role="radio" data-choice="all">Everyone</button>
-              <button type="button" class="bseg-opt" role="radio" data-choice="women">Women</button>
-              <button type="button" class="bseg-opt" role="radio" data-choice="men">Men</button>
-              <button type="button" class="bseg-opt" role="radio" data-choice="none">Nobody</button>
-            </div>
+            <p class="ob-eyebrow">Protect your gaze</p>
+            <h1 class="display">Tap who to blur</h1>
+            <p class="lede" id="ob-blur-say">What you see stays your choice. Tap both for everyone, or neither for none.</p>
             <p class="ob-later"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Change it any time in <b>Settings</b>.</span></p>
             <div class="actions center col narrow-actions">
-              <button type="button" class="btn-solid" id="ob-blur-next" disabled>Continue</button>
+              <button type="button" class="btn-solid" id="ob-blur-next">Continue</button>
             </div>
           </div>
         </div>
