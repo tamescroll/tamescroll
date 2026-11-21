@@ -1525,7 +1525,7 @@ document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("c
 
 // One dot per step after the welcome.
 // No "look" step (his 2026-11-20): Night is the default, Paper stays in Settings.
-const OB_FLOW = IOS ? ["time", "bar", "icon"] : ["time", "blur", "bar", "icon"];
+const OB_FLOW = IOS ? ["time", "why", "bar", "icon"] : ["time", "why", "blur", "bar", "icon"];
 let obDone: () => void = () => {};
 let obBound = false;
 let obReplay = false;
@@ -1567,6 +1567,7 @@ function obGoto(step: string, remember = true) {
   if (step === "blur") markBlurChoice(obReplay || readChosen() !== null ? getChoice() : null);
   if (step === "welcome") playDemo(); else stopDemo();
   if (step === "time") renderObTime();
+  if (step === "why") renderObWhy();
   if (step === "icon") renderObIcon();
   window.scrollTo(0, 0);
 }
@@ -1639,6 +1640,44 @@ function obFinish(tips = true) {
   obDone();
   // Let home paint, then teach it in place.
   if (tips) soon(startCoach, 350);
+}
+
+// ---- why ----
+// One forward-looking question after the years. Kept on this phone only.
+const WHY_KEY = "tamescroll.why";
+const WHY_WORDS: Record<string, string> = {
+  family: "family", prayer: "prayer", sleep: "sleep",
+  learning: "learning", health: "your health", making: "making things",
+};
+function readWhy(): string[] {
+  try { return (JSON.parse(localStorage.getItem(WHY_KEY) || "[]") as string[]).filter((w) => w in WHY_WORDS); } catch { return []; }
+}
+function pickedWhy(): string[] {
+  return [...document.querySelectorAll<HTMLButtonElement>("#ob-why-opts .why-opt.on")].map((b) => b.dataset.why!);
+}
+function renderObWhy(picked = readWhy()) {
+  document.querySelectorAll<HTMLButtonElement>("#ob-why-opts .why-opt").forEach((b) => {
+    const on = picked.includes(b.dataset.why!);
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  document.querySelector<HTMLButtonElement>("#ob-why-next")!.disabled = picked.length === 0;
+  let min = 0;
+  try { min = Number(localStorage.getItem(TIME_KEY)) || 0; } catch { /* none kept */ }
+  const big = document.querySelector<HTMLElement>("#ob-why-big")!;
+  big.textContent = "";
+  const n = document.createElement("b");
+  n.textContent = min ? `${Math.max(1, Math.round((min / 3) * 7 / 60))} hours` : "Time";
+  const words = picked.map((w) => WHY_WORDS[w]);
+  const what = words.length === 0 ? "what matters to you"
+    : words.length <= 2 ? words.join(" and ")
+    : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+  const em = document.createElement("em");
+  em.textContent = what;
+  big.append(n, document.createElement("br"), min ? "a week back for " : "back for ", em);
+  big.classList.remove("pop");
+  void big.offsetWidth;
+  if (picked.length) big.classList.add("pop");
 }
 
 // ---- time back ----
@@ -1879,6 +1918,21 @@ function bindOnboarding() {
   document.querySelector<HTMLButtonElement>("#ob-time-skip")!.addEventListener("click", () => {
     try { localStorage.removeItem(TIME_KEY); } catch { /* nothing kept */ }
     obGoto(obNext("time"));
+  });
+  document.querySelectorAll<HTMLButtonElement>("#ob-why-opts .why-opt").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("on");
+      tick();
+      renderObWhy(pickedWhy());
+    });
+  });
+  document.querySelector<HTMLButtonElement>("#ob-why-next")!.addEventListener("click", () => {
+    try { localStorage.setItem(WHY_KEY, JSON.stringify(pickedWhy())); } catch { /* fine, it is only shown */ }
+    obGoto(obNext("why"));
+  });
+  document.querySelector<HTMLButtonElement>("#ob-why-skip")!.addEventListener("click", () => {
+    try { localStorage.removeItem(WHY_KEY); } catch { /* nothing kept */ }
+    obGoto(obNext("why"));
   });
   document.querySelector<HTMLButtonElement>("#ob-skip-all")!.addEventListener("click", () => obFinish(false));
   document.querySelector<HTMLButtonElement>("#ob-skip")!.addEventListener("click", () => obFinish(false));

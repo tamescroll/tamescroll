@@ -1028,3 +1028,19 @@ b { font-weight: 600; }
 .ln .ln-neck { stroke-width: 2; }
 .bs-who.on svg.ln { filter: blur(10px); }
 .bs .bs-who.bs-w, .bs .bs-who.bs-m { filter: none; left: auto; right: auto; }
+
+/* ---- why: one forward-looking question (2026-11-21) ---- */
+.ob-stage.wy { display: flex; align-items: center; justify-content: center; }
+.why-big { font-family: "Spectral", Georgia, serif; text-align: center; font-size: 22px; line-height: 1.35; color: var(--muted); margin: 0; padding: 0 24px; }
+.why-big b { display: inline-block; font-size: 64px; line-height: 1.05; font-weight: 500; color: var(--ink); letter-spacing: -0.01em; }
+.why-big em { font-style: normal; color: var(--ink); }
+.why-big.pop em { animation: why-pop .45s cubic-bezier(.2,.8,.2,1); }
+@keyframes why-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 360px; margin: 18px auto 0; }
+.why-opt { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; border-radius: 16px; border: 1px solid var(--line); background: rgba(236,231,222,.03); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer; transition: background .2s, border-color .2s, color .2s, transform .12s; }
+.why-opt:active { transform: scale(.97); }
+.why-opt svg { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
+.why-opt.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.why-opt.on svg { opacity: 1; }
+.ob-step[data-step="why"] .ob-stage { height: clamp(150px, 26vh, 230px); }
+@media (max-height: 700px) { .why-big b { font-size: 48px; } .why-opt { min-height: 46px; } .ob-step[data-step="why"] .lede { display: none; } }
