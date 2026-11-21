@@ -135,7 +135,7 @@ pub fn embedded(name: &str) -> Option<&'static str> {
 /// Coverage is deliberately the set the YouTube ad rules in
 /// ubo-filters.txt actually call. Known-unimplemented names those lists
 /// also reference (`trusted-json-edit-xhr-request`,
-/// `trusted-prevent-dom-bypass`, `rpnt`, `rmnt`, `nano-stb`): their rules
+/// `trusted-prevent-dom-bypass`, `rpnt`; desktop www.youtube.com and other sites, none on m.youtube): their rules
 /// are skipped silently by the engine — they are anti-detection
 /// countermeasures, not the core ad strip. Add implementations here if
 /// they ever become load-bearing.
@@ -164,6 +164,24 @@ const SCRIPTLETS: &[(&str, &[&str], &str)] = &[
         "trusted-replace-xhr-response.js",
         &[],
         include_str!("../scriptlets/trusted-replace-xhr-response.js"),
+    ),
+    // Generic names the public lists call on many sites (Facebook's in-feed
+    // video ads and sponsored side feed, countdown walls, anti-adblock
+    // inline scripts). Clean-room, like the rest.
+    (
+        "json-prune-xhr-response.js",
+        &[],
+        include_str!("../scriptlets/json-prune-xhr-response.js"),
+    ),
+    (
+        "nano-setTimeout-booster.js",
+        &["nano-stb.js"],
+        include_str!("../scriptlets/nano-setTimeout-booster.js"),
+    ),
+    (
+        "remove-node-text.js",
+        &["rmnt.js"],
+        include_str!("../scriptlets/remove-node-text.js"),
     ),
     (
         // Our own request-editor (not a uBO name): sets one dotted field on
@@ -729,5 +747,29 @@ mod engine_timing_probe {
         let t = std::time::Instant::now();
         d.use_resources(resources());
         eprintln!("use_res2   {:?}", t.elapsed());
+    }
+}
+
+#[cfg(test)]
+mod generic_scriptlet_tests {
+    use super::*;
+
+    /// The public lists' own rules reach the page through the three generic
+    /// scriptlets: Facebook's sponsored-feed prune (json-prune-xhr-response),
+    /// a site's countdown booster (nano-stb) and an anti-adblock script
+    /// remover (rmnt). An unresolved name is skipped silently by the
+    /// engine, so this asserts each emitted call, not just that a script
+    /// came back.
+    #[test]
+    fn public_list_rules_resolve_to_our_generic_scriptlets() {
+        let engine = build_engine();
+        for (url, needle) in [
+            ("https://www.facebook.com/", "jsonPruneXhrResponse("),
+            ("https://1fichier.com/", "nanoSetTimeoutBooster("),
+            ("https://www.washingtonpost.com/", "removeNodeText("),
+        ] {
+            let js = engine.url_cosmetic_resources(url).injected_script;
+            assert!(js.contains(needle), "{url}: expected a {needle} call");
+        }
     }
 }
