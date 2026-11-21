@@ -138,38 +138,82 @@ function setChoice(c: BlurChoice) {
 }
 
 const CAPTIONS: Record<BlurChoice, string> = {
-  all: "Blurs every picture and preview on the pages you browse.",
+  all: "Both ticked: every picture and preview is blurred.",
   women: "Blurs women in pictures and previews. Faces it can't place stay covered.",
   men: "Blurs men in pictures and previews. Faces it can't place stay covered.",
-  none: "",
+  none: "Nothing ticked: nothing is blurred.",
 };
+
+// A segmented control's thumb slides under the chosen option (2026-11-20).
+// Measured from the button itself, so it fits any label length and the
+// hidden Blur tab on iPhone; a control not on screen yet is skipped and
+// placed again when it shows.
+function placeThumb(seg: Element | null) {
+  if (!seg) return;
+  const thumb = seg.querySelector<HTMLElement>(".seg-thumb");
+  const on = seg.querySelector<HTMLElement>(".seg-opt.active");
+  if (!thumb) return;
+  if (!on || !on.offsetWidth) {
+    thumb.style.opacity = on ? thumb.style.opacity : "0";
+    return;
+  }
+  thumb.style.opacity = "1";
+  thumb.style.width = `${on.offsetWidth}px`;
+  thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+}
+function placeAllThumbs() {
+  document.querySelectorAll(".seg").forEach(placeThumb);
+}
+window.addEventListener("resize", placeAllThumbs);
+
+// The still at the top of Settings -> Blur shows the answer and the
+// strength, the way the tutorial's still shows the answer.
+const blurHero = document.querySelector<HTMLElement>("#blur-hero");
+const HERO_BLUR: Record<number, string> = { 8: "5px", 16: "9px", 28: "14px" };
 
 function renderBlurToggle() {
   const mode = getMode();
   const choice = getChoice();
-  blurToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
-    const active = btn.dataset.value === choice;
+  if (blurHero) {
+    // Smart with no gender (an old skip) still covers every face.
+    blurHero.dataset.show = choice ?? "all";
+    blurHero.style.setProperty("--bpx", HERO_BLUR[getStrength()] ?? "9px");
+  }
+  // Two ticks (his 2026-11-20): Women, Men. Both is everyone, neither is
+  // nobody, so the four stored answers map onto two boxes.
+  blurToggle.querySelectorAll<HTMLButtonElement>("[data-value]").forEach((btn) => {
+    const active = choice === "all" || btn.dataset.value === choice;
     btn.classList.toggle("active", active);
-    btn.setAttribute("aria-checked", String(active));
+    btn.classList.toggle("chosen", active);
+    btn.classList.toggle("on", active);
+    btn.setAttribute("aria-pressed", String(active));
   });
   // The watch player is not blurred (his 2026-10-27 ruling, gaze
   // PLAYER_VIDEO_BLUR); the pane's own line says so.
   blurCaption.textContent = choice
     ? CAPTIONS[choice]
-    : "Every face is blurred until you choose. Pick one above to change it.";
+    : "Every face is blurred until you choose. Tick who to blur.";
   const px = getStrength();
   strengthRow.hidden = mode === "off";
-  strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
+  strengthToggle.querySelectorAll<HTMLButtonElement>(".seg-opt").forEach((btn) => {
     const active = Number(btn.dataset.value) === px;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-checked", String(active));
   });
+  placeThumb(strengthToggle);
 }
 
-blurToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
-  btn.addEventListener("click", () => setChoice(btn.dataset.value as BlurChoice));
+blurToggle.querySelectorAll<HTMLButtonElement>("[data-value]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const c = getChoice();
+    let women = c === "all" || c === "women";
+    let men = c === "all" || c === "men";
+    if (btn.dataset.value === "women") women = !women;
+    else men = !men;
+    setChoice(women && men ? "all" : women ? "women" : men ? "men" : "none");
+  });
 });
-strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
+strengthToggle.querySelectorAll<HTMLButtonElement>(".seg-opt").forEach((btn) => {
   btn.addEventListener("click", () => setStrength(Number(btn.dataset.value)));
 });
 
@@ -217,7 +261,7 @@ function renderTermChips() {
     const hint = document.createElement("p");
     hint.className = "section-hint";
     hint.style.textAlign = "left";
-    hint.textContent = "No terms of your own yet.";
+    hint.textContent = "No words added yet.";
     host.append(hint);
     return;
   }
@@ -725,46 +769,56 @@ function setShown(platformId: string, shown: string[]) {
   writeShownMap(map);
 }
 
-function surfaceRow(platformId: string, surface: SurfaceInfo): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "setting-row";
+// One switch per surface (2026-11-20, replacing the Hidden | Shown pair):
+// on means shown. Off is the tamed default, so a switch reads as "bring
+// this back".
+function surfaceRow(platformId: string, surface: SurfaceInfo, onChange: () => void): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "row";
 
   const label = document.createElement("span");
-  label.className = "setting-label";
+  label.className = "grow row-title";
   label.textContent = surface.label;
 
-  const toggle = document.createElement("div");
-  toggle.className = "toggle";
-  toggle.setAttribute("role", "radiogroup");
-  toggle.setAttribute("aria-label", surface.label);
+  const sw = document.createElement("button");
+  sw.type = "button";
+  sw.className = "switch";
+  sw.setAttribute("role", "switch");
+  sw.setAttribute("aria-label", `Show ${surface.label}`);
 
   const paint = () => {
     const isShown = getShown(platformId).includes(surface.id);
-    toggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
-      const active = (btn.dataset.value === "shown") === isShown;
-      btn.classList.toggle("active", active);
-      btn.setAttribute("aria-checked", String(active));
-    });
+    sw.setAttribute("aria-checked", String(isShown));
   };
-
-  (["hidden", "shown"] as const).forEach((value) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "toggle-opt";
-    btn.setAttribute("role", "radio");
-    btn.dataset.value = value;
-    btn.textContent = value === "hidden" ? "Hidden" : "Shown";
-    btn.addEventListener("click", () => {
-      const current = getShown(platformId).filter((id) => id !== surface.id);
-      setShown(platformId, value === "shown" ? [...current, surface.id] : current);
-      paint();
-    });
-    toggle.append(btn);
+  sw.addEventListener("click", (e) => {
+    e.preventDefault();
+    const isShown = getShown(platformId).includes(surface.id);
+    const current = getShown(platformId).filter((id) => id !== surface.id);
+    setShown(platformId, isShown ? current : [...current, surface.id]);
+    paint();
+    onChange();
+  });
+  // The whole row is the target, like a phone's own settings.
+  row.addEventListener("click", (e) => {
+    if (e.target !== sw) {
+      e.preventDefault();
+      sw.click();
+    }
   });
 
   paint();
-  row.append(label, toggle);
+  row.append(label, sw);
   return row;
+}
+
+// A site's letter on its own small tile, as on home.
+function siteGlyph(letter: string, tint?: string): HTMLElement {
+  const g = document.createElement("span");
+  g.className = "glyph";
+  g.setAttribute("aria-hidden", "true");
+  if (tint) g.style.color = tint;
+  g.textContent = letter;
+  return g;
 }
 
 async function renderBringBack(readyPlatforms: Platform[]) {
@@ -782,12 +836,37 @@ async function renderBringBack(readyPlatforms: Platform[]) {
       if (surfaces.length === 0) continue;
 
       const details = document.createElement("details");
-      details.className = "platform-settings";
+      details.className = "platform-settings group";
       details.dataset.platform = platform.id;
       const summary = document.createElement("summary");
-      summary.textContent = platform.name;
+      summary.className = "row row-btn";
+      const text = document.createElement("span");
+      text.className = "grow";
+      const title = document.createElement("span");
+      title.className = "row-title";
+      title.textContent = platform.name;
+      const sub = document.createElement("span");
+      sub.className = "row-sub";
+      const count = () => {
+        const n = surfaces.filter((x) => getShown(platform.id).includes(x.id)).length;
+        sub.textContent = n === 0 ? "Everything tamed" : `${n} of ${surfaces.length} switched back on`;
+      };
+      count();
+      text.append(title, sub);
+      const chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      chev.setAttribute("viewBox", "0 0 24 24");
+      chev.setAttribute("class", "row-chev");
+      chev.innerHTML = '<path d="M9.5 5.5L16 12l-6.5 6.5"/>';
+      summary.append(siteGlyph(platform.name.charAt(0), DESIGN_TINTS[platform.id] ?? platform.tint), text, chev);
       details.append(summary);
-      surfaces.forEach((surface) => details.append(surfaceRow(platform.id, surface)));
+      const body = document.createElement("div");
+      body.className = "row-more rows";
+      const hint = document.createElement("p");
+      hint.className = "rows-hint";
+      hint.textContent = "Switch on what you want back";
+      body.append(hint);
+      surfaces.forEach((surface) => body.append(surfaceRow(platform.id, surface, count)));
+      details.append(body);
       bringBack.append(details);
     } catch {
       // One platform's toggles failing to load must not block the rest.
@@ -1186,27 +1265,34 @@ function renderManage(platforms: Platform[]) {
   if (!chosen.length && !sites.length) return;
 
   const details = document.createElement("details");
-  details.className = "platform-settings";
+  details.className = "platform-settings group";
   const summary = document.createElement("summary");
-  summary.textContent = "Remove a site";
+  summary.className = "row row-btn";
+  summary.innerHTML =
+    '<span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7.5h14M10 7.5V5.5h4v2M7 7.5l.8 11.5h8.4L17 7.5"/></svg></span>' +
+    '<span class="grow"><span class="row-title">Remove a site</span></span>' +
+    '<svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>';
   details.append(summary);
+  const body = document.createElement("div");
+  body.className = "row-more rows";
+  details.append(body);
 
   const row = (text: string, onRemove: () => void) => {
     const el = document.createElement("div");
-    el.className = "setting-row";
+    el.className = "row";
     const label = document.createElement("span");
-    label.className = "setting-label";
+    label.className = "grow row-title";
     label.textContent = text;
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "link-btn";
+    remove.className = "btn-ghost small danger";
     remove.textContent = "Remove";
     remove.addEventListener("click", () => {
       onRemove();
       refreshAll();
     });
-    el.append(label, remove);
-    details.append(el);
+    el.append(siteGlyph(text.charAt(0).toUpperCase()), label, remove);
+    body.append(el);
   };
   platforms
     .filter((p) => chosen.includes(p.id))
@@ -1456,17 +1542,19 @@ function applyText(size: "normal" | "large") {
   localStorage.setItem(TEXT_KEY, size);
   if (size === "large") document.documentElement.dataset.text = "large";
   else delete document.documentElement.dataset.text;
-  document.querySelectorAll<HTMLButtonElement>("#text-toggle .toggle-opt").forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>("#text-toggle .seg-opt").forEach((btn) => {
     const on = btn.dataset.value === size;
     btn.classList.toggle("active", on);
     btn.setAttribute("aria-checked", String(on));
   });
+  // Larger text widens every label: let the new sizes land first.
+  requestAnimationFrame(placeAllThumbs);
 }
 
 document.querySelectorAll<HTMLButtonElement>(".look").forEach((btn) => {
   btn.addEventListener("click", () => applyLook(btn.dataset.look as Look));
 });
-document.querySelectorAll<HTMLButtonElement>("#text-toggle .toggle-opt").forEach((btn) => {
+document.querySelectorAll<HTMLButtonElement>("#text-toggle .seg-opt").forEach((btn) => {
   btn.addEventListener("click", () => applyText(btn.dataset.value === "large" ? "large" : "normal"));
 });
 applyLook(readLook());
@@ -1491,6 +1579,9 @@ function showPane(name: (typeof PANES)[number]) {
   document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.pane === name);
   });
+  // The pane is on screen now, so its own controls can be measured too.
+  placeAllThumbs();
+  window.scrollTo({ top: 0 });
 }
 
 document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((btn) => {
@@ -1502,6 +1593,15 @@ document.querySelector<HTMLButtonElement>("#open-settings")!.addEventListener("c
   showView("settings");
   showPane("bringback");
 });
+
+// The version under the name in About. Desktop and a shell without the
+// app plugin keep the line empty.
+void import("@tauri-apps/api/app")
+  .then((m) => m.getVersion())
+  .then((v) => {
+    if (v) document.querySelector<HTMLElement>("#about-version")!.textContent = `Version ${v}`;
+  })
+  .catch(() => {});
 
 document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("click", () => {
   showView("launcher");
@@ -1987,6 +2087,27 @@ let bringBackReady: Promise<void> = Promise.resolve();
 // this phone; where there is no such bridge (desktop) the card stays out.
 const today = document.querySelector<HTMLElement>("#today")!;
 
+// The number climbs to today's count the first time home shows it, the
+// way a stat settles in a well-made app; later renders just set it.
+let countedOnce = false;
+function countTo(el: HTMLElement, n: number) {
+  if (countedOnce || REDUCED_MOTION || n < 10) {
+    el.textContent = n.toLocaleString();
+    countedOnce = true;
+    return;
+  }
+  countedOnce = true;
+  const t0 = performance.now();
+  const ms = 900;
+  const step = (t: number) => {
+    const k = Math.min(1, (t - t0) / ms);
+    const eased = 1 - Math.pow(1 - k, 3);
+    el.textContent = Math.round(n * eased).toLocaleString();
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 function renderToday(chosen: string[]) {
   const stats = (window as unknown as { TsStats?: { stoppedToday(): number } }).TsStats;
   if (!stats) {
@@ -2001,7 +2122,7 @@ function renderToday(chosen: string[]) {
     return;
   }
   const tamed = allPlatforms.filter((p) => p.ready && chosen.includes(p.id)).length;
-  today.querySelector(".today-num")!.textContent = n.toLocaleString();
+  countTo(today.querySelector<HTMLElement>(".today-num")!, n);
   today.querySelector(".today-text")!.textContent =
     n === 1 ? "ad or tracker stopped today" : "ads and trackers stopped today";
   today.querySelector(".today-sub")!.textContent =
@@ -2078,12 +2199,12 @@ const siteHere = document.querySelector<HTMLElement>("#site-here")!;
 function renderSiteHere(site: Site) {
   siteHere.textContent = "";
   const card = document.createElement("section");
-  card.className = "card";
+  card.className = "group pad";
   const title = document.createElement("div");
-  title.className = "card-title";
+  title.className = "row-title";
   title.textContent = site.host;
   const body = document.createElement("p");
-  body.className = "card-body";
+  body.className = "row-sub";
   body.textContent = "Blur and ad blocking work here. We don't hide this site's feeds.";
   const actions = document.createElement("div");
   actions.className = "actions";

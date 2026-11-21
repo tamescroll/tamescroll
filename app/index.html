@@ -23,6 +23,10 @@
     <main id="app">
 
       <!-- ================= Launcher ================= -->
+      <!-- POLISHED 2026-11-20 (his "why cant it feel like a professional
+           polished app"): the same language as the tutorial. A soft light
+           at the top, the question large and centred, one search pill,
+           the sites as big squircles, today as one calm number. -->
       <p id="handoff" class="handoff" hidden></p>
       <section id="view-launcher" hidden>
         <header class="bar">
@@ -41,19 +45,25 @@
              so this is visible by default. A link to a platform still
              opens through that platform's tile; anything else becomes an
              address or a strict-safe-search query (Rust resolve_address). -->
-        <p class="greet" id="greet"></p>
-        <h1 class="home-q">What are you here for?</h1>
-        <form class="open-link" id="open-link" autocomplete="off" role="search">
-          <input id="open-link-input" type="search" inputmode="url" enterkeyhint="go" autocapitalize="off" spellcheck="false" placeholder="Search privately or type a site" aria-label="Search privately or type a site" />
-          <button type="submit" class="btn-ghost small">Go</button>
-        </form>
+        <div class="home-hero">
+          <p class="greet" id="greet"></p>
+          <h1 class="home-q">What are you here for?</h1>
+          <form class="open-link" id="open-link" autocomplete="off" role="search">
+            <svg class="open-link-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+            <input id="open-link-input" type="search" inputmode="url" enterkeyhint="go" autocapitalize="off" spellcheck="false" placeholder="Search privately or type a site" aria-label="Search privately or type a site" />
+            <button type="submit" class="go-btn" aria-label="Go"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></button>
+          </form>
+        </div>
 
         <p class="eyebrow tiles-head">Your sites <span class="legend"><i aria-hidden="true"></i>tamed</span></p>
         <div id="tiles" class="tiles" aria-label="Your sites"></div>
 
         <section class="today" id="today" hidden aria-label="Today">
-          <p class="today-line"><span class="today-num"></span> <span class="today-text"></span></p>
-          <p class="today-sub"></p>
+          <div class="today-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z"/><path d="M9 12L11.2 14.2L15.2 10"/></svg></div>
+          <div class="grow">
+            <p class="today-line"><span class="today-num"></span> <span class="today-text"></span></p>
+            <p class="today-sub"></p>
+          </div>
         </section>
 
         <p id="status" role="status"></p>
@@ -65,15 +75,17 @@
            is a sequence: YouTube's switch must go off before ours can win. -->
       <section id="view-links" hidden>
         <header class="bar">
-          <button type="button" id="links-back" class="link-btn">&#8249; Back</button>
-          <span class="bar-title">YouTube links</span>
+          <button type="button" id="links-back" class="back-btn" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+          <span class="bar-title">Links</span>
           <span class="bar-spacer"></span>
         </header>
         <div class="narrow">
-          <h1 class="display">Make tamescroll your YouTube.</h1>
-          <p class="lede">Android sends every YouTube link to the YouTube app until you tell it otherwise. Two switches, then a test.</p>
+          <div class="pane-hero">
+            <h1 class="display">Open YouTube links here</h1>
+            <p class="lede">Android sends every YouTube link to the YouTube app until you tell it otherwise. Two switches, then a test.</p>
+          </div>
 
-          <ol class="steps" id="links-steps">
+          <ol class="steps group" id="links-steps">
             <li class="step" data-step="yt-off">
               <span class="step-num">1</span>
               <div class="grow">
@@ -100,8 +112,8 @@
             </li>
           </ol>
 
-          <p class="eyebrow">Optional</p>
-          <ol class="steps quiet">
+          <p class="group-head">Optional</p>
+          <ol class="steps quiet group">
             <li class="step" data-step="pin">
               <div class="grow">
                 <div class="step-title">YouTube on your home screen</div>
@@ -123,160 +135,222 @@
             </li>
           </ol>
 
-          <p class="setting-caption" id="links-note"></p>
-          <div class="actions">
+          <p class="setting-caption center" id="links-note"></p>
+          <div class="actions col">
             <button type="button" class="btn-solid" id="links-done">Done</button>
           </div>
         </div>
       </section>
 
       <!-- ================= Settings ================= -->
+      <!-- POLISHED 2026-11-20: a sliding segmented control on top, then
+           each section opens on a centred title (the tutorial's type),
+           and every setting sits in one grouped list with real switches. -->
       <section id="view-settings" hidden>
-        <header class="bar">
-          <button type="button" id="settings-back" class="link-btn">&#8249; Home</button>
-          <span class="bar-title">Settings</span>
-          <span class="bar-spacer"></span>
-        </header>
-        <div class="settings-body">
-          <nav class="settings-nav" aria-label="Settings sections">
-            <button type="button" class="nav-item" data-pane="bringback">Sites</button>
-            <button type="button" class="nav-item" data-pane="blur">Blur</button>
-            <button type="button" class="nav-item" data-pane="filters">Filters</button>
-            <button type="button" class="nav-item" data-pane="look">Look</button>
-            <button type="button" class="nav-item" data-pane="about">About</button>
+        <div class="settings-top">
+          <header class="bar">
+            <button type="button" id="settings-back" class="back-btn" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+            <span class="bar-title">Settings</span>
+            <span class="bar-spacer"></span>
+          </header>
+          <nav class="settings-nav seg" aria-label="Settings sections">
+            <span class="seg-thumb" aria-hidden="true"></span>
+            <button type="button" class="nav-item seg-opt" data-pane="bringback">Sites</button>
+            <button type="button" class="nav-item seg-opt" data-pane="blur">Blur</button>
+            <button type="button" class="nav-item seg-opt" data-pane="filters">Filters</button>
+            <button type="button" class="nav-item seg-opt" data-pane="look">Look</button>
+            <button type="button" class="nav-item seg-opt" data-pane="about">About</button>
           </nav>
-
+        </div>
+        <div class="settings-body">
           <div class="panes">
             <section class="pane" id="pane-bringback" hidden>
-              <h2>Sites</h2>
-              <p class="pane-sub">What each site shows. Endless feeds start hidden on the sites we tame; bring back only what you choose. Each site has its own Ads switch.</p>
+              <div class="pane-hero">
+                <h2>Sites</h2>
+                <p class="pane-sub">Endless feeds start hidden on the sites we tame. Switch on only what you want back.</p>
+              </div>
               <div id="site-here"></div>
               <div id="bring-back"></div>
               <!-- Link ownership (1108). Android + YouTube chosen only; main.ts
                    hides it otherwise. In Settings, not on home (#35). -->
-              <section class="card links-card" id="links-card" hidden aria-label="YouTube links">
-                <div class="links-card-row">
+              <section class="group links-card" id="links-card" hidden aria-label="YouTube links">
+                <div class="row links-card-row">
                   <span class="tick" id="links-card-tick" aria-hidden="true"></span>
                   <div class="grow">
-                    <div class="card-title" id="links-card-title">YouTube links</div>
-                    <p class="card-body" id="links-card-body"></p>
+                    <div class="row-title" id="links-card-title">YouTube links</div>
+                    <p class="row-sub" id="links-card-body"></p>
                   </div>
                   <button type="button" class="btn-ghost small" id="links-card-btn">Set up</button>
                 </div>
               </section>
-              <section class="card" aria-label="Always hidden">
-                <div class="eyebrow in-card">Always hidden</div>
-                <div class="always-row">Sign-in and app-install nags <span class="pill">Always</span></div>
-                <p class="setting-caption">These never come back. Ads and promoted posts follow each site's own Ads switch above.</p>
+              <p class="group-head">Always hidden</p>
+              <section class="group" aria-label="Always hidden">
+                <div class="row">
+                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
+                  <div class="grow"><div class="row-title">Sign-in and app-install nags</div></div>
+                  <span class="row-end">Always</span>
+                </div>
               </section>
+              <p class="group-foot">These never come back. Ads and promoted posts follow each site's own Ads switch.</p>
               <div id="manage-platforms"></div>
             </section>
 
             <section class="pane" id="pane-filters" hidden>
-              <h2>Filters</h2>
-              <p class="pane-sub">When pictures are blurred, posts and videos whose titles match these terms stay covered.</p>
-              <section class="card">
-                <div class="card-title">Built-in list</div>
-                <p class="card-body">460+ terms &mdash; sexualized-content bait and its evasion spellings. Ships with the app and updates with it.</p>
-                <p class="setting-caption">Matching happens on this device. Nothing is sent anywhere.</p>
+              <div class="pane-hero">
+                <h2>Filters</h2>
+                <p class="pane-sub">When blur is on, posts and videos with these words in the title stay covered.</p>
+              </div>
+              <section class="group">
+                <div class="row">
+                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z"/><path d="M9 12L11.2 14.2L15.2 10"/></svg></span>
+                  <div class="grow">
+                    <div class="row-title">Built-in words</div>
+                    <p class="row-sub">460+ words often used on revealing posts, including misspelled versions. Updates with the app.</p>
+                  </div>
+                  <span class="row-end">On</span>
+                </div>
               </section>
-              <div class="eyebrow">Your terms</div>
-              <div id="term-chips" class="chips"></div>
-              <form id="term-form" class="term-form">
-                <input id="term-input" type="text" placeholder="Add a word or phrase" autocomplete="off" maxlength="100" />
-                <button type="submit" class="btn-solid">Add</button>
-              </form>
-              <p class="setting-caption">Phrases match whole words, case-insensitive. Remove a term any time.</p>
+              <p class="group-foot">Checked on this device. Nothing is sent anywhere.</p>
+              <p class="group-head">Your words</p>
+              <section class="group pad">
+                <div id="term-chips" class="chips"></div>
+                <form id="term-form" class="term-form">
+                  <input id="term-input" type="text" placeholder="Add a word or phrase" autocomplete="off" maxlength="100" />
+                  <button type="submit" class="go-btn" aria-label="Add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></button>
+                </form>
+              </section>
+              <p class="group-foot">Matches whole words. Capital letters don't matter.</p>
             </section>
 
             <section class="pane" id="pane-blur" hidden>
-              <h2>Blur</h2>
-              <p class="pane-sub">Covers pictures and video previews as you browse. The video you choose to watch plays normally. Runs on this device &mdash; nothing you view leaves it.</p>
-              <section class="card" aria-label="What to blur">
-                <div class="setting-row">
-                  <span class="setting-label">Blur</span>
-                  <!-- One question, asked the way the stores already accept
-                       it (HaramBlur, Haya Shield, Tahir Browser): what to
-                       blur, never the user's own gender. Each answer is a
-                       stored mode + gender pair; coverage is unchanged. -->
-                  <div class="toggle" id="blur-toggle" role="radiogroup" aria-label="What to blur">
-                    <button type="button" class="toggle-opt" role="radio" data-value="all">Every picture</button>
-                    <button type="button" class="toggle-opt" role="radio" data-value="women">Women</button>
-                    <button type="button" class="toggle-opt" role="radio" data-value="men">Men</button>
-                    <button type="button" class="toggle-opt" role="radio" data-value="none">Nothing</button>
+              <!-- The tutorial's still, live: it shows the answer and the
+                   strength as they are tapped. Drawn, never a photo. -->
+              <!-- The tutorial's still (PR 49, his pick 2026-11-21): tap the woman
+                   or the man to blur them; both is everyone, neither is nobody. -->
+              <div class="pane-stage bs blur-hero" id="blur-hero" data-show="none">
+                <div class="bs-scene" id="blur-toggle" role="group" aria-label="Who to blur">
+                <button type="button" class="bs-who bs-w" data-value="women" aria-pressed="false" aria-label="Blur women"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M16 150c0-27 19-42 44-42s44 15 44 42"/><path d="M48 109.5c4 5.5 8 8 12 8s8-2.5 12-8"/><path d="M29 100c6-9 8-21 7-34-2-26 9-42 24-42s26 16 24 42c-1 13 1 25 7 34"/><path class="ln-neck" d="M54 86v22M66 86v22"/><ellipse class="ln-fill" cx="60" cy="63" rx="17.5" ry="21"/><path d="M42.5 59c7-1 13.5-6 17.5-14 4 8 10.5 13 17.5 14"/></svg><span class="bs-patch"></span><span class="bs-tag">Women</span></button>
+                <button type="button" class="bs-who bs-m" data-value="men" aria-pressed="false" aria-label="Blur men"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M10 150c0-29 22-44 50-44s50 15 50 44"/><path d="M48 106l12 13 12-13"/><path class="ln-neck" d="M53 84v21M67 84v21"/><path d="M41.5 58c-3 0-4.5 2.2-4.5 5s1.5 5.5 4.5 5.5M78.5 58c3 0 4.5 2.2 4.5 5s-1.5 5.5-4.5 5.5"/><ellipse class="ln-fill" cx="60" cy="61" rx="18.5" ry="22"/><path class="ln-fill" d="M41.7 61C39 42 48 31.5 60.5 31.5S81.5 41 78.3 59C76 51 70 45.5 63 44 57 50.5 50 56.5 41.7 61Z"/></svg><span class="bs-patch"></span><span class="bs-tag">Men</span></button>
+                </div>
+              </div>
+              <div class="pane-hero tight">
+                <h2>Blur</h2>
+                <p class="pane-sub">Tap who to blur in pictures and previews. Both for everyone, neither for none.</p>
+              </div>
+              <!-- One question, asked the way the stores already accept it
+                   (HaramBlur, Haya Shield, Tahir Browser): what to blur,
+                   never the user's own gender. Each answer is a stored
+                   mode + gender pair; coverage is unchanged. -->
+              
+              <p class="setting-caption center" id="blur-caption"></p>
+              <div id="blur-strength-row" hidden>
+                <p class="group-head">Strength</p>
+                <div class="seg" id="blur-strength" role="radiogroup" aria-label="Blur strength">
+                  <span class="seg-thumb" aria-hidden="true"></span>
+                  <button type="button" class="seg-opt" role="radio" data-value="8"><span class="swatch s8" aria-hidden="true"></span>Light</button>
+                  <button type="button" class="seg-opt" role="radio" data-value="16"><span class="swatch s16" aria-hidden="true"></span>Medium</button>
+                  <button type="button" class="seg-opt" role="radio" data-value="28"><span class="swatch s28" aria-hidden="true"></span>Strong</button>
+                </div>
+              </div>
+              <section class="group spaced">
+                <div class="row">
+                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
+                  <div class="grow">
+                    <div class="row-title">Runs on this phone</div>
+                    <p class="row-sub">Nothing you view leaves it.</p>
                   </div>
                 </div>
-                <div class="setting-row" id="blur-strength-row" hidden>
-                  <span class="setting-label">Strength</span>
-                  <div class="toggle" id="blur-strength" role="radiogroup" aria-label="Blur strength">
-                    <button type="button" class="toggle-opt swatched" role="radio" data-value="8"><span class="swatch s8" aria-hidden="true"></span>Light</button>
-                    <button type="button" class="toggle-opt swatched" role="radio" data-value="16"><span class="swatch s16" aria-hidden="true"></span>Medium</button>
-                    <button type="button" class="toggle-opt swatched" role="radio" data-value="28"><span class="swatch s28" aria-hidden="true"></span>Strong</button>
-                  </div>
-                </div>
-                <p class="setting-caption" id="blur-caption"></p>
               </section>
             </section>
 
             <section class="pane" id="pane-look" hidden>
-              <h2>Look</h2>
-              <p class="pane-sub">How tamescroll looks. Sites keep their own colours.</p>
+              <div class="pane-hero">
+                <h2>Look</h2>
+                <p class="pane-sub">How tamescroll looks. Sites keep their own colours.</p>
+              </div>
               <div class="looks" role="radiogroup" aria-label="Look">
                 <button type="button" class="look" role="radio" data-look="night"><span class="mini night" aria-hidden="true"><i class="m-h"></i><i class="m-s"></i><span class="m-t"><span></span><span></span><span></span><span></span></span></span><b>Night</b><span class="look-sub">Dark and calm</span></button>
                 <button type="button" class="look" role="radio" data-look="paper"><span class="mini paper" aria-hidden="true"><i class="m-h"></i><i class="m-s"></i><span class="m-t"><span></span><span></span><span></span><span></span></span></span><b>Paper</b><span class="look-sub">Light, bigger text</span></button>
               </div>
-              <section class="card" style="margin-top: var(--s4)">
-                <div class="setting-row">
-                  <span class="setting-label">Text size</span>
-                  <div class="toggle" id="text-toggle" role="radiogroup" aria-label="Text size">
-                    <button type="button" class="toggle-opt" role="radio" data-value="normal">Normal</button>
-                    <button type="button" class="toggle-opt" role="radio" data-value="large">Larger</button>
-                  </div>
-                </div>
-                <p class="setting-caption">Changes tamescroll's own screens. For sites, use your phone's font size.</p>
-              </section>
+              <p class="group-head">Text size</p>
+              <div class="seg" id="text-toggle" role="radiogroup" aria-label="Text size">
+                <span class="seg-thumb" aria-hidden="true"></span>
+                <button type="button" class="seg-opt" role="radio" data-value="normal"><span class="aa" aria-hidden="true">Aa</span>Normal</button>
+                <button type="button" class="seg-opt" role="radio" data-value="large"><span class="aa big" aria-hidden="true">Aa</span>Larger</button>
+              </div>
+              <p class="group-foot">Changes tamescroll's own screens. For sites, use your phone's font size.</p>
             </section>
 
             <section class="pane" id="pane-about" hidden>
-              <h2>About</h2>
-              <p class="pane-sub">tamescroll is a calm browser: it opens any site, and tames the busy ones.</p>
-              <section class="card">
-                <div class="card-title">The tour</div>
-                <p class="card-body">The welcome, your look and blur choices, the bar, the home icon and the tips on home, again.</p>
-                <div class="actions"><button type="button" class="btn-ghost" id="replay-tour">Show the tour again</button></div>
+              <div class="pane-hero about-hero">
+                <span class="about-mark" aria-hidden="true"><svg viewBox="0 0 48 36"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3" stroke-linecap="round"/></svg></span>
+                <h2>tamescroll</h2>
+                <p class="about-ver" id="about-version"></p>
+                <p class="pane-sub">A calm browser: it opens any site, and tames the busy ones.</p>
+              </div>
+              <section class="group" id="app-update-card" hidden>
+                <div class="row">
+                  <span class="row-ic gold" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4.5v10M7.5 10l4.5 4.5 4.5-4.5M5.5 19.5h13"/></svg></span>
+                  <div class="grow">
+                    <div class="row-title">App update</div>
+                    <p class="row-sub" id="app-update-notes"></p>
+                  </div>
+                  <button type="button" class="btn-solid small" id="app-update-btn">Update now</button>
+                </div>
+                <p class="row-status" id="app-update-status"></p>
               </section>
-              <section class="card">
-                <p class="card-body">Free and open source, MPL-2.0. No account, no telemetry, no server in the middle. Image blur and keyword filters run on your device.</p>
-              </section>
-              <section class="card">
-                <div class="card-title">Filter rules</div>
-                <p class="card-body">Blocking rules refresh themselves in the background &mdash; no reinstall when a site changes its layout.</p>
-                <form id="rules-refresh-form" class="actions">
-                  <button type="submit" class="btn-ghost" id="rules-refresh">Check for updates</button>
+              <section class="group">
+                <button type="button" class="row row-btn" id="replay-tour">
+                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.8h3.8"/></svg></span>
+                  <span class="grow"><span class="row-title">Show the tour again</span><span class="row-sub">The welcome, the blur question, the bar, the home icon and the tips on home.</span></span>
+                  <svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
+                </button>
+                <form id="rules-refresh-form" class="row-form">
+                  <button type="submit" class="row row-btn" id="rules-refresh">
+                    <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v3.8h-3.8"/></svg></span>
+                    <span class="grow"><span class="row-title">Check for filter updates</span><span class="row-sub">Rules refresh by themselves when a site changes its layout.</span></span>
+                    <svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
+                  </button>
                 </form>
-                <p class="setting-caption" id="rules-refresh-status"></p>
+                <p class="row-status" id="rules-refresh-status"></p>
               </section>
-              <section class="card" id="diag-card" hidden>
-                <div class="card-title">Diagnostics</div>
-                <p class="card-body">Performance numbers from your own device. Kept on this phone. Nothing is sent unless you share it.</p>
+              <section class="group pad" id="diag-card" hidden>
+                <div class="row-title">Diagnostics</div>
+                <p class="row-sub">Performance numbers from your own device. Kept on this phone. Nothing is sent unless you share it.</p>
                 <p class="setting-caption" id="diag-summary"></p>
                 <div class="actions">
-                  <button type="button" class="btn-solid" id="diag-share">Share report</button>
-                  <button type="button" class="btn-ghost" id="diag-copy">Copy</button>
-                  <button type="button" class="btn-ghost" id="diag-clear">Clear</button>
+                  <button type="button" class="btn-solid small" id="diag-share">Share report</button>
+                  <button type="button" class="btn-ghost small" id="diag-copy">Copy</button>
+                  <button type="button" class="btn-ghost small" id="diag-clear">Clear</button>
                 </div>
                 <p class="setting-caption" id="diag-status"></p>
               </section>
-              <section class="card" aria-label="Credits">
-                <div class="card-title">Built on</div>
-                <p class="card-body">Filter lists from EasyList and EasyPrivacy (CC BY-SA 3.0) and uBlock Origin's uAssets (GPLv3), read as data by Brave's adblock-rust engine (MPL-2.0). Models: BlazeFace and MoveNet (Apache-2.0), faceres via vladmandic/human (MIT). Shell: Tauri.</p>
-                <p class="setting-caption">Full notices ship in the source repository's NOTICE file.</p>
-              </section>
-              <section class="card" id="app-update-card" hidden>
-                <div class="card-title">App update</div>
-                <p class="card-body" id="app-update-notes"></p>
-                <div class="actions"><button type="button" class="btn-solid" id="app-update-btn">Update now</button></div>
-                <p class="setting-caption" id="app-update-status"></p>
+              <section class="group" aria-label="Credits">
+                <div class="row">
+                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
+                  <div class="grow">
+                    <div class="row-title">Private by design</div>
+                    <p class="row-sub">No account, no telemetry, no server in the middle. Blur and word filters run on your device.</p>
+                  </div>
+                </div>
+                <div class="row">
+                  <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 7.5L4 12l4.5 4.5M15.5 7.5L20 12l-4.5 4.5"/></svg></span>
+                  <div class="grow">
+                    <div class="row-title">Free and open source</div>
+                    <p class="row-sub">MPL-2.0</p>
+                  </div>
+                </div>
+                <details class="row-details">
+                  <summary class="row row-btn">
+                    <span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/></svg></span>
+                    <span class="grow"><span class="row-title">Built on</span></span>
+                    <svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
+                  </summary>
+                  <div class="row-more">
+                    <p>Filter lists from EasyList and EasyPrivacy (CC BY-SA 3.0) and uBlock Origin's uAssets (GPLv3), read as data by Brave's adblock-rust engine (MPL-2.0). Models: BlazeFace and MoveNet (Apache-2.0), faceres via vladmandic/human (MIT). Shell: Tauri.</p>
+                    <p>Full notices ship in the source repository's NOTICE file.</p>
+                  </div>
+                </details>
               </section>
             </section>
           </div>
@@ -488,6 +562,7 @@
     <div class="update-sheet" id="update-sheet" hidden>
       <div class="update-scrim" id="update-scrim"></div>
       <section class="update-panel" role="dialog" aria-modal="true" aria-labelledby="update-title">
+        <span class="sheet-grab" aria-hidden="true"></span>
         <p class="eyebrow in-card">New version</p>
         <h2 class="update-title" id="update-title">An update is ready</h2>
         <p class="card-body" id="update-sheet-notes"></p>
