@@ -261,7 +261,9 @@ async function main() {
   await mkdir(path.join(OUT, "shots"), { recursive: true });
   const engines = { play: startEngine("play"), full: startEngine("full") };
   const built = { play: await engines.play.readyP, full: await engines.full.readyP };
-  const browser = await chromium.launch();
+  // Muted: the watch pages play video, and the bench runs on a desk
+  // where someone may be wearing headphones (2026-11-21).
+  const browser = await chromium.launch({ args: ["--mute-audio"] });
   const pages = PAGES.filter((p) => !ONLY || ONLY.includes(p.id));
   const ARMS = ["off", "play", "full"];
   const rows = [];
