@@ -1,0 +1,15 @@
+[package]
+name = "filter-engine"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Standalone on purpose: the same adblock-rust version and features as
+# app/src-tauri, fed the same rules/ files, without building Tauri.
+[dependencies]
+adblock = { version = "0.13.2", default-features = false, features = ["content-blocking", "embedded-domain-resolver", "full-regex-handling"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+
+[workspace]
