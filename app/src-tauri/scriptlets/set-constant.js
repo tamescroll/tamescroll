@@ -44,7 +44,7 @@ function setConstant(chain, rawValue) {
     }
     // SOMEONE ELSE MAY ALREADY BE TRAPPING THIS LINK. Blindly redefining
     // it is how a pre-roll reached the owner twice (measured 2026-08-25):
-    // on a watch page `trusted-prune-window-json` traps
+    // on a watch page another scriptlet (then our own pruner) traps
     // window.ytInitialPlayerResponse first, this walk then reads through
     // its getter, sees `undefined` ("not there yet"), and replaced the
     // whole accessor — so the pruner never saw the page's assignment and

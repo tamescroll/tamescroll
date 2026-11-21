@@ -32,10 +32,11 @@ const GENERIC: &[(&str, &[&str])] = &[
     ("trusted-replace-fetch-response.js", &[]),
     ("trusted-replace-xhr-response.js", &[]),
 ];
-const YOUTUBE_ONLY: &[(&str, &[&str])] = &[
-    ("trusted-set-request-field.js", &[]),
-    ("trusted-prune-window-json.js", &[]),
-];
+// Our two YouTube-only scriptlets (trusted-set-request-field,
+// trusted-prune-window-json) were dropped 2026-11-21; the "full" arm is
+// now the lists plus youtube.txt's ads surface. Check out 7d51929 to
+// re-run the arm as it was measured.
+const YOUTUBE_ONLY: &[(&str, &[&str])] = &[];
 
 /// `domain##selector` lines of youtube.txt's `ads` surface.
 fn youtube_ads_surface(root: &Path) -> Vec<(String, String)> {

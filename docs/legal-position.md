@@ -19,6 +19,15 @@ It is not legal advice.
 - Our own icon and palette in every build: no red play tile, no brand
   colours. (2026-10-28: the sideloaded build's red tile retired too.)
 
+## Decided 2026-11-21
+
+- Our own YouTube rule is DROPPED (ZV: "drop it"), superseding the
+  2026-10-28 entry below. On his phone, 6 real-tap plays per build, the
+  public EasyList/uBO lists alone blocked every pre-roll, same as with
+  our rule, and our rule did not speed up the start. YouTube now gets
+  exactly the public lists, like every other site. `rules/scriptlets.txt`
+  is comment-only so the OTA empties it on installed apps.
+
 ## Decided 2026-10-28
 
 - Keep our own YouTube request rule (`rules/scriptlets.txt`) built in.

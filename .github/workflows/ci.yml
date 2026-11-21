@@ -43,7 +43,7 @@ jobs:
       - run: mkdir -p ../dist
       - run: cargo test --lib
       # The clean-room scriptlets' own tests (node is on the runner image).
-      - run: node --test scriptlets/test/
+      - run: node --test scriptlets/test/*.test.mjs
 
   rules:
     name: Rules manifest is current

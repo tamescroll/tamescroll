@@ -2882,41 +2882,6 @@ mod tests {
         assert!(creation.contains("var SCOPED = false"));
     }
 
-    /// A hard navigation to a watch page must drop the EMBEDDED
-    /// streamingData, not just the ad fields.
-    ///
-    /// Pruning only the ad fields kills the ad but leaves YouTube's SABR
-    /// backoff attached to the embedded stream — measured 24-37s to first
-    /// frame, i.e. the user waits out the ad and sees black instead. With
-    /// no stream embedded the player must issue a client-side
-    /// /youtubei/v1/player request, which the isInlinePlaybackNoAd rule
-    /// reshapes into a stream carrying neither ad nor backoff (measured
-    /// 8.3s). Dropping this argument silently restores the 30-second
-    /// stall, and nothing else in the suite would notice.
-    #[test]
-    fn watch_page_forces_a_fresh_player_request() {
-        let js = engine()
-            .url_cosmetic_resources("https://www.youtube.com/watch?v=DD54J5kecpg")
-            .injected_script;
-        let call = js
-            .lines()
-            .find(|l| l.starts_with("trustedPruneWindowJson("))
-            .expect("the inline-JSON pruner must be emitted for a watch page");
-        assert!(
-            call.contains("\"streamingData\""),
-            "watch pages must drop the embedded streamingData or the SABR              backoff survives the ad: {call}"
-        );
-        for field in ["adSlots", "adPlacements", "playerAds"] {
-            assert!(call.contains(field), "{field} must still be pruned: {call}");
-        }
-        // The request-shaper is the other half: without it the fresh
-        // /player request just serves the ad again.
-        assert!(
-            js.contains("isInlinePlaybackNoAd"),
-            "the ad-free-stream request shaper must ship alongside"
-        );
-    }
-
     /// Proves the two halves of in-app ad blocking VISION.md describes are
     /// actually wired: cosmetic hiding (already worked) and scriptlet
     /// injection (the point of this change). A regression here means

@@ -2,28 +2,14 @@
 ! call our own clean-room scriptlets. Kept separate from the cosmetic
 ! rule files (youtube.txt etc.): these compile INTO the adblock engine,
 ! not the settings-pane surface layer.
-
-! YouTube player request. Sets one field on the outbound /player request
-! body; the player then starts the video without the multi-second stall
-! owner reports #9/#12 describe. Runs only where the user has turned the
-! site's Ads switch on.
-! Provenance (clean-room): public protobuf write-up
-! (https://iter.ca/post/yt-adblock/), not uBO/AdGuard code.
-! test: on a youtube.com /watch SPA click, the outbound
-!   POST /youtubei/v1/player body carries the field and the video plays.
-www.youtube.com,m.youtube.com##+js(trusted-set-request-field, youtubei/v1/player, playbackContext.contentPlaybackContext.isInlinePlaybackNoAd, true)
-
-! Desktop pages embed the first stream in ytInitialPlayerResponse; dropping
-! `streamingData` makes the player fetch it through the request above,
-! which brings a hard navigation in line with an SPA click (first frame
-! ~8s instead of 24-37s, measured 2026-08-28). Ad-slot fields are removed
-! alongside, as the public filter lists do.
 !
-! Trade: with no embedded fallback, a failed /player request shows
-! YouTube's own error. Keep videoDetails and the rest intact.
-!
-! m.youtube embeds no stream (its page always fetches client-side), so
-! only the ad-slot fields are removed there. Do not add streamingData to
-! the mobile rule.
-www.youtube.com##+js(trusted-prune-window-json, ytInitialPlayerResponse, streamingData, adSlots, adPlacements, playerAds, adBreakHeartbeatParams)
-m.youtube.com##+js(trusted-prune-window-json, ytInitialPlayerResponse, adSlots, adPlacements, playerAds, adBreakHeartbeatParams)
+! EMPTY ON PURPOSE (2026-11-21, ZV: "drop it"). Our own YouTube rules
+! (trusted-set-request-field on /youtubei/v1/player and
+! trusted-prune-window-json on ytInitialPlayerResponse) were removed.
+! Measured on his phone with real taps, 6 plays per build: the public
+! lists alone blocked every pre-roll (0/6), the same as with our rules,
+! and our rules did not make videos start faster (mobile taps go through
+! /youtubei/v1/get_watch, which the /player rule never touched).
+! YouTube ad blocking is now the public EasyList/uBO lists only, the same
+! as every other site. The file stays (comment-only) so the rules OTA
+! delivers this empty version over the old one on installed apps.
