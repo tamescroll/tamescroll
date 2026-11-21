@@ -53,7 +53,16 @@ const YT_ADS = "ytm-promoted-sparkles-web-renderer, ytm-promoted-video-renderer,
 const PAGES = [
   { id: "yt_home", url: "https://m.youtube.com/", items: YT_ITEMS, adSel: YT_ADS },
   { id: "yt_search", url: "https://m.youtube.com/results?search_query=best+running+shoes", items: YT_ITEMS, adSel: YT_ADS },
-  { id: "yt_watch", url: "https://m.youtube.com/watch?v=dQw4w9WgXcQ", items: "video", adSel: YT_ADS, video: true },
+  // Pre-rolls are served per view, not per video, so several popular
+  // (monetised) videos stand in for "a watch page"; the summary pools them.
+  ...[
+    "dQw4w9WgXcQ", // music video
+    "kJQP7kiw5Fk", // music video
+    "9bZkp7q19f0", // music video
+    "JGwWNGJdvx8", // music video
+    "60ItHLz5WEA", // music video
+    "hY7m5jjJ9mM", // long-form
+  ].map((v, i) => ({ id: `yt_watch${i + 1}`, url: `https://m.youtube.com/watch?v=${v}`, items: "video", adSel: YT_ADS, video: true })),
   { id: "google", url: "https://www.google.com/search?q=best+running+shoes", items: "a h3, [role=heading][aria-level='3']" },
   { id: "bing", url: "https://www.bing.com/search?q=best+running+shoes", items: "li.b_algo, .b_algo h2" },
   { id: "duckduckgo", url: "https://duckduckgo.com/?q=best+running+shoes", items: "article[data-testid=result], [data-testid=result]" },
@@ -169,7 +178,29 @@ async function loadOnce(browser, page, arm, eng, shotPath) {
     navOk = false;
   }
   const loadWall = Date.now() - t0;
-  await p.waitForTimeout(page.video ? 12000 : SETTLE_MS);
+  const adSamples = [];
+  if (page.video) {
+    // Sample the player every second for 15s: a short or skippable ad
+    // can come and go between two reads.
+    for (let i = 0; i < 15; i++) {
+      await p.waitForTimeout(1000);
+      adSamples.push(
+        await p
+          .evaluate(() => {
+            const mp = document.querySelector("#movie_player, .html5-video-player");
+            const v = document.querySelector("video");
+            return {
+              ad: mp ? /ad-showing|ad-interrupting/.test(mp.className) : false,
+              t: v ? v.currentTime : -1,
+              paused: v ? v.paused : true,
+            };
+          })
+          .catch(() => ({ ad: false, t: -1, paused: true })),
+      );
+    }
+  } else {
+    await p.waitForTimeout(SETTLE_MS);
+  }
   const m = await p
     .evaluate(
       ({ items, adSel, generic, video }) => {
@@ -211,6 +242,12 @@ async function loadOnce(browser, page, arm, eng, shotPath) {
     reqs: stats.reqs, blocked: stats.blocked, kb: Math.round(stats.bytes / 1024),
     errors: stats.errors, hosts: stats.hosts.size, blockedHosts: stats.blockedHosts,
     cosSelectors: stats.cosSelectors || 0,
+    ...(page.video ? {
+      adSeen: adSamples.some((x) => x.ad),
+      adSeconds: adSamples.filter((x) => x.ad).length,
+      // Seconds the main video actually advanced while no ad showed.
+      played: adSamples.some((x, i) => i > 0 && !x.ad && x.t > adSamples[i - 1].t + 0.2),
+    } : {}),
   };
 }
 
@@ -262,14 +299,27 @@ async function main() {
         navFail: rs.filter((x) => !x.navOk).length,
         ...(page.video ? {
           videoT: col("videoT"),
-          adShowingRuns: rs.filter((x) => x.adShowing).length,
+          adSeenRuns: rs.filter((x) => x.adSeen).length,
+          playedRuns: rs.filter((x) => x.played).length,
         } : {}),
       });
     }
   }
   await writeFile(path.join(OUT, "rows.json"), JSON.stringify({ built, rows }, null, 1));
   await writeFile(path.join(OUT, "summary.json"), JSON.stringify(summary, null, 1));
-  const cols = ["page", "arm", "n", "reqs", "blocked", "kb", "hosts", "dcl", "load", "lcp", "items", "ads", "errors", "navFail", "videoT", "adShowingRuns"];
+  // All watch pages pooled per arm: the YouTube pre-roll answer.
+  for (const arm of ARMS) {
+    const rs = rows.filter((x) => x.page.startsWith("yt_watch") && x.arm === arm);
+    if (!rs.length) continue;
+    summary.push({
+      page: "yt_watch_ALL", arm, n: rs.length,
+      adSeenRuns: rs.filter((x) => x.adSeen).length,
+      playedRuns: rs.filter((x) => x.played).length,
+      blocked: median(rs.map((x) => x.blocked)),
+      errors: median(rs.map((x) => x.errors)),
+    });
+  }
+  const cols = ["page", "arm", "n", "reqs", "blocked", "kb", "hosts", "dcl", "load", "lcp", "items", "ads", "errors", "navFail", "adSeenRuns", "playedRuns"];
   const md = [
     `# Filter impact, ${new Date().toISOString()}`,
     "",
