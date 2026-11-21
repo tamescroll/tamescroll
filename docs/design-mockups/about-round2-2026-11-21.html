@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About mockups</title>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('look') === 'paper') document.documentElement.dataset.look = 'paper';
+  if (q.get('text') === 'large') document.documentElement.dataset.text = 'large';
+</script>
+<script type="module">
+  import "@fontsource/inter/400.css"; import "@fontsource/inter/500.css"; import "@fontsource/inter/600.css";
+  import "@fontsource/spectral/400.css"; import "@fontsource/spectral/500.css";
+  import "/src/styles.css";
+  const s = new URLSearchParams(location.search).get('s') || 'about';
+  document.querySelector('#app').innerHTML = document.querySelector('#t-' + s).innerHTML;
+  const place = () => document.querySelectorAll('.seg').forEach((seg) => {
+    const th = seg.querySelector('.seg-thumb'), on = seg.querySelector('.seg-opt.active');
+    if (th && on) { th.style.opacity = 1; th.style.width = on.offsetWidth + 'px'; th.style.transform = `translateX(${on.offsetLeft}px)`; }
+  });
+  requestAnimationFrame(() => requestAnimationFrame(place));
+  setTimeout(place, 400);
+</script>
+<style>
+  /* Tabs: five labels used to run into the right edge. Equal widths, a
+     little inset, so About sits inside the pill like the others. */
+  .settings-nav { padding: 4px; }
+  .settings-nav .nav-item { flex: 1 1 0; padding: 0 2px; }
+
+  /* About: the header is centred and carries the version and update state */
+  .ab-head { text-align: center; padding: 18px 0 20px; }
+  .ab-mark { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 18px; display: grid; place-items: center; background: var(--row-ic); }
+  .ab-mark svg { width: 38px; height: 30px; }
+  .ab-mark .mark { stroke: var(--ink); }
+  .ab-head h2 { font-family: var(--font-display); font-weight: 500; font-size: 30px; line-height: 1.1; letter-spacing: -0.3px; }
+  .ab-head .tag { color: var(--muted); font-size: var(--t-base); margin-top: 6px; }
+  .ab-ver { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 7px 12px 7px 10px; border-radius: 999px; background: var(--row-ic); font-size: var(--t-sm); color: var(--muted); }
+  .ab-ver svg { width: 15px; height: 15px; fill: none; stroke: var(--green); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .ab-ver b { color: var(--ink); font-weight: 600; }
+  .ab-ver.new { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--ink); }
+
+  /* The promise: three plain facts, no taps, no jargon */
+  .promise { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 22px; }
+  .promise div { padding: 14px 10px 12px; border-radius: 14px; background: var(--elev); border: 1px solid var(--hairline); text-align: center; }
+  .promise svg { width: 22px; height: 22px; display: block; margin: 0 auto 8px; fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .promise b { display: block; font-size: var(--t-md); font-weight: 600; line-height: 1.25; }
+  .promise span { display: block; font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 3px; }
+  html[data-look="paper"] .promise div { box-shadow: var(--shadow); }
+
+  .ab-label { font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin: 0 4px 8px; }
+  .ab-group { margin-bottom: 22px; }
+  .ab-group .row { min-height: 60px; }
+  .row-end { color: var(--faint); font-size: var(--t-sm); margin-right: 2px; }
+  .ab-foot { text-align: center; color: var(--faint); font-size: var(--t-sm); line-height: 1.5; padding: 4px 0 28px; }
+
+  /* Report sheet */
+  .sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; }
+  .sheet-wrap .update-scrim { animation: none; }
+  .sheet-wrap .update-panel { text-align: left; max-width: none; animation: none; padding-bottom: 26px; }
+  .sheet-wrap h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; line-height: 1.15; margin-bottom: 6px; }
+  .sheet-wrap .lead { color: var(--muted); font-size: var(--t-base); line-height: 1.45; margin-bottom: 16px; }
+  .inlist { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 10px; }
+  .inlist li { display: flex; gap: 10px; align-items: flex-start; font-size: var(--t-md); line-height: 1.4; }
+  .inlist svg { width: 18px; height: 18px; flex: none; margin-top: 1px; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .inlist .y svg { stroke: var(--green); } .inlist .n svg { stroke: var(--faint); }
+  .inlist .n { color: var(--muted); }
+  .sheet-actions { display: grid; gap: 8px; }
+  .sheet-actions .btn-solid, .sheet-actions .btn-ghost { width: 100%; min-height: 50px; justify-content: center; }
+  .sheet-actions .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .faint-link { display: block; margin: 14px auto 0; color: var(--faint); font-size: var(--t-sm); background: none; border: 0; }
+
+  /* Licences page */
+  .sub-bar { display: flex; align-items: center; gap: 10px; padding: 14px 0 6px; }
+  .sub-bar .bar-title { font-weight: 600; }
+  .lic-intro { color: var(--muted); font-size: var(--t-base); line-height: 1.5; margin: 6px 4px 18px; }
+  .lic .row { min-height: 56px; }
+  .lic .row-end { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<!-- ===== About, redone ===== -->
+<template id="t-about">
+  <section id="view-settings">
+    <div class="settings-top">
+      <header class="bar"><button class="back-btn"><svg viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><span class="bar-title">Settings</span><span class="bar-spacer"></span></header>
+      <nav class="settings-nav seg"><span class="seg-thumb"></span><button class="nav-item seg-opt">Sites</button><button class="nav-item seg-opt">Blur</button><button class="nav-item seg-opt">Filters</button><button class="nav-item seg-opt">Look</button><button class="nav-item seg-opt active">About</button></nav>
+    </div>
+    <div class="settings-body"><div class="panes"><section class="pane">
+      <div class="ab-head">
+        <div class="ab-mark"><svg viewBox="0 0 48 36"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3" stroke-linecap="round"/></svg></div>
+        <h2>tamescroll</h2>
+        <p class="tag">A calm way to use the busy web.</p>
+        <span class="ab-ver"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><b>Version 0.1.143</b>· Up to date</span>
+      </div>
+
+      <div class="promise">
+        <div><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/><path d="M4 4l16 16"/></svg><b>No account</b><span>Nothing to sign up for</span></div>
+        <div><svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/><path d="M4 4l16 16"/></svg><b>No tracking</b><span>Nothing is collected</span></div>
+        <div><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/></svg><b>On device</b><span>Blur runs on this phone</span></div>
+      </div>
+
+      <p class="ab-label">Help</p>
+      <section class="group ab-group">
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.8h3.8"/></svg></span><span class="grow"><span class="row-title">Show the tour again</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M5 19.5V5.5h11l-2 3.5 2 3.5H5"/></svg></span><span class="grow"><span class="row-title">Report a problem</span><span class="row-sub">See what's in it before it's sent</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v3.8h-3.8"/></svg></span><span class="grow"><span class="row-title">Check for updates</span><span class="row-sub">The app and site fixes</span></span><span class="row-end">Today</span></button>
+      </section>
+
+      <p class="ab-label">Legal</p>
+      <section class="group ab-group">
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z"/></svg></span><span class="grow"><span class="row-title">Privacy policy</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M8.5 7.5L4 12l4.5 4.5M15.5 7.5L20 12l-4.5 4.5"/></svg></span><span class="grow"><span class="row-title">Open source</span><span class="row-sub">Free software, and what it's built on</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      </section>
+
+      <p class="ab-foot">Not made by or linked to any of the sites it opens.</p>
+    </section></div></div>
+  </section>
+</template>
+
+<!-- ===== About with an update waiting ===== -->
+<template id="t-update">
+  <section id="view-settings">
+    <div class="settings-top">
+      <header class="bar"><button class="back-btn"><svg viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><span class="bar-title">Settings</span><span class="bar-spacer"></span></header>
+      <nav class="settings-nav seg"><span class="seg-thumb"></span><button class="nav-item seg-opt">Sites</button><button class="nav-item seg-opt">Blur</button><button class="nav-item seg-opt">Filters</button><button class="nav-item seg-opt">Look</button><button class="nav-item seg-opt active">About</button></nav>
+    </div>
+    <div class="settings-body"><div class="panes"><section class="pane">
+      <div class="ab-head">
+        <div class="ab-mark"><svg viewBox="0 0 48 36"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3" stroke-linecap="round"/></svg></div>
+        <h2>tamescroll</h2>
+        <p class="tag">A calm way to use the busy web.</p>
+        <span class="ab-ver new"><b>Version 0.1.143</b>· 0.1.144 is ready</span>
+      </div>
+      <section class="group pad" style="margin-bottom:22px">
+        <div class="row-title">What's new in 0.1.144</div>
+        <p class="row-sub" style="margin-top:4px">Settings and home redone. Smoother blur on older phones.</p>
+        <div class="actions" style="margin-top:14px"><button class="btn-solid" style="width:100%;justify-content:center;min-height:48px">Update now</button></div>
+      </section>
+      <p class="ab-label">Help</p>
+      <section class="group ab-group">
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.8h3.8"/></svg></span><span class="grow"><span class="row-title">Show the tour again</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M5 19.5V5.5h11l-2 3.5 2 3.5H5"/></svg></span><span class="grow"><span class="row-title">Report a problem</span><span class="row-sub">See what's in it before it's sent</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      </section>
+    </section></div></div>
+  </section>
+</template>
+
+<!-- ===== Report a problem: the old Diagnostics card, made plain ===== -->
+<template id="t-report">
+  <section id="view-settings" style="opacity:.4">
+    <div class="settings-top"><header class="bar"><span class="bar-title">Settings</span></header></div>
+    <div class="settings-body"><div class="ab-head"><h2>tamescroll</h2></div></div>
+  </section>
+  <div class="sheet-wrap">
+    <div class="update-scrim"></div>
+    <section class="update-panel">
+      <span class="sheet-grab"></span>
+      <h2>Report a problem</h2>
+      <p class="lead">Something not working? Send a short report and we'll look into it. You choose where it goes, like email or WhatsApp.</p>
+      <ul class="inlist">
+        <li class="y"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>How fast blur ran on this phone</li>
+                <li class="n"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>No pictures and no web addresses</li>
+      </ul>
+      <div class="sheet-actions">
+        <button class="btn-solid">Send report</button>
+        <div class="two"><button class="btn-ghost">Read it first</button><button class="btn-ghost">Copy</button></div>
+      </div>
+      <button class="faint-link">Delete saved report</button>
+    </section>
+  </div>
+</template>
+
+<!-- ===== Open source: credits as rows, not a paragraph ===== -->
+<template id="t-licences">
+  <section id="view-settings">
+    <div class="settings-top">
+      <header class="bar"><button class="back-btn"><svg viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><span class="bar-title">Open source</span><span class="bar-spacer"></span></header>
+    </div>
+    <div class="settings-body"><div class="panes"><section class="pane">
+      <p class="lic-intro">tamescroll is free software. Anyone can read the code, check what it does, and build it themselves. It stands on the work of these projects.</p>
+      <section class="group ab-group lic">
+        <div class="row"><span class="grow"><span class="row-title">tamescroll</span><span class="row-sub">This app</span></span><span class="row-end">MPL-2.0</span></div>
+        <div class="row"><span class="grow"><span class="row-title">adblock-rust</span><span class="row-sub">Brave. Reads the filter lists</span></span><span class="row-end">MPL-2.0</span></div>
+        <div class="row"><span class="grow"><span class="row-title">EasyList, EasyPrivacy</span><span class="row-sub">Filter lists</span></span><span class="row-end">CC BY-SA 3.0</span></div>
+        <div class="row"><span class="grow"><span class="row-title">uBlock Origin uAssets</span><span class="row-sub">Filter lists</span></span><span class="row-end">GPLv3</span></div>
+        <div class="row"><span class="grow"><span class="row-title">BlazeFace, MoveNet</span><span class="row-sub">Finding people in pictures</span></span><span class="row-end">Apache-2.0</span></div>
+        <div class="row"><span class="grow"><span class="row-title">Human</span><span class="row-sub">vladmandic. Face model</span></span><span class="row-end">MIT</span></div>
+        <div class="row"><span class="grow"><span class="row-title">Tauri</span><span class="row-sub">The app shell</span></span><span class="row-end">MIT</span></div>
+      </section>
+      <section class="group ab-group">
+        <button class="row row-btn"><span class="grow"><span class="row-title">View the source code</span><span class="row-sub">Opens in your browser</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      </section>
+    </section></div></div>
+  </section>
+</template>
+
+</body>
+</html>
