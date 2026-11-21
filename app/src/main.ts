@@ -757,8 +757,33 @@ function surfaceRow(platformId: string, surface: SurfaceInfo): HTMLElement {
   return row;
 }
 
+// THE PLAY BUILD'S ONE SWITCH (src-tauri rules.rs `PLAY`): a Play build
+// has no Ads row per site. One "Ads and trackers" choice covers every
+// site, stored in the shown map under ALL_SITES (lib.rs reads the same
+// key). Hidden = blocked, like every other row here; absent = blocked.
+const ALL_SITES = "*";
+let playBuild: Promise<boolean> | null = null;
+function isPlayBuild(): Promise<boolean> {
+  const asked = playBuild ?? invoke<boolean>("play_build").catch(() => false);
+  playBuild = asked;
+  return asked;
+}
+
 async function renderBringBack(readyPlatforms: Platform[]) {
   bringBack.textContent = "";
+  if (await isPlayBuild()) {
+    const details = document.createElement("details");
+    details.className = "platform-settings";
+    details.dataset.platform = ALL_SITES;
+    details.open = true;
+    const summary = document.createElement("summary");
+    summary.textContent = "Every site";
+    details.append(summary);
+    details.append(
+      surfaceRow(ALL_SITES, { id: "ads", label: "Ads and trackers", default_shown: false }),
+    );
+    bringBack.append(details);
+  }
   if (!readyPlatforms.length) {
     const hint = document.createElement("p");
     hint.className = "section-hint";

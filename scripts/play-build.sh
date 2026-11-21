@@ -11,6 +11,8 @@
 #   - gradlew exit 0 on failure -> the .aab mtime is the truth
 #   - unsigned bundle   -> Play Console refuses it
 #   - the install permission or the updater sneaking back in -> policy
+#   - YouTube-specific ad blocking in the bundle -> the Play build is a
+#     general ad and tracker blocker only (`--features play`, rules.rs PLAY)
 #
 # Version: the same versionCode as the newest sideload release, read from
 # appupdate.rs. Play refuses a code it has seen, so a second upload of the
@@ -52,9 +54,16 @@ node app/gaze/build/build.js >>"$LOG" 2>&1 || die "gaze bundle build failed (pla
 
 say "Building the Rust library (several minutes)"
 STAMP=$(date +%s)
-( cd app && npx tauri android build --debug --target aarch64 >>"$LOG" 2>&1 ) || true
+( cd app && npx tauri android build --debug --target aarch64 --features play >>"$LOG" 2>&1 ) || true
 SO=app/src-tauri/target/aarch64-linux-android/debug/libapp_lib.so
 [ -f "$SO" ] && [ "$(stat -c %Y "$SO")" -ge "$STAMP" ] || die "the Rust build did not produce a new $SO (play-build.log)."
+# Our YouTube ad rule and the two scriptlets only it calls are compiled out
+# by `--features play`. These strings exist nowhere else (not in the vendor
+# lists, not in a comment), so finding one means the feature did not take.
+# Same list as rules.rs PLAY_FORBIDDEN.
+for NEEDLE in contentPlaybackContext.isInlinePlaybackNoAd trustedSetRequestField trustedPruneWindowJson; do
+  grep -aq "$NEEDLE" "$SO" && die "the library still carries YouTube ad blocking ($NEEDLE): --features play did not take."
+done
 
 say "Stripping"
 STRIP=$(ls "$ANDROID_HOME"/ndk/*/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-strip.exe 2>/dev/null | sort | tail -1)

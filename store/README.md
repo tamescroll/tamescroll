@@ -31,6 +31,14 @@ so the store build should not go up without them.
   Shown turns off network blocking,
   the vendor cosmetic lists, the ad scriptlets and our ad and promo
   surfaces for that platform only.
+  **Superseded for Play on 2026-11-21 (ZV):** the Play build is a
+  general ad and tracker blocker, like Brave: built with
+  `--features play`, it has ONE switch, Settings → Sites → Every site →
+  Ads and trackers (blocked by default), the standard public lists on
+  every site, and none of our YouTube ad rules (`rules/scriptlets.txt`,
+  youtube.txt's ad-unit rules), not even over the air.
+  `scripts/play-build.sh` refuses a library that still carries them. The
+  per-site switch and the YouTube rule stay in the website build.
 - [x] No platform logo or brand colour in the store build, #24 (Play
   Impersonation, Apple 5.2.1). The in-app tiles already use muted letter
   glyphs. Every build's home-screen shortcut icons
@@ -98,7 +106,7 @@ so the store build should not go up without them.
 2. Play Console → Testing → **Internal testing** first: no review wait,
    up to 100 testers, and it is the first time the minified (R8) build
    runs on a phone. Check the launcher, a tile, the blur, the search box
-   and the Ads switch on it before anything else.
+   and the Every site → Ads and trackers switch on it before anything else.
 3. Then **Closed testing** with the 12 testers for 14 days, then
    **Production**.
 
@@ -223,9 +231,11 @@ forms are needed.
 > WebView; tamescroll hides parts of the page (feeds, short-video shelves,
 > autoplay) and blurs images on the device. It does not use any site's
 > API, does not download or save media, and does not modify any other
-> app. Ad blocking is one switch per site, chosen by the user, in
-> Settings → Sites → (the site) → Ads, or the shield in the top bar
-> while on that site. No account is needed to
+> app. Ads and trackers are blocked on every site with the standard
+> public filter lists (EasyList, EasyPrivacy, uBlock Origin's lists), the
+> same lists other browsers use; one switch in Settings → Sites → Every
+> site → Ads and trackers turns that off. The shield in the top bar shows
+> how many requests it stopped on the page. No account is needed to
 > review the app. To see
 > the image blur, open any site from the tiles and scroll a page of
 > thumbnails.
@@ -238,8 +248,8 @@ forms are needed.
 - No platform name in the title or the short description, and no
   platform logo in any graphic (Play Metadata and Impersonation
   policies).
-- No "no ads ever", and never "no YouTube ads": ad blocking is the
-  user's per-site switch, and YouTube's starts off.
+- No "no ads ever", and never name a site's ads ("no YouTube ads"):
+  the Play build is a general ad and tracker blocker for every site.
 - Says "independent, not affiliated" in the description.
 - Never says the app is "legal", "approved" or "official".
 

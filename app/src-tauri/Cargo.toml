@@ -58,5 +58,11 @@ windows = { version = "0.61", features = [
 # phone: the engine warm-up measured 4s on his Redmi against 100ms for
 # the same work in a release build on the host. Optimise the dev profile;
 # debug_assertions and the debug signing path are untouched.
+# `play`: the Google Play build, a general ad and tracker blocker with
+# nothing aimed at one site's ads (src/rules.rs `PLAY`). Turned on by
+# scripts/play-build.sh; the website/GitHub build never sets it.
+[features]
+play = []
+
 [profile.dev]
 opt-level = 3

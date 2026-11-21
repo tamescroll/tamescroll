@@ -28,6 +28,52 @@ use adblock::lists::{FilterSet, ParseOptions};
 use adblock::resources::{MimeType, PermissionMask, Resource, ResourceType};
 use adblock::Engine;
 
+/// THE PLAY BUILD IS A GENERAL AD AND TRACKER BLOCKER (ZV, 2026-11-21).
+///
+/// `cargo build --features play` (scripts/play-build.sh) compiles out
+/// everything that targets one site's ads, so what Google Play reviews is
+/// the same thing Brave ships: the standard public lists (EasyList,
+/// EasyPrivacy, uBO's lists) applied to every site, and one switch for
+/// all of them. Gone from a Play build, and refused if a rules OTA tries
+/// to bring it back:
+///   - `rules/scriptlets.txt`, our YouTube /player request rule, and the
+///     two scriptlets only it calls;
+///   - youtube.txt's `ads` surface and every other rule of ours that
+///     hides a YouTube ad unit (`is_youtube_ad_rule`);
+///   - the per-platform Ads switch (lib.rs ADS_SURFACE); one global
+///     "Block ads and trackers" choice replaces it.
+/// The website/GitHub build keeps all of it. Legal background:
+/// docs/legal-position.md.
+pub const PLAY: bool = cfg!(feature = "play");
+
+/// Strings that exist only in our YouTube ad rule and the two scriptlets
+/// it calls: the rule's field, and the scriptlets' function names. A Play
+/// library or a YouTube page injection carrying one is not a Play build.
+/// scripts/play-build.sh greps the stripped library for the same list.
+pub const PLAY_FORBIDDEN: &[&str] = &[
+    "contentPlaybackContext.isInlinePlaybackNoAd",
+    "trustedSetRequestField",
+    "trustedPruneWindowJson",
+];
+
+/// One of OUR rules that hides a YouTube ad unit. Matched on the element
+/// names YouTube uses for ad renderers, so a youtube.txt that arrives
+/// over the air with a new ad rule is filtered the same way.
+pub fn is_youtube_ad_rule(selector: &str) -> bool {
+    const AD_MARKERS: &[&str] = &[
+        "ad-slot",
+        "in-feed-ad",
+        "promoted-video",
+        "promoted-sparkles",
+        "search-pyv",
+        "companion-slot",
+        "companion-ad",
+        "display-ad",
+        "ad-layout",
+    ];
+    AD_MARKERS.iter().any(|m| selector.contains(m))
+}
+
 /// Our own cosmetic rules — algorithmic-surface removal, not ad blocking.
 /// Each file's header carries the design rules that govern it. No longer
 /// fed into the engine (see module doc); parsed into surfaces instead.
@@ -63,6 +109,7 @@ const BLUR_X: &str = include_str!("../../../rules/blur/x.css");
 const BLUR_TIKTOK: &str = include_str!("../../../rules/blur/tiktok.css");
 const BLUR_INSTAGRAM: &str = include_str!("../../../rules/blur/instagram.css");
 const BLUR_FACEBOOK: &str = include_str!("../../../rules/blur/facebook.css");
+#[cfg(not(feature = "play"))]
 const SCRIPTLET_RULES: &str = include_str!("../../../rules/scriptlets.txt");
 pub const TUNING_JSON: &str = include_str!("../../../rules/tuning.json");
 
@@ -103,6 +150,11 @@ pub fn embedded(name: &str) -> Option<&'static str> {
         "tiktok.txt" => Some(TIKTOK_RULES),
         "instagram.txt" => Some(INSTAGRAM_RULES),
         "facebook.txt" => Some(FACEBOOK_RULES),
+        // Our YouTube ad rule. Not part of a Play build, so ota.rs never
+        // fetches it there either (a name `embedded` refuses is ignored).
+        // (Compiled out, not just unused: scripts/play-build.sh greps the
+        // stripped library for these names and refuses the bundle.)
+        #[cfg(not(feature = "play"))]
         "scriptlets.txt" => Some(SCRIPTLET_RULES),
         // NUMBERS, NOT CODE. Whitelisted and clamped page-side by
         // app/gaze/src/tuning.mjs; see the header there for why each
@@ -165,6 +217,14 @@ const SCRIPTLETS: &[(&str, &[&str], &str)] = &[
         &[],
         include_str!("../scriptlets/trusted-replace-xhr-response.js"),
     ),
+];
+
+/// The two scriptlets only `rules/scriptlets.txt` (our YouTube rule) calls.
+/// Compiled out of a Play build with that file.
+#[cfg(feature = "play")]
+const YOUTUBE_SCRIPTLETS: &[(&str, &[&str], &str)] = &[];
+#[cfg(not(feature = "play"))]
+const YOUTUBE_SCRIPTLETS: &[(&str, &[&str], &str)] = &[
     (
         // Our own request-editor (not a uBO name): sets one dotted field on
         // outbound JSON request bodies. Used on YouTube's /player request
@@ -195,7 +255,7 @@ pub fn build_engine() -> Engine {
 /// The lists the engine is compiled from, in order. Through the OTA
 /// layer: an updated list snapshot wins over the embedded one on the
 /// next rebuild.
-const ENGINE_LISTS: [&str; 6] = [
+const ENGINE_LISTS_ALL: [&str; 6] = [
     "scriptlets.txt",
     "vendor/easylist.txt",
     "vendor/easyprivacy.txt",
@@ -203,6 +263,15 @@ const ENGINE_LISTS: [&str; 6] = [
     "vendor/ubo-quick-fixes.txt",
     "vendor/ubo-unbreak.txt",
 ];
+
+/// `scriptlets.txt` is our YouTube ad rule, left out of a Play build.
+fn engine_lists() -> Vec<&'static str> {
+    ENGINE_LISTS_ALL
+        .iter()
+        .copied()
+        .filter(|l| !(PLAY && *l == "scriptlets.txt"))
+        .collect()
+}
 
 fn build_engine_from_lists(lists: &[String]) -> Engine {
     let mut set = FilterSet::new(false);
@@ -225,7 +294,7 @@ fn build_engine_from_lists(lists: &[String]) -> Engine {
 /// does the same. Resources are not part of the serialised form and are
 /// re-attached either way.
 pub(crate) fn load_or_build_engine(cache_dir: Option<&std::path::Path>) -> Engine {
-    let lists: Vec<String> = ENGINE_LISTS.iter().map(|l| crate::ota::rules_text(l)).collect();
+    let lists: Vec<String> = engine_lists().iter().map(|l| crate::ota::rules_text(l)).collect();
     let key = engine_key(&lists);
     let file = cache_dir.map(|d| d.join(format!("engine-{key}.bin")));
 
@@ -283,7 +352,7 @@ fn resources() -> Vec<Resource> {
     let mut resources: Vec<Resource> = serde_json::from_str(BRAVE_RESOURCES_JSON)
         .expect("rules/vendor/resources.json must deserialize into Vec<adblock::resources::Resource>");
 
-    for (name, aliases, body) in SCRIPTLETS {
+    for (name, aliases, body) in SCRIPTLETS.iter().chain(YOUTUBE_SCRIPTLETS) {
         resources.push(Resource {
             name: (*name).to_string(),
             aliases: aliases.iter().map(|a| (*a).to_string()).collect(),
@@ -414,13 +483,34 @@ fn build_surfaces() -> &'static Vec<(&'static str, Vec<Surface>)> {
         Box::leak(crate::ota::rules_text(name).into_boxed_str())
     }
     Box::leak(Box::new(vec![
-        ("youtube", parse_surfaces(leaked("youtube.txt"))),
+        ("youtube", play_strip(parse_surfaces(leaked("youtube.txt")))),
         ("reddit", parse_surfaces(leaked("reddit.txt"))),
         ("x", parse_surfaces(leaked("x.txt"))),
         ("tiktok", parse_surfaces(leaked("tiktok.txt"))),
         ("instagram", parse_surfaces(leaked("instagram.txt"))),
         ("facebook", parse_surfaces(leaked("facebook.txt"))),
     ]))
+}
+
+/// A Play build drops YouTube's `ads` surface and any other rule of ours
+/// that hides a YouTube ad unit. Runs on every parse, so an OTA'd
+/// youtube.txt cannot bring them back. Identity everywhere else.
+fn play_strip(surfaces: Vec<Surface>) -> Vec<Surface> {
+    if !PLAY {
+        return surfaces;
+    }
+    strip_youtube_ads(surfaces)
+}
+
+fn strip_youtube_ads(surfaces: Vec<Surface>) -> Vec<Surface> {
+    surfaces
+        .into_iter()
+        .filter(|s| s.id != "ads")
+        .map(|mut s| {
+            s.rules.retain(|(_, sel)| !is_youtube_ad_rule(sel));
+            s
+        })
+        .collect()
 }
 
 fn all_surfaces() -> &'static Vec<(&'static str, Vec<Surface>)> {
@@ -502,6 +592,7 @@ mod tests {
 
     /// The parser must actually find the sections youtube.txt declares,
     /// including one it must never let the settings pane toggle off.
+    #[cfg(not(feature = "play"))] // Play strips the ads surface
     #[test]
     fn youtube_surfaces_parse_with_an_always_on_ads_surface() {
         let surfaces = platform_surfaces("youtube").expect("youtube should have surfaces");
@@ -701,7 +792,7 @@ mod engine_timing_probe {
     #[ignore]
     fn where_the_seconds_go() {
         let t = std::time::Instant::now();
-        let lists: Vec<String> = ENGINE_LISTS.iter().map(|l| crate::ota::rules_text(l)).collect();
+        let lists: Vec<String> = engine_lists().iter().map(|l| crate::ota::rules_text(l)).collect();
         eprintln!("lists      {:?}", t.elapsed());
         let t = std::time::Instant::now();
         let _k = engine_key(&lists);
@@ -729,5 +820,85 @@ mod engine_timing_probe {
         let t = std::time::Instant::now();
         d.use_resources(resources());
         eprintln!("use_res2   {:?}", t.elapsed());
+    }
+}
+
+#[cfg(test)]
+mod play_tests {
+    use super::*;
+
+    /// The Play strip, run on the real youtube.txt whatever the build: the
+    /// `ads` surface goes, every ad-unit rule goes, and the feed surfaces
+    /// keep their rules.
+    #[test]
+    fn strip_removes_youtube_ad_rules_and_keeps_the_feed_rules() {
+        let parsed = parse_surfaces(YOUTUBE_RULES);
+        let before: usize = parsed.iter().map(|s| s.rules.len()).sum();
+        assert!(parsed.iter().any(|s| s.id == "ads"));
+        let stripped = strip_youtube_ads(parse_surfaces(YOUTUBE_RULES));
+        assert!(stripped.iter().all(|s| s.id != "ads"));
+        for s in &stripped {
+            for (_, sel) in &s.rules {
+                assert!(!is_youtube_ad_rule(sel), "{}: {sel}", s.id);
+            }
+        }
+        for id in ["home", "shorts", "watch_recs"] {
+            let a = parsed.iter().find(|s| s.id == id).unwrap().rules.len();
+            let b = stripped.iter().find(|s| s.id == id).unwrap().rules.len();
+            assert_eq!(a, b, "{id} lost rules to the ad strip");
+        }
+        let after: usize = stripped.iter().map(|s| s.rules.len()).sum();
+        // ads (3) + search pyv + two in mobile_nags, at the time of writing.
+        assert!(before - after >= 5, "only {} rules stripped", before - after);
+    }
+
+    #[test]
+    fn ad_rule_matcher_names_ad_units_only() {
+        for sel in ["ytd-ad-slot-renderer", "ytm-promoted-video-renderer", "ytd-search-pyv-renderer"] {
+            assert!(is_youtube_ad_rule(sel), "{sel}");
+        }
+        for sel in ["ytm-reel-shelf-renderer", "ytd-rich-grid-renderer", "img.mobile-topbar-logo", "ytm-app-promo-banner"] {
+            assert!(!is_youtube_ad_rule(sel), "{sel}");
+        }
+    }
+
+    /// What a Play build IS. Run with `cargo test --lib --features play`
+    /// (CI does).
+    #[cfg(feature = "play")]
+    #[test]
+    fn play_build_ships_no_youtube_ad_blocking() {
+        assert!(PLAY);
+        assert!(embedded("scriptlets.txt").is_none(), "an OTA scriptlets.txt must be ignored");
+        assert!(!engine_lists().contains(&"scriptlets.txt"));
+        assert!(YOUTUBE_SCRIPTLETS.is_empty());
+        let yt = platform_surfaces("youtube").unwrap();
+        assert!(yt.iter().all(|s| s.id != "ads"));
+        assert!(yt.iter().flat_map(|s| &s.rules).all(|(_, sel)| !is_youtube_ad_rule(sel)));
+        let js = build_engine_from_lists(
+            &engine_lists().iter().map(|l| embedded(l).unwrap().to_string()).collect::<Vec<_>>(),
+        )
+        .url_cosmetic_resources("https://m.youtube.com/watch?v=x")
+        .injected_script;
+        for needle in PLAY_FORBIDDEN {
+            assert!(!js.contains(needle), "{needle} reached a YouTube page on Play");
+        }
+    }
+
+    #[cfg(not(feature = "play"))]
+    #[test]
+    fn website_build_keeps_the_youtube_rule() {
+        assert!(!PLAY);
+        assert!(embedded("scriptlets.txt").is_some());
+        assert!(platform_surfaces("youtube").unwrap().iter().any(|s| s.id == "ads"));
+        // The forbidden list is real: each string is in this build's
+        // YouTube injection, so its absence on Play means something.
+        let js = build_engine_from_lists(
+            &engine_lists().iter().map(|l| embedded(l).unwrap().to_string()).collect::<Vec<_>>(),
+        )
+        .url_cosmetic_resources("https://m.youtube.com/watch?v=x")
+        .injected_script;
+        for needle in PLAY_FORBIDDEN {
+            assert!(js.contains(needle), "{needle} missing from the website build's YouTube injection");
+        }
     }
 }
