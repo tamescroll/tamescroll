@@ -75,9 +75,6 @@ STAMP=$(date +%s)
 ( cd app && npx tauri android build --debug --target aarch64 >>"$LOG" 2>&1 ) || true
 SO=app/src-tauri/target/aarch64-linux-android/debug/libapp_lib.so
 [ -f "$SO" ] && [ "$(stat -c %Y "$SO")" -ge "$STAMP" ] || die "the Rust build did not produce a new $SO (release.log)."
-# The website build keeps everything; a library built with --features play
-# (the Google Play build) has no YouTube rule and must not ship here.
-grep -aq trustedSetRequestField "$SO" || die "$SO looks like a Play build (no YouTube rule): rebuild without --features play."
 
 say "Stripping"
 STRIP=$(ls "$ANDROID_HOME"/ndk/*/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-strip.exe 2>/dev/null | sort | tail -1)

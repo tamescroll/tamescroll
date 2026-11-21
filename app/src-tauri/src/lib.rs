@@ -192,43 +192,12 @@ fn ads_default_shown(platform_id: &str) -> bool {
 }
 
 fn ads_shown(shown: &[String]) -> bool {
-    if rules::PLAY {
-        return play_ads_allowed();
-    }
     shown.iter().any(|id| id == ADS_SURFACE)
-}
-
-/// THE PLAY BUILD'S ONE SWITCH (rules.rs `PLAY`). A Play build has no
-/// per-site Ads entry: one "Ads and trackers" choice covers every site,
-/// the way Brave's shield setting does. The launcher stores it in the
-/// shown map under this key (main.ts ALL_SITES), so it reaches Rust on
-/// every open with the rest of the prefs. Blocked unless the user
-/// explicitly allowed ads.
-pub(crate) const ALL_SITES: &str = "*";
-
-fn play_ads_allowed() -> bool {
-    SHOWN_MAP
-        .lock()
-        .unwrap()
-        .as_ref()
-        .and_then(|m| m.get(ALL_SITES))
-        .is_some_and(|l| l.iter().any(|id| id == ADS_SURFACE))
-}
-
-/// Tells the launcher which build this is, so a Play build renders the
-/// one all-sites switch instead of an Ads row per site.
-#[tauri::command]
-fn play_build() -> bool {
-    rules::PLAY
 }
 
 /// Does the page making a request belong to the platform whose prefs
 /// show ads? Pure, so it can be tested without the process-wide state.
 fn ads_let_through(page_url: &str, shown_platform: &str, shown: &[String]) -> bool {
-    // Play: one switch for every site, platform or not.
-    if rules::PLAY {
-        return play_ads_allowed();
-    }
     ads_shown(shown)
         && url_host(page_url)
             .and_then(|h| platform_for_host(&h))
@@ -1471,9 +1440,8 @@ fn surfaces(id: String) -> Vec<SurfaceInfo> {
                 .chain(kid_surfaces(&id))
                 // The ads switch (ADS_SURFACE), on every platform, last:
                 // it governs network blocking too, so it exists even where
-                // the rules file has no `ads` surface of its own. Not in a
-                // Play build, whose one switch covers all sites (ALL_SITES).
-                .chain((!rules::PLAY).then(|| SurfaceInfo {
+                // the rules file has no `ads` surface of its own.
+                .chain(std::iter::once(SurfaceInfo {
                     id: ADS_SURFACE.to_string(),
                     label: "Ads".to_string(),
                     default_shown: ads_default_shown(&id),
@@ -2386,7 +2354,6 @@ pub fn run() {
             open_address,
             rules_summary,
             surfaces,
-            play_build,
             set_gaze_mode,
             set_blur_strength,
             set_user_gender,
@@ -2633,7 +2600,7 @@ mod tests {
         // No map yet: YouTube's defaults -- Recommendations and Ads Shown.
         let yt = pick_shown("youtube", "reddit", &reddit, None);
         assert!(yt.contains(&"watch_recs".to_string()), "{yt:?}");
-        assert_eq!(yt.contains(&"ads".to_string()), !rules::PLAY, "{yt:?}");
+        assert!(yt.contains(&"ads".to_string()), "{yt:?}");
         assert!(!yt.contains(&"discovery".to_string()), "{yt:?}");
 
         // The tile's own list wins over the map: it is the freshest.
@@ -2650,9 +2617,7 @@ mod tests {
             let s = yt.iter().find(|s| s.id == id).unwrap_or_else(|| panic!("{id} offered"));
             assert!(!s.default_shown, "{id} starts Hidden");
         }
-        if !rules::PLAY {
-            assert_eq!(yt.last().map(|s| s.id.as_str()), Some(ADS_SURFACE), "ads stays last");
-        }
+        assert_eq!(yt.last().map(|s| s.id.as_str()), Some(ADS_SURFACE), "ads stays last");
         // The two that ARE rules (#50) start Hidden too, and their CSS ships
         // by default: Next/Previous, and the search dropdown.
         for id in ["player_skip", "search_suggestions"] {
@@ -2699,7 +2664,6 @@ mod tests {
     /// The ads switch (#23): Shown lets the platform's own page through
     /// and nothing else -- not another platform's page, and not this
     /// platform while the switch says Hidden.
-    #[cfg(not(feature = "play"))] // per-site Ads switch / YouTube rule: website build only
     #[test]
     fn ads_switch_lets_through_only_the_platform_it_was_set_for() {
         let watch = "https://m.youtube.com/watch?v=E4lnTIJaz-g";
@@ -2714,7 +2678,6 @@ mod tests {
 
     /// Shown drops the vendor cosmetics and our own ad and promo
     /// surfaces, and keeps every other surface and the nags hidden.
-    #[cfg(not(feature = "play"))] // per-site Ads switch / YouTube rule: website build only
     #[test]
     fn ads_switch_shows_ad_surfaces_and_keeps_the_rest_hidden() {
         let url = "https://m.youtube.com/";
@@ -2745,7 +2708,6 @@ mod tests {
 
     /// Every platform offers the switch, even one whose rules file has no
     /// ads surface of its own. YouTube's starts Shown, every other Hidden.
-    #[cfg(not(feature = "play"))] // per-site Ads switch / YouTube rule: website build only
     #[test]
     fn every_platform_offers_the_ads_switch_youtube_shown_others_hidden() {
         for p in PLATFORMS.iter().filter(|p| rules::platform_surfaces(p.id).is_some()) {
@@ -2931,7 +2893,6 @@ mod tests {
     /// reshapes into a stream carrying neither ad nor backoff (measured
     /// 8.3s). Dropping this argument silently restores the 30-second
     /// stall, and nothing else in the suite would notice.
-    #[cfg(not(feature = "play"))] // per-site Ads switch / YouTube rule: website build only
     #[test]
     fn watch_page_forces_a_fresh_player_request() {
         let js = engine()
@@ -3936,33 +3897,3 @@ mod tests {
 }
 
 
-
-#[cfg(all(test, feature = "play"))]
-mod play_tests {
-    use super::*;
-
-    /// A Play build: no Ads row on any site, and one all-sites switch
-    /// (ALL_SITES in the shown map) that governs every page, platform or
-    /// not. Blocked until the user allows ads.
-    #[test]
-    fn one_switch_for_every_site_and_no_per_site_ads_row() {
-        for p in PLATFORMS {
-            assert!(surfaces(p.id.to_string()).iter().all(|s| s.id != ADS_SURFACE), "{}", p.id);
-        }
-        let ads = vec![ADS_SURFACE.to_string()];
-        let pages = ["https://m.youtube.com/watch?v=x", "https://www.reddit.com/", "https://example.com/"];
-
-        set_shown_map(Some(HashMap::from([("youtube".to_string(), ads.clone())])));
-        for page in pages {
-            assert!(!ads_let_through(page, "youtube", &ads), "a per-site entry must not unblock {page}");
-        }
-        assert!(!ads_shown(&ads));
-
-        set_shown_map(Some(HashMap::from([(ALL_SITES.to_string(), ads.clone())])));
-        for page in pages {
-            assert!(ads_let_through(page, "youtube", &[]), "{page} should follow the all-sites switch");
-        }
-        set_shown_map(Some(HashMap::new()));
-        assert!(!ads_let_through(pages[2], "youtube", &[]));
-    }
-}

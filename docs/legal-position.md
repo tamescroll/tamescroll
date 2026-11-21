@@ -42,21 +42,6 @@ It is not legal advice.
   it, don't argue in public, remove what it names if that is quick, then
   consult a lawyer with the questions at the end of the review.
 
-## Decided 2026-11-21
-
-- **The Google Play build is a general ad and tracker blocker**, like
-  Brave (ZV: "let's mention it like a general ad blocker"). It is built
-  with `--features play` (`app/src-tauri/src/rules.rs` `PLAY`): the
-  standard public lists on every site, one all-sites "Ads and trackers"
-  switch, blocked by default, and none of our YouTube ad rules
-  (`rules/scriptlets.txt`, its two scriptlets, youtube.txt's ad-unit
-  rules), not even if a rules OTA carries them.
-  `scripts/play-build.sh` refuses a library that still has them. This
-  replaces the 2026-10-28 "keep our YouTube request rule built in" for
-  Play only; the website/GitHub build keeps the per-site switch and the
-  rule. If Play ever removes the app, the website APK is unaffected:
-  store removal is not a legal ban.
-
 ## The lines that keep us defensible
 
 Each of these is a line another app crossed and was removed or sued for.
