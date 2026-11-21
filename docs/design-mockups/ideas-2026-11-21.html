@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>mockups</title>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('look') === 'paper') document.documentElement.dataset.look = 'paper';
+  if (q.get('text') === 'large') document.documentElement.dataset.text = 'large';
+</script>
+<script type="module">
+  import "@fontsource/inter/400.css"; import "@fontsource/inter/500.css"; import "@fontsource/inter/600.css";
+  import "@fontsource/spectral/400.css"; import "@fontsource/spectral/500.css";
+  import "/src/styles.css";
+  const s = new URLSearchParams(location.search).get('s') || 'home';
+  document.querySelector('#app').innerHTML = document.querySelector('#t-' + s).innerHTML;
+  const place = () => document.querySelectorAll('.seg').forEach((seg) => {
+    const th = seg.querySelector('.seg-thumb'), on = seg.querySelector('.seg-opt.active');
+    if (th && on) { th.style.opacity = 1; th.style.width = on.offsetWidth + 'px'; th.style.transform = `translateX(${on.offsetLeft}px)`; }
+  });
+  requestAnimationFrame(() => requestAnimationFrame(place));
+  setTimeout(place, 400);
+</script>
+<style>
+  /* mock-only: the presets and the sheet, new pieces this round */
+  .preset-list { display: grid; gap: 8px; }
+  .preset { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; text-align: left; border-radius: 14px; background: var(--elev); border: 1.5px solid var(--hairline); }
+  .preset.on { border-color: var(--ink); }
+  .preset .grow b { display: block; font-size: var(--t-base); font-weight: 600; }
+  .preset .grow span { display: block; font-size: var(--t-sm); color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .preset .dotr { flex: none; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line); }
+  .preset.on .dotr { box-shadow: inset 0 0 0 7px var(--ink); }
+  .sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; }
+  .sheet-wrap .update-scrim { animation: none; }
+  .sheet-wrap .update-panel { text-align: left; max-width: none; animation: none; padding-bottom: 28px; }
+  .sheet-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .sheet-head .glyph-lg { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-family: var(--font-display); font-size: 24px; background: var(--row-ic); }
+  .sheet-head h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; line-height: 1.1; }
+  .sheet-head p { color: var(--muted); font-size: var(--t-sm); }
+  .customise { margin-top: 10px; }
+  .customise .row { min-height: 54px; }
+  .everyone { display: flex; justify-content: center; margin: 14px 0 4px; }
+  .everyone .btn-ghost { min-height: 42px; gap: 8px; }
+  .hidden-today { margin-top: var(--s5); }
+  .hidden-today .row-ic { width: 32px; height: 32px; }
+  .hold-hint { text-align: center; color: var(--faint); font-size: var(--t-sm); margin-top: 6px; }
+  .ts-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 8px; }
+  .ts-card { padding: 16px 14px; border-radius: 14px; background: var(--elev); border: 1.5px solid var(--hairline); text-align: left; }
+  .ts-card.on { border-color: var(--ink); }
+  .ts-card .aa { display: block; font-family: var(--font-display); color: var(--ink); line-height: 1; margin-bottom: 10px; }
+  .ts-card b { display: block; font-size: 15px; }
+  .ts-card p { color: var(--muted); font-size: 13px; line-height: 1.4; margin-top: 4px; }
+  .ts-card.big p { font-size: 15.5px; }
+  .privacy-line { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--row-ic); color: var(--muted); font-size: var(--t-sm); margin-bottom: 12px; }
+  .privacy-line svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .mock-ob { min-height: calc(100vh - 40px); display: flex; flex-direction: column; text-align: center; padding-top: 40px; }
+  .mock-ob .display { font-size: 32px; max-width: 320px; margin: 0 auto 8px; }
+  .mock-ob .lede { margin: 0 auto; max-width: 300px; }
+  .mock-ob .actions { margin-top: auto; }
+  .mock-tag { position: fixed; right: 10px; bottom: 10px; z-index: 99; font: 600 10px/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; background: rgba(201,164,94,.18); color: #c9a45e; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<!-- ===== 1. Home: sites, and today's calm in plain words ===== -->
+<template id="t-home">
+  <section id="view-launcher">
+    <header class="bar">
+      <svg class="wordmark" viewBox="0 0 560 140" role="img" aria-label="tamescroll"><g transform="translate(40 42) scale(1.28)"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.6" stroke-linecap="round"/></g><text x="146" y="88" font-family="Spectral, Georgia, serif" font-size="58" font-weight="600" letter-spacing="-0.6" fill="currentColor">tamescroll</text></svg>
+      <button class="icon-btn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="15.5" cy="8" r="1.8"/><circle cx="9.5" cy="16" r="1.8"/></svg></button>
+    </header>
+    <div class="home-hero">
+      <p class="greet">Good morning.</p>
+      <h1 class="home-q">What are you here for?</h1>
+      <form class="open-link"><svg class="open-link-ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input placeholder="Search privately or type a site" /><button type="button" class="go-btn"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></button></form>
+    </div>
+    <p class="eyebrow tiles-head">Your sites</p>
+    <div class="tiles">
+      <button class="tile is-tamed"><span class="dot">Y</span><span class="name">YouTube</span></button>
+      <button class="tile is-tamed"><span class="dot">R</span><span class="name">Reddit</span></button>
+      <button class="tile"><span class="dot">W</span><span class="name">Wikipedia</span></button>
+      <button class="tile add"><span class="dot">+</span><span class="name">Add a site</span></button>
+    </div>
+    <p class="hold-hint">Press and hold a site to change what it shows.</p>
+    <p class="group-head">Kept out of sight today</p>
+    <section class="group hidden-today">
+      <div class="row"><span class="row-ic"><svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M9 4.5v15M4.5 9.5h4.5"/></svg></span><span class="grow row-title">3 feeds you didn't scroll</span></div>
+      <div class="row"><span class="row-ic"><svg viewBox="0 0 24 24"><rect x="7.5" y="3.5" width="9" height="17" rx="2.5"/><path d="M11 9.5l3 2.5-3 2.5z"/></svg></span><span class="grow row-title">41 short videos skipped</span></div>
+      <div class="row"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M12 3.5L19 6.2V11.5C19 15.6 16.1 19 12 20.5C7.9 19 5 15.6 5 11.5V6.2Z"/><path d="M9 12L11.2 14.2L15.2 10"/></svg></span><span class="grow row-title">1,284 trackers stopped</span></div>
+    </section>
+  </section>
+</template>
+
+<!-- ===== 2. Hold a site: three plain presets, the switches under Customise ===== -->
+<template id="t-site">
+  <section id="view-launcher" style="opacity:.35">
+    <header class="bar"><svg class="wordmark" viewBox="0 0 560 140"><text x="146" y="88" font-family="Spectral, Georgia, serif" font-size="58" fill="currentColor">tamescroll</text></svg></header>
+    <div class="home-hero"><h1 class="home-q">What are you here for?</h1></div>
+  </section>
+  <div class="sheet-wrap">
+    <div class="update-scrim"></div>
+    <section class="update-panel">
+      <span class="sheet-grab"></span>
+      <div class="sheet-head"><span class="glyph-lg">Y</span><div><h2>YouTube</h2><p>How calm should it be?</p></div></div>
+      <div class="preset-list">
+        <button class="preset on"><span class="grow"><b>Calm</b><span>No home feed, no Shorts, no autoplay, no recommendations. Search and your subscriptions stay.</span></span><span class="dotr"></span></button>
+        <button class="preset"><span class="grow"><b>Balanced</b><span>Recommendations under a video come back. Feeds and Shorts stay hidden.</span></span><span class="dotr"></span></button>
+        <button class="preset"><span class="grow"><b>Just blur</b><span>The site as it is, with your blur choice.</span></span><span class="dotr"></span></button>
+      </div>
+      <details class="customise group row-details" open>
+        <summary class="row row-btn"><span class="grow"><span class="row-title">Customise</span><span class="row-sub">Pick each part yourself</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></summary>
+        <div class="row-more rows">
+          <label class="row"><span class="grow row-title">Shorts</span><button class="switch" role="switch" aria-checked="false"></button></label>
+          <label class="row"><span class="grow row-title">Home feed</span><button class="switch" role="switch" aria-checked="false"></button></label>
+          <label class="row"><span class="grow row-title">Autoplay next video</span><button class="switch" role="switch" aria-checked="false"></button></label>
+        </div>
+      </details>
+    </section>
+  </div>
+</template>
+
+<!-- ===== 3. Settings, three tabs: Blur (with words folded in) ===== -->
+<template id="t-blur">
+  <section id="view-settings">
+    <div class="settings-top">
+      <header class="bar"><button class="back-btn"><svg viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><span class="bar-title">Settings</span><span class="bar-spacer"></span></header>
+      <nav class="settings-nav seg"><span class="seg-thumb"></span><button class="nav-item seg-opt active">Blur</button><button class="nav-item seg-opt">Look</button><button class="nav-item seg-opt">About</button></nav>
+    </div>
+    <div class="settings-body"><div class="panes"><section class="pane">
+      <div class="pane-stage bs blur-hero" data-show="women" style="--bpx:10px"><div class="bs-scene"><button type="button" class="bs-who bs-w on" data-who="women" aria-pressed="true" aria-label="Blur women"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M16 150c0-27 19-42 44-42s44 15 44 42"/><path d="M48 109.5c4 5.5 8 8 12 8s8-2.5 12-8"/><path d="M29 100c6-9 8-21 7-34-2-26 9-42 24-42s26 16 24 42c-1 13 1 25 7 34"/><path class="ln-neck" d="M54 86v22M66 86v22"/><ellipse class="ln-fill" cx="60" cy="63" rx="17.5" ry="21"/><path d="M42.5 59c7-1 13.5-6 17.5-14 4 8 10.5 13 17.5 14"/></svg><span class="bs-patch"></span><span class="bs-tag">Women</span></button>
+<button type="button" class="bs-who bs-m" data-who="men" aria-pressed="false" aria-label="Blur men"><svg class="ln" viewBox="0 0 120 150" aria-hidden="true"><path d="M10 150c0-29 22-44 50-44s50 15 50 44"/><path d="M48 106l12 13 12-13"/><path class="ln-neck" d="M53 84v21M67 84v21"/><path d="M41.5 58c-3 0-4.5 2.2-4.5 5s1.5 5.5 4.5 5.5M78.5 58c3 0 4.5 2.2 4.5 5s-1.5 5.5-4.5 5.5"/><ellipse class="ln-fill" cx="60" cy="61" rx="18.5" ry="22"/><path class="ln-fill" d="M41.7 61C39 42 48 31.5 60.5 31.5S81.5 41 78.3 59C76 51 70 45.5 63 44 57 50.5 50 56.5 41.7 61Z"/></svg><span class="bs-patch"></span><span class="bs-tag">Men</span></button></div></div>
+      <div class="everyone"><button class="btn-ghost small"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="3.2"/><circle cx="16.5" cy="10" r="2.6"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M14 14.6c.8-.4 1.6-.6 2.5-.6 2.2 0 4 1.5 4.5 4.5"/></svg>Blur everyone</button></div>
+      <div class="pane-hero tight" style="padding-top:12px">
+        <h2>Blur</h2>
+        <p class="pane-sub">Tap who to blur in pictures and previews. The video you choose to watch plays normally.</p>
+      </div>
+      <p class="group-head">Strength</p>
+      <div class="seg"><span class="seg-thumb"></span><button class="seg-opt">Light</button><button class="seg-opt active">Medium</button><button class="seg-opt">Strong</button></div>
+      <p class="group-head">Words that keep a post covered</p>
+      <section class="group pad">
+        <div class="chips"><span class="chip"><span>giveaway</span><button>×</button></span><span class="chip"><span>prank</span><button>×</button></span></div>
+        <form class="term-form"><input placeholder="Add a word or phrase" /><button type="button" class="go-btn"><svg viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></svg></button></form>
+      </section>
+      <p class="group-foot">Plus 460+ built-in words. Checked on this phone.</p>
+    </section></div></div>
+  </section>
+</template>
+
+<!-- ===== 4. Settings: About, with privacy up front ===== -->
+<template id="t-about">
+  <section id="view-settings">
+    <div class="settings-top">
+      <header class="bar"><button class="back-btn"><svg viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><span class="bar-title">Settings</span><span class="bar-spacer"></span></header>
+      <nav class="settings-nav seg"><span class="seg-thumb"></span><button class="nav-item seg-opt">Blur</button><button class="nav-item seg-opt">Look</button><button class="nav-item seg-opt active">About</button></nav>
+    </div>
+    <div class="settings-body"><div class="panes"><section class="pane">
+      <div class="pane-hero about-hero">
+        <span class="about-mark"><svg viewBox="0 0 48 36"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3" stroke-linecap="round"/></svg></span>
+        <h2>tamescroll</h2>
+        <p class="about-ver">Version 0.1.143</p>
+        <p class="pane-sub">A calm browser: it opens any site, and tames the busy ones.</p>
+      </div>
+      <div class="privacy-line"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>Nothing you see or choose leaves this phone. No account, no tracking.</div>
+      <section class="group">
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M9.5 12h6M9.5 15.5h6"/></svg></span><span class="grow"><span class="row-title">Privacy policy</span><span class="row-sub">What the app does and doesn't do</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.8h3.8"/></svg></span><span class="grow"><span class="row-title">Show the tour again</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v3.8h-3.8"/></svg></span><span class="grow"><span class="row-title">Check for filter updates</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+        <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M8.5 7.5L4 12l4.5 4.5M15.5 7.5L20 12l-4.5 4.5"/></svg></span><span class="grow"><span class="row-title">Open source and credits</span><span class="row-sub">MPL-2.0</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      </section>
+    </section></div></div>
+  </section>
+</template>
+
+<!-- ===== 5. Tutorial: text size, early, for every age ===== -->
+<template id="t-text">
+  <section id="view-onboard" class="mock-ob">
+    <p class="ob-eyebrow">Easy to read</p>
+    <h1 class="display">Which text is comfortable?</h1>
+    <p class="lede">Pick the one you can read without squinting. Change it any time in Settings.</p>
+    <div class="ts-cards">
+      <button class="ts-card"><span class="aa" style="font-size:26px">Aa</span><b>Normal</b><p>Fits more on the screen.</p></button>
+      <button class="ts-card big on"><span class="aa" style="font-size:36px">Aa</span><b style="font-size:17px">Larger</b><p>Bigger words and buttons everywhere.</p></button>
+    </div>
+    <div class="actions col"><button class="btn-solid">Continue</button></div>
+  </section>
+</template>
+
+</body>
+</html>
