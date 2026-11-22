@@ -58,3 +58,79 @@ jobs:
         with:
           name: tamescroll-safari-xcode-project
           path: safari-app
+
+  # Signed iPhone build to TestFlight. Manual only (Actions > Safari
+  # extension > Run workflow), and only once these repository secrets
+  # exist -- all for the TAME SCROLL app record, never Hijri First's:
+  #   APPLE_TEAM_ID      the team ID (10 characters)
+  #   ASC_KEY_ID         App Store Connect API key ID
+  #   ASC_ISSUER_ID      the key's issuer ID
+  #   ASC_KEY_P8         the key's .p8 file contents
+  # The App Store Connect app record for app.tamescroll.safari must exist.
+  testflight:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: macos-15
+    defaults:
+      run:
+        shell: bash
+    env:
+      HAS_SECRETS: ${{ secrets.ASC_KEY_P8 != '' && secrets.ASC_KEY_ID != '' && secrets.ASC_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
+    steps:
+      - name: Stop if the signing secrets are missing
+        if: env.HAS_SECRETS != 'true'
+        run: |
+          echo "::error::Add APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 as repository secrets first."
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and convert
+        run: |
+          (cd extension && npm ci && node build.mjs)
+          xcrun safari-web-extension-converter extension/dist/safari \
+            --project-location safari-app \
+            --app-name "Tame Scroll" \
+            --bundle-identifier app.tamescroll.safari \
+            --swift --copy-resources --no-open --no-prompt --force
+      - name: Write the API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+      - name: Archive and upload to TestFlight
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          proj="$(find safari-app -maxdepth 2 -name '*.xcodeproj' | head -1)"
+          auth=(-allowProvisioningUpdates
+                -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+                -authenticationKeyID "$ASC_KEY_ID"
+                -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -project "$proj" -scheme "Tame Scroll (iOS)" \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/TameScroll.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            "${auth[@]}" archive | tail -30
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/TameScroll.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -exportPath "$RUNNER_TEMP/export" "${auth[@]}" | tail -30
+      - name: Remove the API key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc"
