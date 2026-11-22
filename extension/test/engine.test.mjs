@@ -52,3 +52,11 @@ test('manifests ask for the hosts we serve and nothing broader', () => {
 test('the engine was compiled for every host a site serves', () => {
   for (const site of SITES) for (const h of site.hosts) assert.ok(engine.hosts[h], `gen/engine.json has no ${h}: rerun node build.mjs --compile`);
 });
+
+test('the manifest description fits Safari (112) and Chrome (132)', () => {
+  for (const target of ['chrome', 'firefox', 'safari']) {
+    const d = manifest(target).description;
+    assert.equal(typeof d, 'string');
+    assert.ok(d.length > 0 && d.length <= 112, `${target}: ${d.length} characters`);
+  }
+});

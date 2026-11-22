@@ -58,7 +58,8 @@ export function manifest(target) {
     name: 'Tame Scroll',
     short_name: 'Tame Scroll',
     version: pkg.version,
-    description: 'A calmer social media on YouTube, Reddit, X, Instagram, Facebook and TikTok: no algorithmic feeds, no Shorts or Reels, optional blur.',
+    // Safari rejects more than 112 characters; Chrome allows 132.
+    description: 'A calmer social media: no algorithmic feeds, no Shorts or Reels, no autoplay, optional blur.',
     icons: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png', 48: 'icons/icon-48.png', 128: 'icons/icon-128.png' },
     action: { default_popup: 'popup.html', default_icon: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' } },
     permissions: ['storage', 'scripting', 'alarms'],
