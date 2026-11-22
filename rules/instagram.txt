@@ -67,6 +67,18 @@ instagram.com##article:has(> div a[href^="/reel/"])
 !   still present in the DOM
 instagram.com##a[href^="/explore"]
 
+! The signed-out desktop /explore/ page ("See what's popular on
+! Instagram"): trending hashtag chips, a "Pop culture moments" reel row
+! and a "Profiles to look out for" row. Every link on it goes to
+! /popular/<tag>, and each row is a div[role="presentation"].
+! [live] measured 2026-11-22, signed out, desktop Chrome, /explore/:
+!   the Explore nav link was the only rule that matched; these rows were
+!   all visible.
+! test: on https://www.instagram.com/explore/ -> no a[href^="/popular/"]
+!   is visible; the navigation remains
+instagram.com##div[role="presentation"]:has(a[href^="/popular/"])
+instagram.com##a[href^="/popular/"]
+
 
 ! ============================================================
 ! NAGS
