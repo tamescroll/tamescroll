@@ -99,3 +99,12 @@ extension's menu.
 - The name and icon are our own glyph, never a platform's logo.
 - The listing declares no data collection; `web/privacy.html` needs an
   extension section first.
+
+## Safari on TestFlight
+
+- App Store Connect app: **Tame Scroll for Safari** (Apple ID 6838015758),
+  bundle IDs `app.tamescroll.safari` and `app.tamescroll.safari.Extension`,
+  on the same Apple team as the iPhone app.
+- A commit whose message contains `[safari-testflight]` builds, signs and
+  uploads it (`.github/workflows/safari.yml`, job `testflight`), using the
+  iPhone app's existing key. CLAUDE.md's Apple key rules apply.
