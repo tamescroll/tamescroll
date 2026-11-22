@@ -113,6 +113,17 @@ constant once shipped dead as `var IY;` for six rounds.
 **RESTART THE EMULATOR BEFORE BELIEVING A FAILURE OR A TIMING NUMBER.**
 The stale-emulator trap has invented a regression five times.
 
+## THE APPLE KEY -- HIJRI FIRST SHARES THE TEAM (his rule, 2026-11-22)
+
+The App Store Connect key in the repo secrets (`APPLE_API_KEY_*`) has the
+ADMIN role on the Apple team that also holds **Hijri First**. Use it only
+to build and upload Tame Scroll builds (the iPhone app, the Safari
+extension) to TestFlight. Never view, change, submit, delete or re-sign
+anything for Hijri First or any other app. Never revoke or replace an
+existing certificate, key or profile. Never print, log, commit or copy
+the key. Get his OK before any App Store review submission and before
+any change to listings, prices, users or roles.
+
 ## PROTECTION DECISIONS ARE HIS, ALWAYS
 
 Anything that trades exposure -- a bar, a floor, a coast, grey, a
