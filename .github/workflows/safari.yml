@@ -118,6 +118,16 @@ jobs:
             --app-name "Tame Scroll" \
             --bundle-identifier app.tamescroll.safari \
             --swift --copy-resources --ios-only --no-open --no-prompt --force
+          # The converter names the app target after the app
+          # (app.tamescroll.Tame-Scroll); the App ID and the App Store
+          # Connect record are app.tamescroll.safari. The extension's
+          # ID (app.tamescroll.safari.Extension) already matches.
+          pbx="$(find safari-app -name project.pbxproj | head -1)"
+          sed -i '' -E '/Extension/!s/PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/PRODUCT_BUNDLE_IDENTIFIER = app.tamescroll.safari;/' "$pbx"
+          grep -n PRODUCT_BUNDLE_IDENTIFIER "$pbx"
+          if grep PRODUCT_BUNDLE_IDENTIFIER "$pbx" | grep -v -q -E 'app\.tamescroll\.safari(\.Extension)?;'; then
+            echo "::error::an unexpected bundle ID is left in the project"; exit 1
+          fi
       - name: API key on disk
         env:
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
@@ -128,6 +138,11 @@ jobs:
         run: |
           proj="$(find safari-app -maxdepth 2 -name '*.xcodeproj' | head -1)"
           scheme="$(xcodebuild -list -json -project "$proj" | python3 -c 'import json,sys; s=json.load(sys.stdin)["project"]["schemes"]; print(next(x for x in s if "Extension" not in x))')"
+          # Archive UNSIGNED: signing the archive asks for a Development
+          # profile, which needs a registered device the team does not
+          # have (first run, 2026-11-22). The export signs for App Store
+          # distribution with cloud-managed signing instead, the way the
+          # iPhone app's build does.
           auth=(-allowProvisioningUpdates
                 -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
                 -authenticationKeyID "$ASC_KEY_ID"
@@ -135,9 +150,8 @@ jobs:
           xcodebuild -project "$proj" -scheme "$scheme" \
             -configuration Release -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/TameScroll.xcarchive" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
-            "${auth[@]}" archive | tail -40
+            CODE_SIGNING_ALLOWED=NO archive | tail -40
           cat > "$RUNNER_TEMP/export.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
