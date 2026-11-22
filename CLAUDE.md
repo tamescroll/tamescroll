@@ -20,7 +20,8 @@ bar mid-screen (1120). OTA rules: the watch-next related-items SECTION
 is hidden (per-item hiding kept fetching 600+ videos into a hidden
 column).
 
-**HIS RULINGS, standing:** mobile first; browser extension stays dead;
+**HIS RULINGS, standing:** mobile first; browser extension REVIVED
+2026-11-21 on his word (phase 1 YouTube + Reddit, `extension/README.md`);
 student gender model PARKED (it was tried 5 Sept and lost: best 0.977 vs
 shipped 0.986 -- do not call it "unmeasured" again); NULL_MINT_NM_FLOOR
 stays 5 (6 measured +30% exposure); GENDER_IMAGE_NM_FLOOR 6 (thumbnail

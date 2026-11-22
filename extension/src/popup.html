@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tame Scroll</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header class="top">
+  <img src="icons/icon-32.png" alt="" width="24" height="24">
+  <h1>Tame Scroll</h1>
+</header>
+<main id="sites"></main>
+<section class="card" aria-labelledby="look-title">
+  <div class="setting-row">
+    <span class="setting-label" id="look-title">Look</span>
+    <div class="toggle" id="look"></div>
+  </div>
+  <div class="setting-row">
+    <span class="setting-label">Blur strength</span>
+    <div class="toggle" id="strength"></div>
+  </div>
+</section>
+<footer>
+  <p id="reload-note" class="caption" hidden>Shorts, ads and autoplay change when the page reloads.
+    <button id="reload" class="link">Reload this tab</button></p>
+  <p class="caption" id="rules-status"></p>
+</footer>
+<script src="popup.js"></script>
+</body>
+</html>

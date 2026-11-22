@@ -1,0 +1,135 @@
+// A browser smoke test of the built extension, offline: every request to
+// the served sites is answered by a fixture page, so this checks the
+// extension's own wiring (stylesheet, page-world scripts, popup) and not
+// the live sites' markup. The live selector pass is a separate step.
+//
+//   node build.mjs && node smoke/smoke.mjs
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import assert from 'node:assert/strict';
+
+const require = createRequire(import.meta.url);
+const { chromium } = require('playwright');
+const here = dirname(fileURLToPath(import.meta.url));
+const ext = join(here, '..', 'dist', 'chrome');
+
+const YT_HOME = `<!doctype html><html><head><title>yt</title></head><body>
+<ytd-browse page-subtype="home"><ytd-rich-grid-renderer id="grid">feed</ytd-rich-grid-renderer></ytd-browse>
+<ytd-reel-shelf-renderer id="shorts-shelf">shorts</ytd-reel-shelf-renderer>
+<ytd-search><ytd-thumbnail id="thumb">thumb</ytd-thumbnail></ytd-search>
+<a id="short" href="/shorts/abcdefghijk">a short</a>
+</body></html>`;
+const YT_WATCH = `<!doctype html><html><head></head><body><div id="watch">watch</div>
+<ytd-watch-next-secondary-results-renderer id="recs">recs</ytd-watch-next-secondary-results-renderer></body></html>`;
+const REDDIT = `<!doctype html><html><head></head><body>
+<shreddit-app pagetype="popular"><shreddit-feed id="feed">popular</shreddit-feed></shreddit-app></body></html>`;
+
+const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'ts-ext-')), {
+  headless: true,
+  channel: 'chromium',
+  args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`],
+});
+try {
+  await ctx.route(/^https:\/\/(www|m)\.youtube\.com\//, (route) => {
+    const u = new URL(route.request().url());
+    const body = u.pathname.startsWith('/watch') ? YT_WATCH : YT_HOME;
+    route.fulfill({ status: 200, contentType: 'text/html', body });
+  });
+  await ctx.route(/^https:\/\/www\.reddit\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: REDDIT }));
+  await ctx.route(/^https:\/\/raw\.githubusercontent\.com\//, (route) => route.abort());
+
+  let [sw] = ctx.serviceWorkers();
+  if (!sw) sw = await ctx.waitForEvent('serviceworker');
+  const extId = new URL(sw.url()).host;
+  // Let onInstalled seed settings and register the page scripts.
+  await sw.evaluate(async () => {
+    for (let i = 0; i < 50; i++) {
+      const st = await chrome.storage.local.get('settings');
+      const regs = await chrome.scripting.getRegisteredContentScripts();
+      if (st.settings && regs.length) return;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error('settings never seeded');
+  });
+  const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
+  console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
+  assert.deepEqual(regs.map((r) => r.id).sort(), ['youtube-autoplay', 'youtube-shorts']);
+
+  const page = await ctx.newPage();
+  const display = (sel) => page.$eval(sel, (el) => getComputedStyle(el).display);
+
+  await page.goto('https://www.youtube.com/');
+  await page.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
+  assert.equal(await display('#grid'), 'none', 'home feed hidden');
+  assert.equal(await display('#shorts-shelf'), 'none', 'shorts shelf hidden');
+  assert.equal(await page.$eval('#thumb', (el) => getComputedStyle(el).filter), 'none', 'blur off by default');
+  assert.equal(await page.evaluate(() => window.__TS_EXT_SHORTS__), 1, 'shorts script runs in the page world');
+  assert.equal(await page.evaluate(() => window.__TS_EXT_ADS__), undefined, 'ads shown by default on YouTube');
+  console.log('youtube home: feed and shorts hidden, page script present');
+
+  await page.click('#short');
+  await page.waitForURL(/\/watch\?v=abcdefghijk/);
+  console.log('short opened as', new URL(page.url()).pathname + new URL(page.url()).search);
+  assert.notEqual(await display('#recs'), 'none', 'watch recommendations start shown');
+
+  await page.goto('https://www.youtube.com/shorts/zyxwvutsrqp');
+  await page.waitForURL(/\/watch\?v=zyxwvutsrqp/);
+  console.log('hard load of /shorts/ redirected');
+
+  // Popup: bring the home feed back and turn blur on; the open page follows live.
+  await page.goto('https://www.youtube.com/');
+  await page.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
+  const popup = await ctx.newPage();
+  await popup.goto(`chrome-extension://${extId}/popup.html`);
+  await popup.click('details summary >> nth=0');
+  const homeRow = popup.locator('.setting-row', { hasText: 'Home feed' }).first();
+  await homeRow.getByRole('button', { name: 'Shown' }).click();
+  await popup.locator('.card').first().locator('.setting-row', { hasText: 'Blur images' }).getByRole('button', { name: 'On' }).click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('grid')).display !== 'none');
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('thumb')).filter.includes('blur'));
+  console.log('popup: home feed brought back and blur on, applied live');
+
+  // Ads hidden on YouTube registers the ad scriptlets.
+  await popup.locator('.card').first().locator('.setting-row', { hasText: /^Ads/ }).getByRole('button', { name: 'Hidden' }).click();
+  await sw.evaluate(async () => {
+    for (let i = 0; i < 50; i++) {
+      const regs = await chrome.scripting.getRegisteredContentScripts();
+      if (regs.some((r) => r.id === 'youtube-ads')) return;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error('ads script never registered');
+  });
+  assert.ok(await popup.isVisible('#reload-note'), 'popup says a reload is needed');
+  await page.reload();
+  assert.equal(await page.evaluate(() => window.__TS_EXT_ADS__), 1);
+  // The scriptlets pin the player response: YouTube's own later
+  // assignment of ad slots must come out pruned.
+  const slots = await page.evaluate(() => {
+    window.ytInitialPlayerResponse = { adSlots: [1, 2], adPlacements: [{}], playerAds: [{}], videoDetails: { videoId: 'v' } };
+    const r = window.ytInitialPlayerResponse;
+    return { adSlots: r && r.adSlots, adPlacements: r && r.adPlacements, video: r && r.videoDetails && r.videoDetails.videoId };
+  });
+  assert.equal(slots.adSlots, undefined);
+  assert.equal(slots.adPlacements, undefined);
+  assert.equal(slots.video, 'v');
+  console.log('ads hidden: ad scriptlets run after reload');
+
+  await popup.click('text=Paper');
+  assert.equal(await popup.evaluate(() => document.documentElement.dataset.look), 'paper');
+  await popup.setViewportSize({ width: 360, height: 900 });
+  await popup.screenshot({ path: join(here, 'popup-paper.png'), fullPage: true });
+  await popup.click('text=Night');
+  await popup.screenshot({ path: join(here, 'popup-night.png'), fullPage: true });
+
+  const rp = await ctx.newPage();
+  await rp.goto('https://www.reddit.com/r/popular/');
+  await rp.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
+  assert.equal(await rp.$eval('#feed', (el) => getComputedStyle(el).display), 'none');
+  console.log('reddit: r/popular feed hidden');
+  console.log('SMOKE OK');
+} finally {
+  await ctx.close();
+}
