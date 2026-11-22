@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { youtubeAdsScript, autoplayScript, manifest } from '../build.mjs';
+import { SITES } from '../src/sites.js';
 
 const repo = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, repo), 'utf8');
@@ -32,14 +33,22 @@ test('the autoplay script turns on autoplay only', () => {
   assert.throws(() => autoplayScript('no token here'));
 });
 
-test('manifests ask for the five-ish hosts we serve and nothing broader', () => {
+test('manifests ask for the hosts we serve and nothing broader', () => {
   for (const target of ['chrome', 'firefox']) {
     const m = manifest(target);
     assert.equal(m.manifest_version, 3);
     assert.deepEqual(m.permissions.sort(), ['alarms', 'scripting', 'storage']);
-    for (const h of m.host_permissions) assert.match(h, /^https:\/\/(www|m)\.(youtube|reddit)\.com\/\*$/);
+    const allowed = new Set(SITES.flatMap((s) => s.hosts));
+    for (const h of m.host_permissions) {
+      const host = h.match(/^https:\/\/([^/]+)\/\*$/)[1];
+      assert.ok(allowed.has(host), h);
+    }
     assert.ok(!JSON.stringify(m).includes('<all_urls>'));
   }
   assert.ok(manifest('firefox').browser_specific_settings.gecko.id);
   assert.equal(manifest('chrome').background.service_worker, 'background.js');
+});
+
+test('the engine was compiled for every host a site serves', () => {
+  for (const site of SITES) for (const h of site.hosts) assert.ok(engine.hosts[h], `gen/engine.json has no ${h}: rerun node build.mjs --compile`);
 });

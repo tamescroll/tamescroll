@@ -5,9 +5,13 @@ Edge, with a Firefox build from the same code. ZV asked for it on
 2026-11-21, which reverses the earlier "browser extension stays dead"
 ruling.
 
-Phase 1 covers **YouTube and Reddit**. X, Instagram and Facebook come next,
-each after a live desktop selector pass (their rules were checked on the
-mobile sites the app loads).
+It serves **YouTube, Reddit, X, Instagram, Facebook and TikTok**, the same
+six platforms as the app. YouTube and Reddit were phase 1. The other four
+use the app's rules as they are, and those were checked on the mobile sites
+the app loads (x.txt on desktop in August, instagram.txt partly,
+facebook.txt and tiktok.txt not at all). Each needs a live desktop pass
+before a store listing. A selector that no longer matches hides nothing;
+it never breaks the page.
 
 ## What it does
 
@@ -20,6 +24,20 @@ mobile sites the app loads).
 | Blur images (Stage A) | Search, subscriptions, channels | Feeds |
 | Bring back | Every surface, one by one | Every surface |
 | Look | Night or Paper | |
+
+X, Instagram, Facebook and TikTok get their rules files' surfaces (For you
+tab, Explore, Reels, Suggested posts, People you may know, For You feed and
+so on), each with a Bring back toggle, the Ads switch (starts hidden) and
+Stage A blur.
+
+## Browsers
+
+| Browser | Build | Status |
+|---|---|---|
+| Chrome | `dist/chrome` | Smoke-tested (offline fixtures) |
+| Edge | `dist/chrome`, unchanged | Same Chromium engine and store format |
+| Firefox 128+ | `dist/firefox` | `web-ext lint`: 0 errors, 0 warnings |
+| Safari | not built | Needs a Mac with Xcode (`safari-web-extension-converter`) and an Apple developer account; it ships as an app |
 
 ## Where each piece comes from
 

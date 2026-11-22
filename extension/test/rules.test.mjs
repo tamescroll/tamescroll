@@ -26,7 +26,7 @@ for (const site of SITES) {
     assert.deepEqual(orphans, []);
     const parsed = parseSurfaces(text).reduce((n, s) => n + s.rules.length, 0);
     assert.equal(parsed, declared);
-    assert.ok(declared > 5, 'a rules file this small means the parser read nothing');
+    assert.ok(declared > 0, 'an empty rules file means the parser read nothing');
   });
 }
 

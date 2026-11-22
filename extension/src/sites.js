@@ -1,6 +1,6 @@
 // The sites the extension serves, and everything per-site that is not a
-// rule. Phase 1 is YouTube and Reddit; X, Instagram and Facebook join once
-// their rules have had a live desktop pass (see extension/README.md).
+// rule. Phase 1 was YouTube and Reddit; X, Instagram, Facebook and TikTok
+// follow (see extension/README.md for what has been checked live).
 //
 // `adsDefaultShown` mirrors the app (lib.rs ads_default_shown): YouTube's
 // Ads switch starts SHOWN, so blocking is the person's own choice there
@@ -67,7 +67,65 @@ export const SITES = [
     pageSurfaces: [],
     scripts: [],
   },
+  // Phase 2. These rules were checked on the mobile sites the app loads
+  // (x.txt on desktop in August; instagram.txt partly, facebook.txt and
+  // tiktok.txt not at all), so each needs a live desktop pass before a
+  // store listing. A selector that no longer matches hides nothing; it
+  // never breaks the page.
+  {
+    id: 'x',
+    label: 'X',
+    root: 'x.com',
+    hosts: ['x.com'],
+    matches: ['https://x.com/*'],
+    rulesFile: 'x.txt',
+    blurFile: 'blur/x.css',
+    adsDefaultShown: false,
+    pageSurfaces: [],
+    scripts: [],
+  },
+  {
+    id: 'instagram',
+    label: 'Instagram',
+    root: 'instagram.com',
+    hosts: ['www.instagram.com'],
+    matches: ['https://www.instagram.com/*'],
+    rulesFile: 'instagram.txt',
+    blurFile: 'blur/instagram.css',
+    adsDefaultShown: false,
+    pageSurfaces: [],
+    scripts: [],
+  },
+  {
+    id: 'facebook',
+    label: 'Facebook',
+    root: 'facebook.com',
+    hosts: ['www.facebook.com'],
+    matches: ['https://www.facebook.com/*'],
+    rulesFile: 'facebook.txt',
+    blurFile: 'blur/facebook.css',
+    adsDefaultShown: false,
+    pageSurfaces: [],
+    scripts: [],
+  },
+  {
+    id: 'tiktok',
+    label: 'TikTok',
+    root: 'tiktok.com',
+    hosts: ['www.tiktok.com'],
+    matches: ['https://www.tiktok.com/*'],
+    rulesFile: 'tiktok.txt',
+    blurFile: 'blur/tiktok.css',
+    adsDefaultShown: false,
+    pageSurfaces: [],
+    scripts: [],
+  },
 ];
+
+/** Every page pattern the extension serves, for the manifest. */
+export function allMatches() {
+  return SITES.flatMap((s) => s.matches);
+}
 
 /** The site a page host belongs to: the root itself or any subdomain. */
 export function siteForHost(host) {

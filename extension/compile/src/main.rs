@@ -17,7 +17,17 @@ use serde_json::{json, Map, Value};
 
 /// The page each host is asked about. Cosmetic results depend on the
 /// host, not the path, so the root is enough.
-const HOSTS: &[&str] = &["www.youtube.com", "m.youtube.com", "www.reddit.com"];
+const HOSTS: &[&str] = &[
+    "www.youtube.com",
+    "m.youtube.com",
+    "www.reddit.com",
+    "x.com",
+    "www.instagram.com",
+    "www.facebook.com",
+    "www.tiktok.com",
+];
+
+// Keep in step with `hosts` in extension/src/sites.js (test/engine.test.mjs checks).
 
 fn main() {
     let mut args = std::env::args().skip(1);

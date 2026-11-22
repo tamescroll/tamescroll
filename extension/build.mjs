@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITES, allMatches } from './src/sites.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..');
@@ -51,13 +52,13 @@ export function autoplayScript(source) {
 }
 
 export function manifest(target) {
-  const matches = ['https://www.youtube.com/*', 'https://m.youtube.com/*', 'https://www.reddit.com/*'];
+  const matches = allMatches();
   const m = {
     manifest_version: 3,
     name: 'Tame Scroll',
     short_name: 'Tame Scroll',
     version: pkg.version,
-    description: 'A calmer social media: no algorithmic feeds, no Shorts, no autoplay, optional blur and ad switches.',
+    description: 'A calmer social media on YouTube, Reddit, X, Instagram, Facebook and TikTok: no algorithmic feeds, no Shorts or Reels, optional blur.',
     icons: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png', 48: 'icons/icon-48.png', 128: 'icons/icon-128.png' },
     action: { default_popup: 'popup.html', default_icon: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' } },
     permissions: ['storage', 'scripting', 'alarms'],
