@@ -74,6 +74,10 @@ export function manifest(target) {
         data_collection_permissions: { required: ['none'] },
       },
     };
+  } else if (target === 'safari') {
+    // Packaged into a Mac and iPhone app by Apple's converter on a cloud
+    // Mac (.github/workflows/safari.yml); this folder is its input.
+    m.background = { service_worker: 'background.js' };
   } else {
     m.background = { service_worker: 'background.js' };
     m.minimum_chrome_version = '111';
@@ -103,7 +107,7 @@ async function bundle(outdir) {
 
 async function main() {
   const kid = readFileSync(join(repo, 'app/src-tauri/kid-controls.js'), 'utf8');
-  for (const target of ['chrome', 'firefox']) {
+  for (const target of ['chrome', 'firefox', 'safari']) {
     const out = join(here, 'dist', target);
     rmSync(out, { recursive: true, force: true });
     mkdirSync(out, { recursive: true });

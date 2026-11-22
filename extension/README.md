@@ -37,7 +37,7 @@ Stage A blur.
 | Chrome | `dist/chrome` | Smoke-tested (offline fixtures) |
 | Edge | `dist/chrome`, unchanged | Same Chromium engine and store format |
 | Firefox 128+ | `dist/firefox` | `web-ext lint`: 0 errors, 0 warnings |
-| Safari | not built | Needs a Mac with Xcode (`safari-web-extension-converter`) and an Apple developer account; it ships as an app |
+| Safari (Mac, iPhone) | `dist/safari` | Packaged by Apple's converter on a GitHub Mac (`.github/workflows/safari.yml`), built unsigned. Signing and TestFlight need an App Store Connect key as a repo secret |
 
 ## Where each piece comes from
 

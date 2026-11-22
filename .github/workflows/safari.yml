@@ -1,0 +1,60 @@
+name: Safari extension
+
+# Safari extensions ship inside a Mac/iPhone app, and Apple's converter
+# only runs on macOS. ZV has no Mac, so this builds it on GitHub's.
+#
+# Today: convert extension/dist/safari into an Xcode project and build it
+# UNSIGNED for macOS and the iOS simulator, to prove it compiles. The
+# project is uploaded as an artifact.
+#
+# Not yet: signing and TestFlight. That needs an App Store Connect API key
+# and a Tame Scroll bundle ID added as repository secrets (ZV's hands).
+# Keep them separate from Hijri First's.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'extension/**'
+      - '.github/workflows/safari.yml'
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        # Explicit bash means -eo pipefail, so a failed xcodebuild piped
+        # into tail still fails the job.
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the extension
+        working-directory: extension
+        run: |
+          npm ci
+          node build.mjs
+      - name: Convert to an Xcode project
+        run: |
+          xcrun safari-web-extension-converter extension/dist/safari \
+            --project-location safari-app \
+            --app-name "Tame Scroll" \
+            --bundle-identifier app.tamescroll.safari \
+            --swift --copy-resources --no-open --no-prompt --force
+          find safari-app -maxdepth 2 -name '*.xcodeproj'
+      - name: Build for macOS and the iOS simulator (unsigned)
+        run: |
+          proj="$(find safari-app -maxdepth 2 -name '*.xcodeproj' | head -1)"
+          xcodebuild -list -project "$proj"
+          xcodebuild -project "$proj" -scheme "Tame Scroll (macOS)" \
+            -configuration Release -destination 'generic/platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO build | tail -20
+          xcodebuild -project "$proj" -scheme "Tame Scroll (iOS)" \
+            -configuration Release -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -20
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tamescroll-safari-xcode-project
+          path: safari-app
