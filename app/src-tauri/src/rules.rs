@@ -576,8 +576,8 @@ mod engine_timing_probe {
         let r = resources();
         eprintln!("resources  {:?} ({} entries)", t.elapsed(), r.len());
         let t = std::time::Instant::now();
-        let mut set = FilterSet::new(false);
-        for text in &lists { set.add_filter_list(text.clone(), ParseOptions::default()); }
+        let mut set = adblock::lists::FilterSet::new(false);
+        for text in &lists { set.add_filter_list(text.clone(), adblock::lists::ParseOptions::default()); }
         eprintln!("parse      {:?}", t.elapsed());
         let t = std::time::Instant::now();
         let mut e = Engine::new_with_filter_set(set);
