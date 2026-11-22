@@ -60,32 +60,54 @@ jobs:
           path: safari-app
 
   # Signed iPhone build to TestFlight. Manual only (Actions > Safari
-  # extension > Run workflow), and only once these repository secrets
-  # exist -- all for the TAME SCROLL app record, never Hijri First's:
-  #   APPLE_TEAM_ID      the team ID (10 characters)
-  #   ASC_KEY_ID         App Store Connect API key ID
-  #   ASC_ISSUER_ID      the key's issuer ID
-  #   ASC_KEY_P8         the key's .p8 file contents
-  # The App Store Connect app record for app.tamescroll.safari must exist.
+  # extension > Run workflow).
+  #
+  # LEAST PRIVILEGE, because the Apple team also holds Hijri First:
+  # - The App Store Connect key has the DEVELOPER role. It can upload a
+  #   build; it cannot edit any app's listing, pricing or users, submit
+  #   for review, or create certificates. (Every team key reaches every
+  #   app on the team, so the role is what limits it.)
+  # - Signing is manual: an Apple Distribution certificate and two App
+  #   Store profiles made once in the portal, so the key never needs the
+  #   rights to create them.
+  # - Every secret lives in the `testflight` ENVIRONMENT, which needs ZV's
+  #   approval on each run and only serves allowed branches. Fork pull
+  #   requests never see it. Nothing here prints a secret.
+  #
+  # Environment secrets (all for the Tame Scroll app, never Hijri First's):
+  #   APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (key contents),
+  #   DIST_CERT_P12_B64, DIST_CERT_PASSWORD,
+  #   PROFILE_APP_B64 (app.tamescroll.safari, App Store),
+  #   PROFILE_EXT_B64 (app.tamescroll.safari.Extension, App Store)
   testflight:
     if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: macos-15
+    environment: testflight
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash
-    env:
-      HAS_SECRETS: ${{ secrets.ASC_KEY_P8 != '' && secrets.ASC_KEY_ID != '' && secrets.ASC_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
     steps:
-      - name: Stop if the signing secrets are missing
-        if: env.HAS_SECRETS != 'true'
-        run: |
-          echo "::error::Add APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 as repository secrets first."
-          exit 1
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check the secrets are all there
+        env:
+          A: ${{ secrets.APPLE_TEAM_ID }}
+          B: ${{ secrets.ASC_KEY_ID }}
+          C: ${{ secrets.ASC_ISSUER_ID }}
+          D: ${{ secrets.ASC_KEY_P8 }}
+          E: ${{ secrets.DIST_CERT_P12_B64 }}
+          F: ${{ secrets.DIST_CERT_PASSWORD }}
+          G: ${{ secrets.PROFILE_APP_B64 }}
+          H: ${{ secrets.PROFILE_EXT_B64 }}
+        run: |
+          for v in A B C D E F G H; do
+            if [ -z "${!v}" ]; then echo "::error::A testflight environment secret is missing (see the comment in safari.yml)."; exit 1; fi
+          done
       - name: Build and convert
         run: |
           (cd extension && npm ci && node build.mjs)
@@ -93,44 +115,73 @@ jobs:
             --project-location safari-app \
             --app-name "Tame Scroll" \
             --bundle-identifier app.tamescroll.safari \
-            --swift --copy-resources --no-open --no-prompt --force
-      - name: Write the API key
+            --swift --copy-resources --ios-only --no-open --no-prompt --force
+      - name: Install the certificate and profiles
         env:
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          DIST_CERT_P12_B64: ${{ secrets.DIST_CERT_P12_B64 }}
+          DIST_CERT_PASSWORD: ${{ secrets.DIST_CERT_PASSWORD }}
+          PROFILE_APP_B64: ${{ secrets.PROFILE_APP_B64 }}
+          PROFILE_EXT_B64: ${{ secrets.PROFILE_EXT_B64 }}
         run: |
-          mkdir -p "$RUNNER_TEMP/asc"
-          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
-      - name: Archive and upload to TestFlight
+          kc="$RUNNER_TEMP/signing.keychain-db"
+          kcpass="$(uuidgen)"
+          security create-keychain -p "$kcpass" "$kc"
+          security set-keychain-settings -lut 3600 "$kc"
+          security unlock-keychain -p "$kcpass" "$kc"
+          printf '%s' "$DIST_CERT_P12_B64" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security import "$RUNNER_TEMP/dist.p12" -k "$kc" -P "$DIST_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          rm -f "$RUNNER_TEMP/dist.p12"
+          security set-key-partition-list -S apple-tool:,apple: -k "$kcpass" "$kc" >/dev/null
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          pp="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$pp"
+          printf '%s' "$PROFILE_APP_B64" | base64 --decode > "$pp/app.mobileprovision"
+          printf '%s' "$PROFILE_EXT_B64" | base64 --decode > "$pp/ext.mobileprovision"
+          name_of() { security cms -D -i "$1" | plutil -extract Name raw -; }
+          echo "APP_PROFILE=$(name_of "$pp/app.mobileprovision")" >> "$GITHUB_ENV"
+          echo "EXT_PROFILE=$(name_of "$pp/ext.mobileprovision")" >> "$GITHUB_ENV"
+      - name: Archive, sign and export
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           proj="$(find safari-app -maxdepth 2 -name '*.xcodeproj' | head -1)"
-          auth=(-allowProvisioningUpdates
-                -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
-                -authenticationKeyID "$ASC_KEY_ID"
-                -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-          xcodebuild -project "$proj" -scheme "Tame Scroll (iOS)" \
+          scheme="$(xcodebuild -list -json -project "$proj" | python3 -c 'import json,sys; s=json.load(sys.stdin)["project"]["schemes"]; print(next(x for x in s if "Extension" not in x))')"
+          xcodebuild -project "$proj" -scheme "$scheme" \
             -configuration Release -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/TameScroll.xcarchive" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
-            "${auth[@]}" archive | tail -30
+            CODE_SIGNING_ALLOWED=NO archive | tail -30
           cat > "$RUNNER_TEMP/export.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
             <key>method</key><string>app-store-connect</string>
-            <key>destination</key><string>upload</string>
+            <key>destination</key><string>export</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key><dict>
+              <key>app.tamescroll.safari</key><string>${APP_PROFILE}</string>
+              <key>app.tamescroll.safari.Extension</key><string>${EXT_PROFILE}</string>
+            </dict>
           </dict></plist>
           PLIST
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/TameScroll.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
-            -exportPath "$RUNNER_TEMP/export" "${auth[@]}" | tail -30
-      - name: Remove the API key
+            -exportPath "$RUNNER_TEMP/export" | tail -30
+          ls "$RUNNER_TEMP/export"
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          ipa="$(ls "$RUNNER_TEMP"/export/*.ipa | head -1)"
+          xcrun altool --upload-app -f "$ipa" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+      - name: Remove every secret from the runner
         if: always()
-        run: rm -rf "$RUNNER_TEMP/asc"
+        run: |
+          rm -rf "$HOME/.appstoreconnect" "$HOME/Library/MobileDevice/Provisioning Profiles" "$RUNNER_TEMP/export.plist"
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
