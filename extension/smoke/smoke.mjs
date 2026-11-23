@@ -57,6 +57,17 @@ const IG_HOME = `<!doctype html><html><head></head><body><main><div><div id="fee
 
 const FB_BODIES = { '/age': FB_AGE, '/me': FB_SIGNED_IN, '/buttons': FB_BUTTONS };
 
+// The toolbar badge colour for a tab, waiting up to 5s for `want`.
+async function badgeColor(page, tabId, want) {
+  let got = '';
+  for (let i = 0; i < 25; i++) {
+    got = await page.evaluate(async (t) => (await chrome.action.getBadgeBackgroundColor({ tabId: t })).join(), tabId);
+    if (got === want) break;
+    await page.waitForTimeout(200);
+  }
+  return got;
+}
+
 const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'ts-ext-')), {
   headless: true,
   channel: 'chromium',
@@ -162,6 +173,24 @@ try {
   await popup.waitForTimeout(300); await popup.screenshot({ path: join(here, 'popup-home-reload.png'), fullPage: true });
   await popup.click('#open-settings');
   await popup.waitForTimeout(300); await popup.screenshot({ path: join(here, 'popup-settings.png'), fullPage: true });
+
+  // On a video, what you brought back is listed on the first screen with
+  // a one-tap Hide (recommendations ship shown).
+  await page.goto('https://www.youtube.com/watch?v=abcdefghijk');
+  await page.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
+  const sp = await ctx.newPage();
+  await sp.goto(`chrome-extension://${extId}/popup.html?tab=${ytTab}`);
+  await sp.waitForFunction(() => !document.getElementById('showing-wrap').hidden);
+  assert.match(await sp.$eval('#showing', (el) => el.textContent), /Recommendations/, 'recommendations listed as showing');
+  assert.equal(await badgeColor(sp, ytTab, '201,164,94,255'), '201,164,94,255', 'badge is gold while something is showing by choice');
+  await sp.setViewportSize({ width: 340, height: 300 });
+  await sp.waitForTimeout(300); await sp.screenshot({ path: join(here, 'popup-showing.png'), fullPage: true });
+  await sp.getByRole('switch', { name: 'Hide Recommendations' }).click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('recs')).display === 'none');
+  await sp.waitForFunction(() => document.getElementById('showing-wrap').hidden);
+  assert.equal(await badgeColor(sp, ytTab, '134,168,147,255'), '134,168,147,255', 'badge back to green');
+  await sp.close();
+  console.log('popup: showing on this page listed, one tap hides it');
 
   const rp = await ctx.newPage();
   await rp.goto('https://www.reddit.com/r/popular/');

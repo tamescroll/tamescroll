@@ -64,7 +64,13 @@ export function manifest(target) {
     action: { default_popup: 'popup.html', default_icon: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' } },
     permissions: ['storage', 'scripting', 'alarms'],
     host_permissions: matches,
-    content_scripts: [{ matches, js: ['content.js'], run_at: 'document_start', all_frames: false }],
+    content_scripts: [
+      { matches, js: ['content.js'], run_at: 'document_start', all_frames: false },
+      // Embedded YouTube players on any site, inside their frames.
+      { matches: ['https://www.youtube.com/embed/*', 'https://www.youtube-nocookie.com/embed/*'], css: ['embed.css'], run_at: 'document_start', all_frames: true },
+      // old.reddit.com opens on www.reddit.com, where the rules apply.
+      { matches: ['https://old.reddit.com/*'], js: ['old-reddit.js'], run_at: 'document_start', all_frames: false },
+    ],
   };
   if (target === 'firefox') {
     m.background = { scripts: ['background.js'] };
@@ -96,6 +102,7 @@ async function bundle(outdir) {
       'reddit-discovery': join(here, 'src/reddit-discovery.js'),
       'login-nags': join(here, 'src/login-nags.js'),
       'instagram-suggested': join(here, 'src/instagram-suggested.js'),
+      'old-reddit': join(here, 'src/old-reddit.js'),
     },
     outdir,
     bundle: true,
@@ -120,6 +127,7 @@ async function main() {
     writeFileSync(join(out, 'youtube-autoplay.js'), autoplayScript(kid));
     cpSync(join(here, 'src/popup.html'), join(out, 'popup.html'));
     cpSync(join(here, 'src/popup.css'), join(out, 'popup.css'));
+    cpSync(join(here, 'src/embed.css'), join(out, 'embed.css'));
     cpSync(join(here, 'icons'), join(out, 'icons'), { recursive: true });
     // Inter, bundled (OFL-1.1): Windows does not have it, and the fallback
     // was what made the popup's type feel off.

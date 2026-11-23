@@ -19,6 +19,7 @@ let needsReload = false;
 let site = null;
 let tabId = null;
 let hiddenHere = null;
+let loaded = false; // the page has been asked at least once
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -87,13 +88,29 @@ function home() {
   $('site-switch').replaceChildren(switchEl(prefs.on, `Tame ${site.label}`, (v) => save(() => { prefs.on = v; })));
   rows.hidden = !prefs.on;
 
-  const hidden = prefs.on && hiddenHere ? hiddenHere : [];
+  const status = prefs.on && hiddenHere ? hiddenHere : null;
+  const hidden = status ? status.hidden : [];
+  const showing = status ? status.showing : [];
+  const slipped = status ? status.slipped : [];
+  $('showing-wrap').hidden = showing.length === 0;
+  $('showing').replaceChildren(...showing.map((h) => {
+    const r = el('div', 'row');
+    r.append(el('span', 'row-label', h.label), el('span', 'row-state', 'Showing'),
+      switchEl(false, `Hide ${h.label}`, () => save(() => { prefs.shown = prefs.shown.filter((x) => x !== h.id); })));
+    return r;
+  }));
+  $('slipped-note').hidden = slipped.length === 0;
+  $('slipped-text').textContent = slipped.length
+    ? `${listWords(slipped.map((h) => h.label))} got through on this page.`
+    : '';
+  // The page answered nothing: it opened before Tame Scroll did.
+  $('stale-note').hidden = !(prefs.on && hiddenHere === null && tabId != null && loaded);
   count.hidden = hidden.length === 0;
   $('count-num').textContent = String(hidden.length);
   $('count-text').textContent = hidden.length === 1 ? 'thing hidden on this page' : 'things hidden on this page';
   tags.replaceChildren(...hidden.map((h) => el('span', '', h.label)));
   $('site-status').textContent = !prefs.on
-    ? 'Paused. This site shows everything.'
+    ? 'Paused. This site shows everything. Switch it on above.'
     : hidden.length ? '' : 'Tamed. Nothing to hide on this page right now.';
 
   const { back, total } = backCount(site, prefs);
@@ -150,10 +167,11 @@ async function loadHiddenHere() {
   if (tabId == null || !site) return;
   try {
     const r = await chrome.tabs.sendMessage(tabId, { type: 'ts-hidden-here' });
-    hiddenHere = r && Array.isArray(r.hidden) ? r.hidden : null;
+    hiddenHere = r && Array.isArray(r.hidden) ? { hidden: r.hidden, showing: r.showing || [], slipped: r.slipped || [] } : null;
   } catch (e) {
     hiddenHere = null; // the page loaded before the extension did
   }
+  loaded = true;
   home();
 }
 
@@ -176,6 +194,10 @@ async function main() {
   $('open-settings').addEventListener('click', () => show('settings'));
   $('open-parts').addEventListener('click', () => show('parts'));
   for (const b of document.querySelectorAll('.back')) b.addEventListener('click', () => show('home'));
+  for (const id of ['reload-stale', 'reload-slipped']) $(id).addEventListener('click', () => { if (tabId != null) chrome.tabs.reload(tabId); window.close(); });
+  try {
+    chrome.extension.isAllowedIncognitoAccess((ok) => { $('incognito-note').hidden = !!ok; });
+  } catch (e) {}
   $('reload').addEventListener('click', () => {
     if (tabId != null) chrome.tabs.reload(tabId);
     needsReload = false;

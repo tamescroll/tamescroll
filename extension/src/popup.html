@@ -32,6 +32,19 @@
     <div class="tags" id="tags"></div>
   </section>
 
+  <div id="stale-note" class="notice" hidden>
+    <span>Reload this page to apply Tame Scroll.</span>
+    <button id="reload-stale" class="text-btn" type="button">Reload</button>
+  </div>
+  <div id="slipped-note" class="notice warn" hidden>
+    <span id="slipped-text"></span>
+    <button id="reload-slipped" class="text-btn" type="button">Reload</button>
+  </div>
+  <div id="showing-wrap" hidden>
+    <div class="label gold">Showing on this page, by your choice</div>
+    <div class="group" id="showing"></div>
+  </div>
+
   <div class="group" id="site-rows">
     <button class="row" type="button" id="open-parts">
       <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>
@@ -81,6 +94,7 @@
     <button class="text-btn" id="check-rules" type="button">Check for filter updates</button>
   </div>
   <p class="foot" id="rules-status"></p>
+  <p class="foot" id="incognito-note" hidden>Not on in private windows. To allow it: chrome://extensions, Tame Scroll, Details, Allow in Incognito.</p>
   <p class="foot">Built with EasyList, EasyPrivacy and uBlock Origin filter lists. <button class="text-btn" id="credits" type="button">Credits and licences</button></p>
 </div>
 <script src="popup.js"></script>

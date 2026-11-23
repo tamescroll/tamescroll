@@ -54,29 +54,61 @@ if (site) {
   });
 
 
-  // The popup asks what this page is keeping out of sight: the surfaces
-  // that are hidden here and match at least one element right now.
-  chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
-    if (!msg || msg.type !== 'ts-hidden-here') return false;
+  // What this page is doing, for the popup and the toolbar badge:
+  //   hidden  - surfaces hidden here that match something on the page;
+  //   showing - surfaces you brought back that are on the page now;
+  //   slipped - surfaces set to hide whose elements are still visible
+  //             (the stylesheet did not reach them).
+  const visible = (el) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && getComputedStyle(el).display !== 'none';
+  };
+  function pageStatus() {
     const st = lastState || {};
     const ota = st.ota;
     const overrides = ota && ota.version === chrome.runtime.getManifest().version && ota.files ? ota.files : {};
     const prefs = ((st.settings || {}).sites || {})[site.id];
-    const shown = (prefs && prefs.shown) || [];
-    const out = [];
-    if (prefs && prefs.on !== false) {
-      for (const s of parseSurfaces(rulesText(site.rulesFile, BUNDLED, overrides))) {
-        if (s.alwaysOn || shown.includes(s.id)) continue;
-        let n = 0;
-        for (const [, sel] of s.rules) {
-          try { n += document.querySelectorAll(sel).length; } catch (e) {}
-        }
-        if (n) out.push({ id: s.id, label: s.label, count: n });
+    if (!prefs || prefs.on === false) return { site: site.id, off: true, hidden: [], showing: [], slipped: [] };
+    const shown = prefs.shown || [];
+    const out = { site: site.id, off: false, hidden: [], showing: [], slipped: [], styled: !!(lastCss && lastCss.length) };
+    for (const s of parseSurfaces(rulesText(site.rulesFile, BUNDLED, overrides))) {
+      const isShown = !s.alwaysOn && shown.includes(s.id);
+      let n = 0, seen = 0;
+      for (const [, sel] of s.rules) {
+        try {
+          for (const el of document.querySelectorAll(sel)) { n++; if (visible(el)) seen++; }
+        } catch (e) {}
       }
+      if (!n) continue;
+      const item = { id: s.id, label: s.label, count: n };
+      if (isShown) { if (seen) out.showing.push(item); }
+      else if (seen) out.slipped.push(item);
+      else out.hidden.push(item);
     }
-    reply({ site: site.id, hidden: out });
+    return out;
+  }
+
+  chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+    if (!msg || msg.type !== 'ts-hidden-here') return false;
+    reply(pageStatus());
     return false;
   });
+
+  // Keep the toolbar badge current: at most every 1.5s while the page changes.
+  let badgeTimer = null, lastBadge = '';
+  const reportStatus = () => {
+    badgeTimer = null;
+    const p = pageStatus();
+    const msg = { type: 'ts-status', off: p.off, hidden: p.hidden.length, showing: p.showing.length, slipped: p.slipped.length };
+    const key = JSON.stringify(msg);
+    if (key === lastBadge) return;
+    lastBadge = key;
+    try { chrome.runtime.sendMessage(msg).catch(() => {}); } catch (e) {}
+  };
+  const scheduleStatus = () => { if (!badgeTimer) badgeTimer = setTimeout(reportStatus, 1500); };
+  new MutationObserver(scheduleStatus).observe(document.documentElement, { childList: true, subtree: true });
+  chrome.storage.onChanged.addListener(() => { lastBadge = ''; scheduleStatus(); });
+  scheduleStatus();
 
   // YouTube's single-page app can replace <head>; put the sheet back.
   new MutationObserver(() => {
