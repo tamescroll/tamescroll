@@ -84,6 +84,22 @@ instagram.com##a[href^="/popular/"]
 ! NAGS
 ! ============================================================
 
+! Signed in, /explore/ is a grid of suggested posts and reels under a
+! search box. The grid goes; the search box stays, so explore becomes a
+! search page. Scoped by data-ts-page="search" (set by the extension's
+! content script and the app's init-entry for /explore and /search).
+! [live] signed in 2026-11-23: main > section > ... > row div (4 tiles)
+!   > div > div > a[href^="/p/" | "/reel/"], all visible
+instagram.com##html[data-ts-page="search"] main[role="main"] div:has(> div > div > a[href^="/p/"])
+instagram.com##html[data-ts-page="search"] main[role="main"] div:has(> div > div > a[href^="/reel/"])
+instagram.com##html[data-ts-page="search"] main[role="main"] a[href^="/p/"]
+instagram.com##html[data-ts-page="search"] main[role="main"] a[href^="/reel/"]
+
+! Home's right rail: the "Suggested for you" header with its See all
+! link (the suggested accounts under it were already hidden).
+! [live] signed in 2026-11-23: div (header) > a[href="/explore/people/"]
+instagram.com##div:has(> a[href="/explore/people/"])
+
 ! "Profiles to look out for": the row of suggested celebrity cards on
 ! explore, each with a Dismiss button, and its heading.
 ! [live] www.instagram.com/explore/ signed out 2026-11-23
