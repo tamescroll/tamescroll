@@ -57,11 +57,11 @@ const IG_HOME = `<!doctype html><html><head></head><body><main><div><div id="fee
 
 const FB_BODIES = { '/age': FB_AGE, '/me': FB_SIGNED_IN, '/buttons': FB_BUTTONS };
 
-// The toolbar badge colour for a tab, waiting up to 5s for `want`.
-async function badgeColor(page, tabId, want) {
+// The toolbar icon state for a tab, waiting up to 5s for `want`.
+async function iconState(page, tabId, want) {
   let got = '';
   for (let i = 0; i < 25; i++) {
-    got = await page.evaluate(async (t) => (await chrome.action.getBadgeBackgroundColor({ tabId: t })).join(), tabId);
+    got = await page.evaluate(async (t) => (await chrome.runtime.sendMessage({ type: 'icon-state', tabId: t })).state, tabId);
     if (got === want) break;
     await page.waitForTimeout(200);
   }
@@ -182,13 +182,13 @@ try {
   await sp.goto(`chrome-extension://${extId}/popup.html?tab=${ytTab}`);
   await sp.waitForFunction(() => !document.getElementById('showing-wrap').hidden);
   assert.match(await sp.$eval('#showing', (el) => el.textContent), /Recommendations/, 'recommendations listed as showing');
-  assert.equal(await badgeColor(sp, ytTab, '201,164,94,255'), '201,164,94,255', 'badge is gold while something is showing by choice');
+  assert.equal(await iconState(sp, ytTab, 'gold'), 'gold', 'icon dot is gold while something is showing by choice');
   await sp.setViewportSize({ width: 340, height: 300 });
   await sp.waitForTimeout(300); await sp.screenshot({ path: join(here, 'popup-showing.png'), fullPage: true });
   await sp.getByRole('switch', { name: 'Hide Recommendations' }).click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('recs')).display === 'none');
   await sp.waitForFunction(() => document.getElementById('showing-wrap').hidden);
-  assert.equal(await badgeColor(sp, ytTab, '134,168,147,255'), '134,168,147,255', 'badge back to green');
+  assert.equal(await iconState(sp, ytTab, 'green'), 'green', 'icon dot back to green');
   await sp.close();
   console.log('popup: showing on this page listed, one tap hides it');
 

@@ -127,29 +127,61 @@ api.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-// The toolbar badge, per tab, from what the page reports: blank when all
-// is tamed; a gold dot when something you brought back is on the
-// page; red "!" when something set to hide is still visible; grey "off"
-// when the site is paused.
-const BADGE = { green: '#86a893', gold: '#c9a45e', red: '#c96a5e', grey: '#6f6b65' };
-function setBadge(tabId, s) {
-  let text, color;
-  if (s.off) { text = 'off'; color = BADGE.grey; }
-  else if (s.slipped) { text = '!'; color = BADGE.red; }
-  // All tamed: blank. A count on the icon reads like a notification,
-  // the very pull this extension removes (ZV, 2026-11-23).
-  else if (s.showing) { text = '•'; color = BADGE.gold; }
-  else { text = ''; color = BADGE.green; }
-  api.action.setBadgeText({ tabId, text }).catch(() => {});
-  api.action.setBadgeBackgroundColor({ tabId, color }).catch(() => {});
-  if (api.action.setBadgeTextColor) api.action.setBadgeTextColor({ tabId, color: '#121212' }).catch(() => {});
+// The toolbar icon, per tab, from what the page reports (ZV picked the
+// calm style, 2026-11-23): lit with a small green dot when all is tamed;
+// a gold dot when something you brought back is on the page; a red "!"
+// badge when something set to hide is still visible; dimmed when the site
+// is paused. Sites Tame Scroll does not cover keep the dimmed default.
+const DOT = { green: '#86a893', gold: '#c9a45e' };
+const SIZES = [16, 32];
+let iconBitmaps = null;
+async function bitmaps() {
+  if (!iconBitmaps) {
+    iconBitmaps = {};
+    for (const n of SIZES) {
+      const blob = await (await fetch(api.runtime.getURL(`icons/icon-${n}.png`))).blob();
+      iconBitmaps[n] = await createImageBitmap(blob);
+    }
+  }
+  return iconBitmaps;
 }
+async function iconData({ dim = false, dot = null }) {
+  const bms = await bitmaps();
+  const out = {};
+  for (const n of SIZES) {
+    const c = new OffscreenCanvas(n, n);
+    const g = c.getContext('2d');
+    if (dim) { g.globalAlpha = 0.45; g.filter = 'grayscale(1)'; }
+    g.drawImage(bms[n], 0, 0, n, n);
+    g.globalAlpha = 1; g.filter = 'none';
+    if (dot) {
+      const r = n * 0.15, cx = n - r - n * 0.03, cy = n - r - n * 0.03;
+      g.beginPath(); g.arc(cx, cy, r + n * 0.06, 0, Math.PI * 2); g.fillStyle = '#121212'; g.fill();
+      g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = dot; g.fill();
+    }
+    out[n] = g.getImageData(0, 0, n, n);
+  }
+  return out;
+}
+const iconState = new Map(); // tabId -> 'dim' | 'green' | 'gold' (+ '!'), read by the smoke test
+async function setIconFor(tabId, s) {
+  iconState.set(tabId, s.off ? 'dim' : (s.showing ? 'gold' : 'green') + (s.slipped ? '!' : ''));
+  try {
+    if (s.off) await api.action.setIcon({ tabId, imageData: await iconData({ dim: true }) });
+    else await api.action.setIcon({ tabId, imageData: await iconData({ dot: s.showing ? DOT.gold : DOT.green }) });
+    await api.action.setBadgeText({ tabId, text: !s.off && s.slipped ? '!' : '' });
+    if (!s.off && s.slipped) await api.action.setBadgeBackgroundColor({ tabId, color: '#c96a5e' });
+  } catch (e) {} // the tab closed
+}
+// Default for every tab: dimmed, until a covered page says otherwise.
+iconData({ dim: true }).then((imageData) => api.action.setIcon({ imageData })).catch(() => {});
 
 api.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg && msg.type === 'ts-status' && sender.tab && sender.tab.id != null) {
-    setBadge(sender.tab.id, msg);
+    setIconFor(sender.tab.id, msg);
     return false;
   }
+  if (msg && msg.type === 'icon-state') { reply({ state: iconState.get(msg.tabId) || 'dim' }); return false; }
   if (msg && msg.type === 'build-id') { reply({ id: BUILD_ID }); return false; }
   if (msg && msg.type === 'refresh-rules') {
     refreshRules().then(() => reply({ ok: true }));
