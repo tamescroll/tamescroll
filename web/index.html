@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>tamescroll — a calm browser: the web, without the feeds</title>
-<meta name="description" content="tamescroll is a calm web browser for your phone: feeds and autoplay hidden, pictures blurred by your rules, ad blocking you switch per site. Free, open source, nothing leaves your device.">
+<title>tamescroll — a calm, private browser: the web, without the feeds</title>
+<meta name="description" content="tamescroll is a calm web browser for your phone: feeds and autoplay hidden, trackers blocked, pictures blurred by your rules. No account, no analytics. Free, open source, nothing leaves your device.">
 <meta name="theme-color" content="#faf9f5">
 <meta property="og:title" content="tamescroll — the web, without the feeds">
-<meta property="og:description" content="A calm browser for your phone. Free, open source, and nothing leaves your device.">
+<meta property="og:description" content="A calm, private browser for your phone. Trackers blocked, no account, no analytics. Free and open source.">
 <meta property="og:image" content="https://tamescroll.com/img/og.png">
 <meta property="og:url" content="https://tamescroll.com/">
 <meta property="og:type" content="website">
@@ -83,7 +83,7 @@
     margin: 18px auto 22px; max-width: 18ch;
   }
   .hero p.lead {
-    max-width: 46ch; margin: 0 auto 30px; font-size: 18px; color: var(--paper-muted);
+    max-width: 50ch; margin: 0 auto 30px; font-size: 18px; color: var(--paper-muted);
   }
   .dl-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .btn {
@@ -112,7 +112,7 @@
   .removed.gone s { background-size: 100% 1.5px; color: var(--paper-faint); }
   .removed.gone s:nth-of-type(2) { transition-delay: .15s; } .removed.gone s:nth-of-type(3) { transition-delay: .3s; }
   .removed.gone s:nth-of-type(4) { transition-delay: .45s; } .removed.gone s:nth-of-type(5) { transition-delay: .6s; }
-  .removed.gone s:nth-of-type(6) { transition-delay: .75s; }
+  .removed.gone s:nth-of-type(6) { transition-delay: .75s; } .removed.gone s:nth-of-type(7) { transition-delay: .9s; }
 
   /* ---- the phone, in 3D ---- */
   .stage { display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 48px 24px 0; perspective: 1800px; overflow: clip; }
@@ -234,6 +234,38 @@
   .pic.blur .art { filter: blur(8px); transform: scale(1.08); }
   .pics-sec .pics-note { font-size: 12.5px; color: var(--paper-faint); margin-top: 8px; text-align: center; max-width: none; }
 
+  /* ---- privacy: the request log on the left, the promises on the right ---- */
+  section.privacy { max-width: 1080px; margin: 112px auto 0; padding: 0 24px; }
+  .privacy .top { display: grid; grid-template-columns: 420px 1fr; gap: 56px; align-items: center; }
+  .privacy h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(30px, 4.2vw, 44px); line-height: 1.1; margin-bottom: 14px; max-width: 16ch; }
+  .privacy .top p { color: var(--paper-muted); font-size: 16px; max-width: 48ch; }
+  .privacy .top p + p { margin-top: 12px; }
+  .vlog { aspect-ratio: auto; margin: 0; padding: 18px 18px 46px; }
+  .req { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hairline); font: 500 11.5px var(--font-mono); color: var(--muted); opacity: 0; transform: translateX(-6px); transition: opacity .35s var(--ease), transform .35s var(--ease); }
+  .req .host { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: linear-gradient(var(--faint), var(--faint)) no-repeat 0 55% / 0% 1px; transition: background-size .4s var(--ease), color .4s var(--ease); }
+  .req em { flex: none; font-style: normal; font-size: 9px; letter-spacing: .12em; padding: 3px 7px; border-radius: 6px; color: var(--faint); border: 1px solid var(--line); }
+  .req.bad em { color: var(--faint); }
+  .vlog.run .req { opacity: 1; transform: none; }
+  .vlog.run .req.bad .host { background-size: 100% 1px; color: var(--faint); }
+  .vlog.run .req.bad em { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+  .vlog .req:nth-of-type(3), .vlog .req:nth-of-type(3) * { transition-delay: .25s; }
+  .vlog .req:nth-of-type(4), .vlog .req:nth-of-type(4) * { transition-delay: .5s; }
+  .vlog .req:nth-of-type(5), .vlog .req:nth-of-type(5) * { transition-delay: .75s; }
+  .vlog .req:nth-of-type(6), .vlog .req:nth-of-type(6) * { transition-delay: 1s; }
+  .vlog .req:nth-of-type(7), .vlog .req:nth-of-type(7) * { transition-delay: 1.25s; }
+  .vlog .req:nth-of-type(8), .vlog .req:nth-of-type(8) * { transition-delay: 1.5s; }
+  .vlog:not(.run) .req, .vlog:not(.run) .req * { transition-delay: 0s; }
+  .vlog .count { position: absolute; left: 18px; right: 18px; bottom: 16px; display: flex; align-items: center; gap: 7px; font: 500 9px var(--font-mono); letter-spacing: .1em; color: var(--muted); opacity: 0; transition: opacity .4s var(--ease); }
+  .vlog .count svg { width: 13px; height: 13px; color: var(--ink); }
+  .vlog.run .count { opacity: 1; transition-delay: 1.9s; }
+  .promises { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 48px; }
+  .promises .card { padding: 22px 20px; }
+  .promises .card:nth-child(2) { transition-delay: .08s; } .promises .card:nth-child(3) { transition-delay: .16s; } .promises .card:nth-child(4) { transition-delay: .24s; }
+  .soon { display: flex; gap: 10px 16px; align-items: baseline; flex-wrap: wrap; margin-top: 18px; padding: 16px 20px; border: 1px dashed var(--paper-line); border-radius: 14px; font-size: 14px; color: var(--paper-muted); }
+  .soon .tag { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--paper-faint); font-weight: 600; }
+  .privacy .fine { font-size: 13.5px; color: var(--paper-faint); margin-top: 16px; max-width: 80ch; }
+  .privacy .fine a { color: var(--paper-muted); }
+
   /* ---- feature cards ---- */
   section.features { max-width: 1080px; margin: 64px auto 0; padding: 0 24px; }
   .features .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -303,9 +335,21 @@
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
   }
+  @media (max-width: 1000px) and (min-width: 761px) {
+    .promises { grid-template-columns: repeat(2, 1fr); }
+    .privacy .top { grid-template-columns: 360px 1fr; gap: 40px; }
+  }
   @media (max-width: 760px) {
     nav.top a:not(.cta) { display: none; }
-    .how .grid, .features .grid, section.pics-sec, section.download { grid-template-columns: 1fr; }
+    .how .grid, .features .grid, section.pics-sec, section.download, .privacy .top { grid-template-columns: 1fr; }
+    section.privacy { margin-top: 88px; }
+    .privacy .top { gap: 26px; }
+    .privacy .top .vlog { order: 2; }
+    .promises { grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
+    .promises .card { padding: 18px 16px; }
+    .promises .card h3 { font-size: 16px; }
+    .promises .card p { font-size: 13.5px; }
+    .promises .card .ic { margin-bottom: 12px; }
     section.pics-sec { gap: 22px; margin-top: 80px; }
     section.download { text-align: center; }
     .download .dl-row { justify-content: center; }
@@ -331,6 +375,7 @@
   </a>
   <nav class="top">
     <a href="#how">How it works</a>
+    <a href="#privacy">Privacy</a>
     <a href="#features">Features</a>
     <a href="https://github.com/tamescroll/tamescroll">Source</a>
     <a class="cta" href="#download">Download</a>
@@ -339,18 +384,18 @@
 
 <main>
   <div class="hero">
-    <div class="kicker">A calm browser · free · open source · Android</div>
+    <div class="kicker">A calm, private browser · free · open source · Android</div>
     <h1>The web,<br>without the feeds.</h1>
-    <p class="lead">A web browser for your phone that leaves out the parts built to keep you scrolling.</p>
+    <p class="lead">A web browser for your phone that leaves out the parts built to keep you scrolling, and stops the trackers built to follow you.</p>
     <div class="dl-row">
       <a class="btn primary" href="#download">Download for Android</a>
     </div>
-    <p class="sub">No account, no analytics, nothing about you leaves your phone</p>
+    <p class="sub">Trackers blocked · no account · no analytics · nothing about you leaves your phone</p>
   </div>
 
   <div class="removed" id="removed" aria-label="Left out">
     <span class="label">Left out</span>
-    <s>Endless feeds</s><s>Short-video shelves</s><s>Recommended for you</s><s>Trending</s><s>Autoplay</s><s>Sign-in nags</s>
+    <s>Endless feeds</s><s>Short-video shelves</s><s>Recommended for you</s><s>Trending</s><s>Autoplay</s><s>Sign-in nags</s><s>Trackers</s>
   </div>
 
   <div class="stage">
@@ -359,7 +404,7 @@
         <span class="depth" style="--z:18"></span><span class="depth" style="--z:16"></span><span class="depth" style="--z:14"></span><span class="depth" style="--z:12"></span><span class="depth" style="--z:10"></span><span class="depth" style="--z:8"></span><span class="depth" style="--z:6"></span><span class="depth" style="--z:4"></span><span class="depth" style="--z:2"></span>
         <span class="btns"></span>
         <div class="face">
-          <div class="screen demo" id="demo" aria-label="A made-up video site, first busy, then calm in tamescroll: the trending row, short-video shelf and recommendations fold away, pictures blur, and the shield counts what it hid." role="img">
+          <div class="screen demo" id="demo" aria-label="A made-up video site, first busy, then calm in tamescroll: the trending row, short-video shelf and recommendations fold away, pictures blur, trackers are blocked, and the shield counts what it hid." role="img">
             <div class="bar">
               <span class="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg></span>
               <span class="addr">videos.example</span>
@@ -377,7 +422,7 @@
               <div class="post"><span class="thumb t5 blurs"><span class="play"></span></span><span class="lines"><i></i><i class="s"></i></span></div>
               <div class="post"><span class="thumb t1 blurs"><span class="play"></span></span><span class="lines"><i></i><i class="s"></i></span></div>
             </div>
-            <div class="toast"><b>Tamed.</b> 4 things hidden · pictures blurred</div>
+            <div class="toast"><b>Tamed.</b> 4 things hidden · 9 trackers blocked</div>
           </div>
           <div class="glass"></div>
         </div>
@@ -457,6 +502,52 @@
       </div>
       <p class="pics-note" id="pics-note">All pictures blurred</p>
     </div>
+  </section>
+
+  <section class="privacy" id="privacy">
+    <div class="top">
+      <div class="vig vlog reveal" id="vlog" aria-hidden="true">
+        <div class="v-head"><svg><use href="#shield"/></svg>news.example<span>THIS PAGE</span></div>
+        <div class="req"><span class="host">news.example/today</span><em>PAGE</em></div>
+        <div class="req bad"><span class="host">pixel.tracker.example</span><em>BLOCKED</em></div>
+        <div class="req"><span class="host">img.news.example</span><em>ALLOWED</em></div>
+        <div class="req bad"><span class="host">ads.network.example/bid</span><em>BLOCKED</em></div>
+        <div class="req bad"><span class="host">analytics.example/collect</span><em>BLOCKED</em></div>
+        <div class="req bad"><span class="host">fingerprint.example/id.js</span><em>BLOCKED</em></div>
+        <div class="req"><span class="host">cdn.news.example/app.js</span><em>ALLOWED</em></div>
+        <div class="count"><svg><use href="#shield"/></svg>4 TRACKERS STOPPED BEFORE THEY LOADED</div>
+      </div>
+      <div class="reveal">
+        <div class="sec-label">Privacy</div>
+        <h2>Browse without being followed.</h2>
+        <p>Most pages load dozens of trackers: little scripts and pixels from ad networks and analytics companies that log what you read and build a profile of you across sites. tamescroll stops them before they load.</p>
+        <p>Every request a page makes is checked on your phone against EasyList and EasyPrivacy, the open lists that power the best-known blockers, and known trackers and ad networks never get a connection. The lists update over the air, without an app update.</p>
+      </div>
+    </div>
+    <div class="promises">
+      <div class="card reveal">
+        <div class="ic"><svg><use href="#shield"/></svg></div>
+        <h3>Trackers blocked</h3>
+        <p>Tracking scripts, pixels and ad networks are stopped as you browse, not just hidden from view.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg></div>
+        <h3>Private search</h3>
+        <p>The search box asks DuckDuckGo, which does not profile your searches, with safe search held at strict.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 3.8-5.5 7-5.5s5.8 1.9 7 5.5M4 4l16 16"/></svg></div>
+        <h3>No account, no analytics</h3>
+        <p>Nothing to sign up for. No analytics, no ad SDK, no advertising ID, and no server of ours to send anything to.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
+        <h3>Stays on your phone</h3>
+        <p>Your sites, settings and keywords live only on your phone, and pictures are checked there and forgotten.</p>
+      </div>
+    </div>
+    <div class="soon reveal"><span class="tag">Coming soon</span>Tracking codes stripped from the links you open and share · third-party cookies blocked · the Global Privacy Control signal sent to every site</div>
+    <p class="fine reveal">On the Tamed sites, the shield's Ads switch lets you allow a site's ads, and when you do, the ad and tracking requests that come with them load too. YouTube starts with its ads allowed, so there blocking is a switch you turn on. Every other site is blocked from the start. The details are in our <a href="privacy.html">privacy policy</a>, and every claim here can be checked in the <a href="https://github.com/tamescroll/tamescroll">source</a>.</p>
   </section>
 
   <section class="features" id="features">
@@ -618,6 +709,16 @@
   // 03: one switch flips at a time, as if someone is choosing.
   var tgs = document.querySelectorAll("#vsheet .tg"), ti = 0;
   onScreen(document.getElementById("vsheet"), function () { tgs[ti % tgs.length].classList.toggle("on"); ti += 3; }, 1500);
+
+  // Privacy: the page's requests come in one by one and the trackers
+  // among them are struck off, then the log clears and runs again.
+  var vlog = document.getElementById("vlog");
+  var lt = null;
+  if (still) vlog.classList.add("run");
+  onScreen(vlog, function () {
+    vlog.classList.remove("run");
+    clearTimeout(lt); lt = setTimeout(function () { vlog.classList.add("run"); }, 600);
+  }, 6500);
 
   // Pictures: the three choices take turns until the visitor picks one.
   var modeBtns = document.querySelectorAll(".modes button");
