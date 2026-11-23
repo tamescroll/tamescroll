@@ -67,23 +67,32 @@ function summary(s) {
 
 function home() {
   const rows = $('site-rows');
+  const count = $('count');
+  const tags = $('tags');
   if (!site) {
+    $('site-chip').textContent = '';
     $('site-name').textContent = 'Nothing to tame here';
     $('site-switch').replaceChildren();
     $('site-status').textContent = `Open ${listWords(SITES.map((s) => s.label)).replace(' and ', ' or ')} to tame it.`;
+    count.hidden = true;
+    tags.replaceChildren();
     rows.hidden = true;
     return;
   }
   const prefs = settings.sites[site.id];
+  $('site-chip').textContent = site.label[0];
   $('site-name').textContent = site.label;
   $('site-switch').replaceChildren(switchEl(prefs.on, `Tame ${site.label}`, (v) => save(() => { prefs.on = v; })));
   rows.hidden = !prefs.on;
 
-  let status;
-  if (!prefs.on) status = 'Paused. This site shows everything.';
-  else if (hiddenHere && hiddenHere.length) status = `Hiding ${listWords(hiddenHere.map((h) => h.label))} on this page.`;
-  else status = 'Tamed. Nothing to hide on this page right now.';
-  $('site-status').textContent = status;
+  const hidden = prefs.on && hiddenHere ? hiddenHere : [];
+  count.hidden = hidden.length === 0;
+  $('count-num').textContent = String(hidden.length);
+  $('count-text').textContent = hidden.length === 1 ? 'thing hidden on this page' : 'things hidden on this page';
+  tags.replaceChildren(...hidden.map((h) => el('span', '', h.label)));
+  $('site-status').textContent = !prefs.on
+    ? 'Paused. This site shows everything.'
+    : hidden.length ? '' : 'Tamed. Nothing to hide on this page right now.';
 
   const { back, total } = backCount(site, prefs);
   $('parts-value').textContent = back ? `${back} of ${total}` : 'None';

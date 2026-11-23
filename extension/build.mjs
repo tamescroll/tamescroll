@@ -119,15 +119,12 @@ async function main() {
     cpSync(join(here, 'src/popup.html'), join(out, 'popup.html'));
     cpSync(join(here, 'src/popup.css'), join(out, 'popup.css'));
     cpSync(join(here, 'icons'), join(out, 'icons'), { recursive: true });
-    // The app's two faces, bundled (OFL-1.1): Windows has neither, and the
-    // fallbacks were what made the popup's type feel off.
+    // Inter, bundled (OFL-1.1): Windows does not have it, and the fallback
+    // was what made the popup's type feel off.
     mkdirSync(join(out, 'fonts'), { recursive: true });
     const fonts = join(here, 'node_modules/@fontsource-variable/inter');
-    const serif = join(here, 'node_modules/@fontsource/spectral');
     cpSync(join(fonts, 'files/inter-latin-wght-normal.woff2'), join(out, 'fonts/inter.woff2'));
-    cpSync(join(serif, 'files/spectral-latin-500-normal.woff2'), join(out, 'fonts/spectral-500.woff2'));
     cpSync(join(fonts, 'LICENSE'), join(out, 'fonts/LICENSE-inter.txt'));
-    cpSync(join(serif, 'LICENSE'), join(out, 'fonts/LICENSE-spectral.txt'));
     writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest(target), null, 2) + '\n');
     console.log(`built dist/${target}`);
   }

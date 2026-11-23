@@ -94,7 +94,7 @@ try {
   const popup = await ctx.newPage();
   const ytTab = await sw.evaluate(async () => (await chrome.tabs.query({ url: 'https://www.youtube.com/*' }))[0].id);
   await popup.goto(`chrome-extension://${extId}/popup.html?tab=${ytTab}`);
-  await popup.waitForFunction(() => document.getElementById('site-status').textContent.startsWith('Hiding'));
+  await popup.waitForFunction(() => document.getElementById('site-status').textContent === '' && !document.getElementById('count').hidden);
   await popup.setViewportSize({ width: 320, height: 300 });
   await popup.waitForTimeout(300); await popup.screenshot({ path: join(here, 'popup-home.png'), fullPage: true });
   await popup.click('#open-parts');

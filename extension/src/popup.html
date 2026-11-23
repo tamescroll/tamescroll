@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-<!-- One calm screen: the site you are on, one switch, two rows. Bring
-     back and Settings are one tap away and one level deep. Night only
-     (his call, 2026-11-23). -->
+<!-- One screen: the site you are on, what it hides here, two rows.
+     Bring back and Settings are one level deep. Night only, option A
+     "Status card" (his calls, 2026-11-23). -->
 <div id="view-home" class="view">
   <header class="bar">
     <span class="brand">
@@ -21,21 +21,26 @@
     </button>
   </header>
 
-  <section class="site">
-    <div class="site-line">
+  <section class="hero">
+    <div class="hero-top">
+      <span class="chip" id="site-chip"></span>
       <h1 id="site-name"></h1>
       <span id="site-switch"></span>
     </div>
+    <div class="count" id="count" hidden><b id="count-num"></b><span id="count-text"></span></div>
     <p class="site-status" id="site-status"></p>
+    <div class="tags" id="tags"></div>
   </section>
 
-  <div class="rows" id="site-rows">
+  <div class="group" id="site-rows">
     <button class="row" type="button" id="open-parts">
+      <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>
       <span class="row-label">Bring back</span>
       <span class="row-value" id="parts-value"></span>
       <span class="chev" aria-hidden="true"></span>
     </button>
     <div class="row">
+      <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 17l-5-5-9 7"/></svg>
       <span class="row-label">Blur pictures</span>
       <span id="blur-switch"></span>
     </div>
@@ -56,7 +61,7 @@
     <span class="bar-spacer"></span>
   </header>
   <p class="hint">Everything starts hidden. Switch on only what you want back.</p>
-  <div class="rows" id="parts"></div>
+  <div class="group" id="parts"></div>
 </div>
 
 <div id="view-settings" class="view" hidden>
@@ -68,7 +73,7 @@
     <span class="bar-spacer"></span>
   </header>
   <div class="label">Sites</div>
-  <div class="rows" id="sites"></div>
+  <div class="group" id="sites"></div>
   <div class="label">Blur strength</div>
   <div class="seg" id="strength"></div>
   <div class="about">
