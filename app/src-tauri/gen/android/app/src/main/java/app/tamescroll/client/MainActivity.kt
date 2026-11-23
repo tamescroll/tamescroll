@@ -1621,6 +1621,7 @@ class MainActivity : TauriActivity() {
         text = label
         setTextColor(c.muted)
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+        gravity = Gravity.CENTER
         setPadding(0, dp(5), 0, 0)
       })
       setOnClickListener { act(run) }
@@ -1639,7 +1640,7 @@ class MainActivity : TauriActivity() {
         marginEnd = dp(3)
       }
     }
-    fun row(res: Int, label: String, enabled: Boolean = true, sub: String? = null, trailing: View? = null, run: () -> Unit) {
+    fun row(res: Int, label: String, enabled: Boolean = true, sub: String? = null, trailing: View? = null, trailingLive: Boolean = false, run: () -> Unit) {
       if (list.childCount > 0) list.addView(View(this).apply {
         setBackgroundColor(c.hair)
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, maxOf(1, dp(0.7f)))
@@ -1663,10 +1664,16 @@ class MainActivity : TauriActivity() {
         gravity = Gravity.CENTER_VERTICAL
         minimumHeight = dp(48)
         setPadding(dp(14), dp(4), if (trailing != null) dp(6) else dp(14), dp(4))
-        addView(glyph(res, c.ink, 19))
+        val icon = glyph(res, c.ink, 19)
+        addView(icon)
         addView(words)
         if (trailing != null) addView(trailing)
-        if (enabled) setOnClickListener { act(run) } else { glyphAlpha(this) }
+        if (enabled) setOnClickListener { act(run) } else {
+          // Dim what is off; a live trailing button (reload) stays usable.
+          icon.alpha = DISABLED_ALPHA
+          words.alpha = DISABLED_ALPHA
+          if (!trailingLive) trailing?.alpha = DISABLED_ALPHA
+        }
       })
     }
 
@@ -1678,7 +1685,7 @@ class MainActivity : TauriActivity() {
       layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
       setOnClickListener { act { webView.reload() } }
     }
-    row(R.drawable.ic_bar_fwd, "Forward", enabled = webView.canGoForward(), trailing = reload) { goForward() }
+    row(R.drawable.ic_bar_fwd, "Forward", enabled = webView.canGoForward(), trailing = reload, trailingLive = true) { goForward() }
     val marked = isBookmarked(barUrl)
     row(R.drawable.ic_bar_star, if (marked) "Remove bookmark" else "Bookmark this page") { toggleBookmark() }
     row(R.drawable.ic_bar_find, "Find on page") { showFindBar() }
@@ -1696,8 +1703,8 @@ class MainActivity : TauriActivity() {
     showSheet(sheet, box)
   }
 
-  /** A disabled menu row: dimmed, words and all. */
-  private fun glyphAlpha(v: View) { v.alpha = 0.45f }
+  /** How far a disabled menu row is dimmed. */
+  private val DISABLED_ALPHA = 0.45f
 
   /** The launcher's flat switch (mockup .tog), for the menu's one toggle. */
   private fun toggleView(c: BarColors, on: Boolean) = FrameLayout(this).apply {
@@ -2798,7 +2805,12 @@ class MainActivity : TauriActivity() {
           // attach a fresh Activity to an already-initialized process —
           // the relaunch renders permanently blank (emulator evidence
           // 2026-08-18, new Task with zero webview activity).
-          onLauncher -> moveTaskToBack(true)
+          // The launcher's own layers first (#73): its menu sheet closes,
+          // and Bookmarks and history opened from a site's menu returns to
+          // that site. Anything it does not claim backgrounds the app.
+          onLauncher -> webView.evaluateJavascript(
+            "(function(){try{return !!(window.__tsBack&&window.__tsBack())}catch(e){return false}})()",
+          ) { handled -> if (handled != "true") moveTaskToBack(true) }
           // Never history-restore INTO the launcher: goBack() onto the
           // custom-protocol page revives a back/forward-cache zombie
           // document that stays visible but detached — taps land in it

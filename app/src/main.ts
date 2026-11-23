@@ -1379,6 +1379,21 @@ historyClear.addEventListener("click", () => {
 });
 document.querySelector<HTMLButtonElement>("#library-back")!.addEventListener("click", () => libraryReturn());
 
+// System Back on Android (MainActivity asks before backgrounding the app):
+// the menu sheet closes first, then Bookmarks and history goes where its
+// own Back button would. Everything else is left to MainActivity.
+(window as unknown as { __tsBack?: () => boolean }).__tsBack = () => {
+  if (!menuSheet.hidden) {
+    menuSheet.hidden = true;
+    return true;
+  }
+  if (!views.library.hidden) {
+    libraryReturn();
+    return true;
+  }
+  return false;
+};
+
 // ---------- the new tab page's bar and menu (#73) ----------
 
 function closeMenu() {

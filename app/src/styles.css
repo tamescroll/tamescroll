@@ -509,13 +509,16 @@ b { font-weight: 600; }
 @keyframes update-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .update-scrim, .update-panel { animation: none; } }
 
+:root { --chip: #262523; }
+:root[data-look="paper"] { --chip: #efece5; }
+
 /* ---------- new tab page (#73, mockup 2) ----------
    A browser's new tab: the wordmark small, the question in Spectral,
    Favourites as letter tiles, the last pages, and the address field in
    a bar at the bottom, in thumb reach. Flat 10-12px corners. */
 #view-launcher { padding-bottom: 96px; }
 .ntp-head { display: flex; align-items: center; min-height: 40px; padding-top: var(--s1); }
-.ntp-head .wordmark { height: 22px; width: auto; color: var(--ink); }
+.ntp-head .wordmark { height: 30px; width: auto; color: var(--ink); }
 .ntp-head .wordmark .mark { stroke: var(--gold); }
 #view-launcher .home-q { margin-top: var(--s4); }
 #view-launcher .tile .dot { width: 48px; height: 48px; border-radius: 12px; font-size: 22px; }
@@ -559,10 +562,10 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 .ntp-bar .open-link { flex: 1; min-width: 0; margin: 0; }
 .ntp-bar .addr {
   flex: 1; min-width: 0; height: 46px; display: flex; align-items: center; gap: var(--s2);
-  padding: 0 var(--s3); border-radius: var(--r-sm); background: var(--elev); border: 1px solid var(--line);
+  padding: 0 var(--s3); border-radius: var(--r-sm); background: var(--chip); border: 1px solid var(--line);
   color: var(--faint);
 }
-:root[data-look="paper"] .ntp-bar .addr { background: #efece5; border-color: transparent; }
+:root[data-look="paper"] .ntp-bar .addr { border-color: transparent; }
 .ntp-bar .addr:focus-within { border-color: var(--muted); }
 .ntp-bar .addr svg { width: 16px; height: 16px; flex: none; }
 .ntp-bar .open-link input {
@@ -591,8 +594,10 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 
 /* Bookmarks and history (mockup 8). */
 #view-library .narrow { display: grid; gap: var(--s3); align-content: start; }
-.lib-seg { display: flex; width: 100%; }
-.lib-seg .toggle-opt { flex: 1; }
+.lib-seg { display: flex; width: 100%; gap: 2px; padding: 3px; border: 0; border-radius: 9px; background: var(--chip); }
+.lib-seg .toggle-opt { flex: 1; justify-content: center; border: 0; border-radius: 7px; padding: 6px 0; color: var(--muted); font-weight: 500; }
+.lib-seg .toggle-opt + .toggle-opt { border-left: 0; }
+.lib-seg .toggle-opt.active { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
 #lib-bookmarks, #lib-history { display: grid; gap: var(--s2); }
 #lib-history .eyebrow { margin: var(--s3) 0 var(--s1); }
 .search-field {
