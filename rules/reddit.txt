@@ -97,6 +97,13 @@ reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post
 reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(shreddit-join-button)
 reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(shreddit-join-button) + hr
 
+! Signed out, every home-feed post is a recommendation, so the posts
+! above hide all of it -- and Reddit's loader then fetches page after
+! page into an empty column (178 posts in 12 s, 2026-11-23). Hiding the
+! whole feed stops that: its load-more marker is never on screen.
+! [live] signed out 2026-11-23: 178 loaded, 0 visible, still loading
+reddit.com##shreddit-app[pagetype="home"]:not([user-logged-in="true"]) shreddit-feed
+
 ! "Communities you might like" blocks inside the feed, and the
 ! suggested posts under an opened post.
 ! [unverified] names from clean-reddit's stylesheet and an MIT uBlock list
