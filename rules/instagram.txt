@@ -88,7 +88,7 @@ instagram.com##a[href^="/popular/"]
 ! explore, each with a Dismiss button, and its heading.
 ! [live] www.instagram.com/explore/ signed out 2026-11-23
 instagram.com##main[role="main"] div[role="presentation"]:has([aria-label="Dismiss"])
-instagram.com##main[role="main"] h1:has(+ div [aria-label="Dismiss"])
+instagram.com##main[role="main"]:has(div[role="presentation"] [aria-label="Dismiss"]) h1
 
 
 !surface: nags App-install nags
