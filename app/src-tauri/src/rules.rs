@@ -204,6 +204,25 @@ const ENGINE_LISTS: [&str; 6] = [
     "vendor/ubo-unbreak.txt",
 ];
 
+/// The tracker lists: what stays blocked on a page whose ads the user
+/// let through. EasyPrivacy names trackers rather than ads, and the
+/// unbreak list keeps its exceptions so a tracker rule never breaks a page
+/// the full engine would have left working.
+const TRACKER_LISTS: [&str; 2] = ["vendor/easyprivacy.txt", "vendor/ubo-unbreak.txt"];
+
+/// Builds the tracker-only engine (TRACKER_LISTS), through the OTA layer
+/// like the full one. Network rules only, so no scriptlet resources and
+/// no serialised cache: it is a fifth of the full set (about 0.2s on a
+/// desktop) and is warmed off the critical path.
+pub fn build_tracker_engine() -> Engine {
+    let lists: Vec<String> = TRACKER_LISTS.iter().map(|l| crate::ota::rules_text(l)).collect();
+    let mut set = FilterSet::new(false);
+    for text in &lists {
+        set.add_filter_list(text.clone(), ParseOptions::default());
+    }
+    Engine::new_with_filter_set(set)
+}
+
 fn build_engine_from_lists(lists: &[String]) -> Engine {
     let mut set = FilterSet::new(false);
     for text in lists {
