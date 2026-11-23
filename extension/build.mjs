@@ -24,6 +24,12 @@ if (process.argv.includes('--compile')) {
   });
 }
 
+// One id per build. An unpacked install compares it with build-id.txt on
+// disk and reloads itself when a newer build lands (background.js).
+let gitHash = 'nogit';
+try { gitHash = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: repo }).toString().trim(); } catch (e) {}
+const BUILD_ID = `${gitHash}-${Date.now()}`;
+
 const engine = JSON.parse(readFileSync(join(here, 'gen', 'engine.json'), 'utf8'));
 
 /** The engine's scriptlet code for YouTube, picked by host at run time. */
@@ -105,6 +111,7 @@ async function bundle(outdir) {
       'old-reddit': join(here, 'src/old-reddit.js'),
     },
     outdir,
+    define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
     bundle: true,
     format: 'iife',
     target: ['chrome111', 'firefox128'],
@@ -138,6 +145,8 @@ async function main() {
     // Credits and licences for the lists, engine and font built in.
     cpSync(join(here, 'THIRD-PARTY-NOTICES.txt'), join(out, 'THIRD-PARTY-NOTICES.txt'));
     writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest(target), null, 2) + '\n');
+    // Written LAST: a half-built folder never looks like a new build.
+    writeFileSync(join(out, 'build-id.txt'), BUILD_ID + '\n');
     console.log(`built dist/${target}`);
   }
 }

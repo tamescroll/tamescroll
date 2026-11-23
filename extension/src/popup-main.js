@@ -175,7 +175,20 @@ async function loadHiddenHere() {
   home();
 }
 
+// Opening the popup checks for a newer build at once (unpacked installs).
+async function checkBuild() {
+  try {
+    const [{ id }, onDisk] = await Promise.all([
+      chrome.runtime.sendMessage({ type: 'build-id' }),
+      fetch(chrome.runtime.getURL('build-id.txt'), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')),
+    ]);
+    const me = await chrome.management.getSelf();
+    if (me.installType === 'development' && onDisk.trim() && id && onDisk.trim() !== id) chrome.runtime.reload();
+  } catch (e) {}
+}
+
 async function main() {
+  checkBuild();
   const st = await chrome.storage.local.get(['settings', 'ota']);
   otaState = st.ota && st.ota.version === VERSION ? st.ota : null;
   overrides = otaState && otaState.files ? otaState.files : {};

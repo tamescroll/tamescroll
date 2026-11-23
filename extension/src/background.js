@@ -89,6 +89,25 @@ api.runtime.onInstalled.addListener(async () => {
   refreshRules();
 });
 
+// An unpacked (developer) install reloads itself when a new build lands
+// in its folder, so testing never needs the reload button on
+// chrome://extensions. build.mjs writes build-id.txt last; Chrome serves
+// an unpacked extension's files straight from disk.
+const BUILD_ID = typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : 'dev';
+async function checkForNewBuild() {
+  if (!(await isDevBuild())) return;
+  try {
+    const r = await fetch(api.runtime.getURL('build-id.txt'), { cache: 'no-store' });
+    if (!r.ok) return;
+    const onDisk = (await r.text()).trim();
+    if (onDisk && onDisk !== BUILD_ID) api.runtime.reload();
+  } catch (e) {} // mid-build: the folder is being rewritten
+}
+function watchBuilds() {
+  isDevBuild().then((dev) => { if (dev) api.alarms.create('dev-update', { periodInMinutes: 0.5 }); });
+}
+watchBuilds();
+
 api.runtime.onStartup.addListener(async () => {
   const settings = await ensureSettings();
   await syncScripts(settings);
@@ -96,6 +115,7 @@ api.runtime.onStartup.addListener(async () => {
 
 api.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'rules-refresh') refreshRules();
+  if (alarm.name === 'dev-update') checkForNewBuild();
 });
 
 api.storage.onChanged.addListener((changes, area) => {
@@ -127,6 +147,7 @@ api.runtime.onMessage.addListener((msg, sender, reply) => {
     setBadge(sender.tab.id, msg);
     return false;
   }
+  if (msg && msg.type === 'build-id') { reply({ id: BUILD_ID }); return false; }
   if (msg && msg.type === 'refresh-rules') {
     refreshRules().then(() => reply({ ok: true }));
     return true;
