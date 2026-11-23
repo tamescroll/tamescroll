@@ -219,6 +219,20 @@ m.youtube.com##ytm-browse ytm-feed-filter-chip-bar-renderer
 ! SHORTS — every entry point
 ! ============================================================
 
+!surface: explore_menu Explore menu
+
+! Desktop side menu: the Explore section (Music, Movies & TV, Live,
+! Shopping...) and "More from YouTube" (Premium, Music, Kids). Doors to
+! curated feeds and promos, not anything you subscribed to.
+! [live] www.youtube.com signed out 2026-11-23: guide section holding
+! /feed/storefront, /channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ (Music),
+! /channel/UC4R8DWoMoI7CAwX8_LjQHig (Live); and one holding /premium
+youtube.com##ytd-guide-section-renderer:has(a[href^="/feed/storefront"])
+youtube.com##ytd-guide-section-renderer:has(a[href="/channel/UC4R8DWoMoI7CAwX8_LjQHig"])
+youtube.com##ytd-guide-section-renderer:has(a[href="/premium"])
+youtube.com##ytd-mini-guide-entry-renderer:has(a[href^="/feed/explore"])
+
+
 !surface: shorts Shorts
 
 ! Sidebar navigation entry. Matched on the link title because the entry

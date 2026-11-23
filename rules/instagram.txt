@@ -84,6 +84,13 @@ instagram.com##a[href^="/popular/"]
 ! NAGS
 ! ============================================================
 
+! "Profiles to look out for": the row of suggested celebrity cards on
+! explore, each with a Dismiss button, and its heading.
+! [live] www.instagram.com/explore/ signed out 2026-11-23
+instagram.com##main[role="main"] div[role="presentation"]:has([aria-label="Dismiss"])
+instagram.com##main[role="main"] h1:has(+ div [aria-label="Dismiss"])
+
+
 !surface: nags App-install nags
 
 ! "Use the app" / app-install banners on mobile web.

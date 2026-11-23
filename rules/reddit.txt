@@ -63,6 +63,16 @@ reddit.com##li:has(> faceplate-tracker > a[href="/r/all/"])
 reddit.com##shreddit-app[pagetype="news"] #main-content
 reddit.com##shreddit-app[pagetype="explore"] #main-content
 
+! The right rail's Popular Communities box on the home feed, and the
+! "Best of Reddit" (rereddit) links in the left nav and footer.
+! [live] signed out 2026-11-23: aside[aria-label="Popular Communities"],
+! tracker nouns rereddit_menu, rereddit_translated_*_menu, links to
+! /posts/2026/...
+reddit.com##aside[aria-label="Popular Communities"]
+reddit.com##faceplate-tracker[noun^="rereddit"]
+reddit.com##faceplate-tracker:has(> a[href^="/posts/20"])
+reddit.com##li:has(> faceplate-tracker > a[href^="/posts/20"])
+
 ! Trending searches shown when the search box is focused.
 ! [unverified] renders only on search focus
 ! test: focus the search box on any page ->

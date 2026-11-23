@@ -2,10 +2,10 @@
   "version": 1,
   "files": {
     "youtube.txt": {
-      "sha256": "e930209d14029706edce6c0a303f0279c28baae50fdc0c7ce536ab657786f140"
+      "sha256": "aa2be760eda951f102cfc16b56e34b15c8f3875aa081219d773b1db98bc427dc"
     },
     "reddit.txt": {
-      "sha256": "c2c0df6d001ba8e57bfd653b9f8d50ae9620d58434477048597f60bea87a2778"
+      "sha256": "6daf6ba20b5ed07197a85c8be55976b8acd7aa9163ec3daaac593b55d011137d"
     },
     "x.txt": {
       "sha256": "98fadf60738d267179754970bf23948331b77dfd7926e7f30e92992e5dbe514a"
