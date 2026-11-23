@@ -39,6 +39,15 @@ const FB_PAGE = `<!doctype html><html><head><style>html{overflow:hidden}</style>
 <div id="layer"><div><div role="dialog"><h2>See more on Facebook</h2><input name="email"><input name="pass" type="password"></div></div></div>
 </div></body></html>`;
 
+// The same pop-up where it must be left alone: an age gate, and a
+// signed-in page. And a page whose buttons open sign-in boxes on purpose.
+const FB_AGE = FB_PAGE.replace('See more on Facebook', 'You must be 18 or older to see this');
+const FB_SIGNED_IN = FB_PAGE.replace('<div role="main">', '<a aria-label="Your profile" href="/me">me</a><div role="main">');
+const FB_BUTTONS = FB_PAGE.replace('<div role="main">public page</div>', `<div role="main">public page
+<button id="open-box" onclick="const d=document.createElement('div');d.id='mine';d.setAttribute('role','dialog');d.innerHTML='<input type=password>';document.body.append(d)">Comment</button>
+<button id="log-in">Log in</button></div>`);
+const FB_BODIES = { '/age': FB_AGE, '/me': FB_SIGNED_IN, '/buttons': FB_BUTTONS };
+
 const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'ts-ext-')), {
   headless: true,
   channel: 'chromium',
@@ -54,7 +63,7 @@ try {
     const u = new URL(route.request().url());
     route.fulfill({ status: 200, contentType: 'text/html', body: u.pathname === '/' ? REDDIT_HOME : REDDIT });
   });
-  await ctx.route(/^https:\/\/www\.facebook\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: FB_PAGE }));
+  await ctx.route(/^https:\/\/www\.facebook\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: FB_BODIES[new URL(route.request().url()).pathname] || FB_PAGE }));
   await ctx.route(/^https:\/\/raw\.githubusercontent\.com\//, (route) => route.abort());
 
   let [sw] = ctx.serviceWorkers();
@@ -165,6 +174,22 @@ try {
   await fb.waitForTimeout(500);
   assert.notEqual(await fb.$eval('#layer', (el) => getComputedStyle(el).display), 'none', 'a real login page is left alone');
   console.log('facebook: sign-in pop-up hidden, scroll back, login page untouched');
+  const layer = () => fb.$eval('#layer', (el) => getComputedStyle(el).display);
+  await fb.goto('https://www.facebook.com/age');
+  await fb.waitForTimeout(500);
+  assert.notEqual(await layer(), 'none', 'an age gate is never hidden');
+  await fb.goto('https://www.facebook.com/me');
+  await fb.waitForTimeout(500);
+  assert.notEqual(await layer(), 'none', 'nothing is hidden while signed in');
+  await fb.goto('https://www.facebook.com/buttons');
+  await fb.waitForFunction(() => getComputedStyle(document.getElementById('layer')).display === 'none');
+  await fb.click('#open-box');
+  await fb.waitForTimeout(500);
+  assert.notEqual(await fb.$eval('#mine', (el) => getComputedStyle(el).display), 'none', 'a box you opened yourself stays');
+  await fb.click('#log-in');
+  await fb.waitForTimeout(300);
+  assert.notEqual(await layer(), 'none', 'using Log in brings back what was hidden');
+  console.log('facebook: age gate, signed in, and boxes you open are all left alone');
   console.log('SMOKE OK');
 } finally {
   await ctx.close();

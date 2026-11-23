@@ -87,4 +87,6 @@ button.row:hover { background: var(--hover); }
 .seg button.active { background: var(--chip); color: var(--ink); box-shadow: inset 0 0 0 1px var(--edge); }
 .about { display: flex; align-items: center; justify-content: space-between; margin: 16px 4px 0; color: var(--faint); }
 .foot { color: var(--faint); font-size: 12px; margin: 2px 4px 0; }
+.foot + .foot { margin-top: 10px; }
+.foot .text-btn { font-size: 12px; }
 @media (prefers-reduced-motion: reduce) { .switch, .switch::after { transition: none; } }

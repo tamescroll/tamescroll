@@ -189,6 +189,7 @@ export function siteById(id) {
 export function rulesFiles() {
   const out = [];
   for (const s of SITES) out.push(s.rulesFile, s.blurFile);
+  out.push('kill.json');
   return out;
 }
 

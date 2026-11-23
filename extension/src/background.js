@@ -7,6 +7,7 @@ import { seed } from './settings.js';
 import { refresh, rulesText } from './ota.js';
 import { BUNDLED } from './bundled.js';
 import { wantedScripts } from './scripts.js';
+import { parseKill } from './kill.js';
 
 const api = globalThis.browser || globalThis.chrome;
 const VERSION = api.runtime.getManifest().version;
@@ -37,7 +38,8 @@ function syncScripts(settings) {
     const registered = (await api.scripting.getRegisteredContentScripts()).map((r) => r.id);
     const stale = registered.filter((id) => ours.has(id));
     if (stale.length) await api.scripting.unregisterContentScripts({ ids: stale });
-    const wanted = wantedScripts(settings);
+    const st = await state();
+    const wanted = wantedScripts(settings, parseKill(rulesText('kill.json', BUNDLED, overridesOf(st))));
     if (wanted.length) await api.scripting.registerContentScripts(wanted);
   }).catch((e) => console.warn('tamescroll: script sync failed', e));
   return syncing;
@@ -99,6 +101,9 @@ api.alarms.onAlarm.addListener((alarm) => {
 api.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings && changes.settings.newValue) {
     syncScripts(changes.settings.newValue);
+  } else if (area === 'local' && changes.ota) {
+    // A new kill.json can switch page code off: resync with the settings.
+    state().then((st) => st.settings && syncScripts(st.settings));
   }
 });
 

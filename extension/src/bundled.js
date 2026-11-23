@@ -12,6 +12,7 @@ import xBlur from '../../rules/blur/x.css';
 import instagramBlur from '../../rules/blur/instagram.css';
 import facebookBlur from '../../rules/blur/facebook.css';
 import tiktokBlur from '../../rules/blur/tiktok.css';
+import killJson from '../../rules/kill.json';
 import engine from '../gen/engine.json';
 
 export const BUNDLED = {
@@ -27,6 +28,8 @@ export const BUNDLED = {
   'blur/instagram.css': instagramBlur,
   'blur/facebook.css': facebookBlur,
   'blur/tiktok.css': tiktokBlur,
+  // Text, like every other entry: kill.js parses it.
+  'kill.json': JSON.stringify(killJson, null, 2) + '\n',
 };
 
 export const ENGINE = engine;

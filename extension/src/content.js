@@ -7,6 +7,7 @@
 import { siteForHost } from './sites.js';
 import { pageCss, parseSurfaces } from './rules.js';
 import { rulesText } from './ota.js';
+import { parseKill, effectivePrefs } from './kill.js';
 import { BUNDLED, ENGINE } from './bundled.js';
 import { pageKind } from '../../app/gaze/src/diag-report.mjs';
 
@@ -38,7 +39,7 @@ function render(state) {
     engine: ENGINE,
     rulesText: rulesText(site.rulesFile, BUNDLED, overrides),
     blurText: rulesText(site.blurFile, BUNDLED, overrides),
-    prefs: (settings.sites || {})[site.id],
+    prefs: effectivePrefs(site, (settings.sites || {})[site.id], parseKill(rulesText('kill.json', BUNDLED, overrides))),
     blurStrength: settings.blurPx || 16,
   });
   lastCss = css;

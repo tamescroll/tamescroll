@@ -126,6 +126,8 @@ async function main() {
     const fonts = join(here, 'node_modules/@fontsource-variable/inter');
     cpSync(join(fonts, 'files/inter-latin-wght-normal.woff2'), join(out, 'fonts/inter.woff2'));
     cpSync(join(fonts, 'LICENSE'), join(out, 'fonts/LICENSE-inter.txt'));
+    // Credits and licences for the lists, engine and font built in.
+    cpSync(join(here, 'THIRD-PARTY-NOTICES.txt'), join(out, 'THIRD-PARTY-NOTICES.txt'));
     writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest(target), null, 2) + '\n');
     console.log(`built dist/${target}`);
   }

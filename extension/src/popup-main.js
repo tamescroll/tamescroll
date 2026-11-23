@@ -9,6 +9,7 @@ import { rulesText } from './ota.js';
 import { BUNDLED } from './bundled.js';
 import { seed } from './settings.js';
 import { wantedScripts } from './scripts.js';
+import { parseKill } from './kill.js';
 
 const VERSION = chrome.runtime.getManifest().version;
 let settings = null;
@@ -27,7 +28,8 @@ const el = (tag, cls, text) => {
   return e;
 };
 const surfacesOf = (s) => parseSurfaces(rulesText(s.rulesFile, BUNDLED, overrides));
-const scriptIds = (s) => wantedScripts(s).map((x) => x.id).sort().join(',');
+const killList = () => parseKill(rulesText('kill.json', BUNDLED, overrides));
+const scriptIds = (s) => wantedScripts(s, killList()).map((x) => x.id).sort().join(',');
 
 async function save(mutate) {
   const before = scriptIds(settings);
@@ -179,6 +181,7 @@ async function main() {
     needsReload = false;
     render();
   });
+  $('credits').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('THIRD-PARTY-NOTICES.txt') }));
   $('check-rules').addEventListener('click', async () => {
     $('rules-status').textContent = 'Checking…';
     try { await chrome.runtime.sendMessage({ type: 'refresh-rules' }); } catch (e) {}

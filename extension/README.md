@@ -108,3 +108,29 @@ extension's menu.
 - A commit whose message contains `[safari-testflight]` builds, signs and
   uploads it (`.github/workflows/safari.yml`, job `testflight`), using the
   iPhone app's existing key. CLAUDE.md's Apple key rules apply.
+
+## Licences and credits
+
+Every build carries `THIRD-PARTY-NOTICES.txt` (copied by `build.mjs`),
+and the popup's Settings links to it. It credits EasyList and
+EasyPrivacy (GPLv3 / CC BY-SA 3.0), the uBlock Origin uAssets lists
+(GPLv3, list data only, no uBlock code) and Brave's resources.json
+(MPL-2.0), plus adblock-rust and the Inter font (OFL-1.1). Update it
+whenever `rules/vendor/` gains or loses a list.
+
+## Remote off switch
+
+`rules/kill.json` travels with the daily filter update (data only). Its
+`adsBlockingOff` list (site ids) turns ad hiding off on that site, and
+`disabledScripts` (script ids such as `youtube-ads`) unregisters page
+scripts, without a store update. Leave both empty unless a complaint
+needs it.
+
+## Sign-in pop-ups
+
+`login-nags.js` hides only signed-out pop-ups you did not open: it does
+nothing while signed in, skips any dialog that appears right after you
+click or press, gives everything back when you use a Log in or Sign up
+control, and never touches an age or mature-content gate (or a Reddit
+NSFW post page). Store wording: "hides sign-in pop-ups", never "browse
+without an account" or "bypass login".
