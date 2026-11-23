@@ -27,6 +27,12 @@ const YT_WATCH = `<!doctype html><html><head></head><body><div id="watch">watch<
 const REDDIT = `<!doctype html><html><head></head><body>
 <shreddit-app pagetype="popular"><shreddit-feed id="feed">popular</shreddit-feed></shreddit-app></body></html>`;
 
+const REDDIT_HOME = `<!doctype html><html><head></head><body>
+<shreddit-app pagetype="home"><div role="tablist">
+<button role="tab" aria-selected="true" id="fy">For You</button>
+<button role="tab" aria-selected="false" id="fo" onclick="this.setAttribute('aria-selected','true');document.getElementById('fy').setAttribute('aria-selected','false');window.__clicked=(window.__clicked||0)+1">Following</button>
+</div></shreddit-app></body></html>`;
+
 const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'ts-ext-')), {
   headless: true,
   channel: 'chromium',
@@ -38,7 +44,10 @@ try {
     const body = u.pathname.startsWith('/watch') ? YT_WATCH : YT_HOME;
     route.fulfill({ status: 200, contentType: 'text/html', body });
   });
-  await ctx.route(/^https:\/\/www\.reddit\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: REDDIT }));
+  await ctx.route(/^https:\/\/www\.reddit\.com\//, (route) => {
+    const u = new URL(route.request().url());
+    route.fulfill({ status: 200, contentType: 'text/html', body: u.pathname === '/' ? REDDIT_HOME : REDDIT });
+  });
   await ctx.route(/^https:\/\/raw\.githubusercontent\.com\//, (route) => route.abort());
 
   let [sw] = ctx.serviceWorkers();
@@ -56,7 +65,7 @@ try {
   });
   const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
   console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
-  assert.deepEqual(regs.map((r) => r.id).sort(), ['youtube-autoplay', 'youtube-shorts']);
+  assert.deepEqual(regs.map((r) => r.id).sort(), ['reddit-foryou', 'youtube-autoplay', 'youtube-shorts']);
 
   const page = await ctx.newPage();
   const display = (sel) => page.$eval(sel, (el) => getComputedStyle(el).display);
@@ -133,6 +142,11 @@ try {
   await rp.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
   assert.equal(await rp.$eval('#feed', (el) => getComputedStyle(el).display), 'none');
   console.log('reddit: r/popular feed hidden');
+  await rp.goto('https://www.reddit.com/');
+  await rp.waitForFunction(() => window.__clicked === 1 && getComputedStyle(document.getElementById('fy')).display === 'none');
+  await rp.waitForTimeout(800);
+  assert.equal(await rp.evaluate(() => window.__clicked), 1, 'Following clicked once, not in a loop');
+  console.log('reddit home: For You tab hidden, Following opened');
   console.log('SMOKE OK');
 } finally {
   await ctx.close();

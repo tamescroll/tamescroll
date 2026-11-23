@@ -64,8 +64,18 @@ export const SITES = [
     rulesFile: 'reddit.txt',
     blurFile: 'blur/reddit.css',
     adsDefaultShown: false,
-    pageSurfaces: [],
-    scripts: [],
+    pageSurfaces: [
+      { id: 'for_you', label: 'For You feed', defaultShown: false },
+    ],
+    scripts: [
+      {
+        // Hides the signed-in home's For You tab and opens Following.
+        id: 'reddit-foryou',
+        file: 'reddit-foryou.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('for_you'),
+      },
+    ],
   },
   // Phase 2. These rules were checked on the mobile sites the app loads
   // (x.txt on desktop in August; instagram.txt partly, facebook.txt and
