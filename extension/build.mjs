@@ -3,6 +3,12 @@
 //   node build.mjs             bundle from the committed gen/engine.json
 //   node build.mjs --compile   first regenerate gen/engine.json with the
 //                              Rust compiler in compile/ (needs cargo)
+//   node build.mjs --store     ALSO build the store packages:
+//                              dist/chrome-store, dist/firefox-store and a
+//                              zip of each. A store build has no developer
+//                              self-reload (dev-reload-store.js), no
+//                              build-id.txt, and only the sites that have
+//                              had a live pass (sites.js notInStore).
 //
 // Everything a page runs is produced here, at build time, from files in
 // this repo. Nothing executable is ever fetched at runtime.
@@ -11,7 +17,8 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SITES, allMatches } from './src/sites.js';
+import { allMatches } from './src/sites.js';
+import { zipFolder } from './zip.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..');
@@ -57,8 +64,8 @@ export function autoplayScript(source) {
   );
 }
 
-export function manifest(target) {
-  const matches = allMatches();
+export function manifest(target, { store = false } = {}) {
+  const matches = allMatches(store);
   const m = {
     manifest_version: 3,
     name: 'Tame Scroll',
@@ -66,6 +73,7 @@ export function manifest(target) {
     version: pkg.version,
     // Safari rejects more than 112 characters; Chrome allows 132.
     description: 'A calmer social media: no algorithmic feeds, no Shorts or Reels, no autoplay, optional blur.',
+    homepage_url: 'https://tamescroll.com/',
     icons: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png', 48: 'icons/icon-48.png', 128: 'icons/icon-128.png' },
     action: { default_popup: 'popup.html', default_icon: { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' } },
     permissions: ['storage', 'scripting', 'alarms'],
@@ -98,7 +106,35 @@ export function manifest(target) {
   return m;
 }
 
-async function bundle(outdir) {
+// Page scripts, the popup and the background only need the engine's
+// cosmetics (hide and style rules). Its scriptlet code goes into
+// youtube-ads.js alone, so no bundle carries code as text.
+export function cosmeticEngine(eng) {
+  const hosts = {};
+  for (const [h, v] of Object.entries(eng.hosts || {})) hosts[h] = { hide: v.hide || [], styles: v.styles || [] };
+  return { generatedBy: eng.generatedBy, lists: eng.lists, hosts };
+}
+
+const enginePlugin = {
+  name: 'cosmetic-engine',
+  setup(b) {
+    b.onResolve({ filter: /gen[\\/]engine\.json$/ }, (args) => ({ path: join(args.resolveDir, args.path), namespace: 'cosmetic-engine' }));
+    b.onLoad({ filter: /.*/, namespace: 'cosmetic-engine' }, (args) => ({
+      contents: JSON.stringify(cosmeticEngine(JSON.parse(readFileSync(args.path, 'utf8')))),
+      loader: 'json',
+    }));
+  },
+};
+
+// A store build swaps the developer self-reload for its no-op stand-in.
+const storePlugin = {
+  name: 'store-stubs',
+  setup(b) {
+    b.onResolve({ filter: /^\.\/dev-reload\.js$/ }, () => ({ path: join(here, 'src/dev-reload-store.js') }));
+  },
+};
+
+async function bundle(outdir, { store }) {
   await build({
     entryPoints: {
       background: join(here, 'src/background.js'),
@@ -111,7 +147,8 @@ async function bundle(outdir) {
       'old-reddit': join(here, 'src/old-reddit.js'),
     },
     outdir,
-    define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
+    define: { __BUILD_ID__: JSON.stringify(store ? 'store' : BUILD_ID), __STORE__: String(!!store) },
+    plugins: store ? [enginePlugin, storePlugin] : [enginePlugin],
     bundle: true,
     format: 'iife',
     target: ['chrome111', 'firefox128'],
@@ -123,31 +160,48 @@ async function bundle(outdir) {
   });
 }
 
-async function main() {
+async function buildTarget(target, out, { store }) {
   const kid = readFileSync(join(repo, 'app/src-tauri/kid-controls.js'), 'utf8');
+  rmSync(out, { recursive: true, force: true });
+  mkdirSync(out, { recursive: true });
+  await bundle(out, { store });
+  writeFileSync(join(out, 'youtube-ads.js'), youtubeAdsScript(engine));
+  writeFileSync(join(out, 'youtube-autoplay.js'), autoplayScript(kid));
+  cpSync(join(here, 'src/popup.html'), join(out, 'popup.html'));
+  cpSync(join(here, 'src/popup.css'), join(out, 'popup.css'));
+  cpSync(join(here, 'src/embed.css'), join(out, 'embed.css'));
+  cpSync(join(here, 'icons'), join(out, 'icons'), { recursive: true });
+  // The store shows the 128px icon on a light page: the store copy is the
+  // same glyph at 96px with rounded corners and 16px of clear margin, as
+  // the Chrome Web Store image guidelines ask.
+  if (store) cpSync(join(here, 'icons-store/icon-128.png'), join(out, 'icons/icon-128.png'));
+  // Inter, bundled (OFL-1.1): Windows does not have it, and the fallback
+  // was what made the popup's type feel off.
+  mkdirSync(join(out, 'fonts'), { recursive: true });
+  const fonts = join(here, 'node_modules/@fontsource-variable/inter');
+  cpSync(join(fonts, 'files/inter-latin-wght-normal.woff2'), join(out, 'fonts/inter.woff2'));
+  cpSync(join(fonts, 'LICENSE'), join(out, 'fonts/LICENSE-inter.txt'));
+  // Credits and licences for the lists, engine and font built in.
+  cpSync(join(here, 'THIRD-PARTY-NOTICES.txt'), join(out, 'THIRD-PARTY-NOTICES.txt'));
+  writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest(target, { store }), null, 2) + '\n');
+  // Written LAST: a half-built folder never looks like a new build. A
+  // store package has none (it never reloads itself).
+  if (!store) writeFileSync(join(out, 'build-id.txt'), BUILD_ID + '\n');
+}
+
+async function main() {
   for (const target of ['chrome', 'firefox', 'safari']) {
-    const out = join(here, 'dist', target);
-    rmSync(out, { recursive: true, force: true });
-    mkdirSync(out, { recursive: true });
-    await bundle(out);
-    writeFileSync(join(out, 'youtube-ads.js'), youtubeAdsScript(engine));
-    writeFileSync(join(out, 'youtube-autoplay.js'), autoplayScript(kid));
-    cpSync(join(here, 'src/popup.html'), join(out, 'popup.html'));
-    cpSync(join(here, 'src/popup.css'), join(out, 'popup.css'));
-    cpSync(join(here, 'src/embed.css'), join(out, 'embed.css'));
-    cpSync(join(here, 'icons'), join(out, 'icons'), { recursive: true });
-    // Inter, bundled (OFL-1.1): Windows does not have it, and the fallback
-    // was what made the popup's type feel off.
-    mkdirSync(join(out, 'fonts'), { recursive: true });
-    const fonts = join(here, 'node_modules/@fontsource-variable/inter');
-    cpSync(join(fonts, 'files/inter-latin-wght-normal.woff2'), join(out, 'fonts/inter.woff2'));
-    cpSync(join(fonts, 'LICENSE'), join(out, 'fonts/LICENSE-inter.txt'));
-    // Credits and licences for the lists, engine and font built in.
-    cpSync(join(here, 'THIRD-PARTY-NOTICES.txt'), join(out, 'THIRD-PARTY-NOTICES.txt'));
-    writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest(target), null, 2) + '\n');
-    // Written LAST: a half-built folder never looks like a new build.
-    writeFileSync(join(out, 'build-id.txt'), BUILD_ID + '\n');
+    await buildTarget(target, join(here, 'dist', target), { store: false });
     console.log(`built dist/${target}`);
+  }
+  if (process.argv.includes('--store')) {
+    for (const target of ['chrome', 'firefox']) {
+      const out = join(here, 'dist', `${target}-store`);
+      await buildTarget(target, out, { store: true });
+      const zip = join(here, 'dist', `tamescroll-${target}-${pkg.version}.zip`);
+      zipFolder(out, zip);
+      console.log(`built dist/${target}-store and ${zip.slice(here.length + 1)}`);
+    }
   }
 }
 

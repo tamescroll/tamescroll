@@ -78,3 +78,7 @@ jobs:
       # extension stale: recompile and fail on any difference.
       - run: node build.mjs --compile
       - run: git diff --exit-code -- gen/engine.json
+      # The store packages: no developer self-reload, no code as text,
+      # only the justified permissions (store/chrome-web-store/README.md).
+      - run: node build.mjs --store
+      - run: node store-check.mjs

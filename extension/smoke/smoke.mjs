@@ -14,7 +14,8 @@ import assert from 'node:assert/strict';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const here = dirname(fileURLToPath(import.meta.url));
-const ext = join(here, '..', 'dist', 'chrome');
+// TS_EXT_DIR=dist/chrome-store runs the same checks on the store package.
+const ext = process.env.TS_EXT_DIR ? join(here, '..', process.env.TS_EXT_DIR) : join(here, '..', 'dist', 'chrome');
 
 const YT_HOME = `<!doctype html><html><head><title>yt</title></head><body>
 <ytd-browse page-subtype="home"><ytd-rich-grid-renderer id="grid">feed</ytd-rich-grid-renderer></ytd-browse>

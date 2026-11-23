@@ -8,6 +8,7 @@ import { refresh, rulesText } from './ota.js';
 import { BUNDLED } from './bundled.js';
 import { wantedScripts } from './scripts.js';
 import { parseKill } from './kill.js';
+import { BUILD_ID, isDevBuild, checkForNewBuild, watchBuilds } from './dev-reload.js';
 
 const api = globalThis.browser || globalThis.chrome;
 const VERSION = api.runtime.getManifest().version;
@@ -48,15 +49,8 @@ function syncScripts(settings) {
 // An unpacked (developer) install runs the rules it was built with:
 // rules OTA reads main, so a branch being tested would otherwise be
 // shadowed by main's older rules the moment it loads (2026-11-23, the
-// Reddit fix that never reached the page).
-async function isDevBuild() {
-  try {
-    const me = await api.management.getSelf();
-    return me.installType === 'development';
-  } catch (e) {
-    return false;
-  }
-}
+// Reddit fix that never reached the page). isDevBuild is always false in
+// a store build (dev-reload-store.js).
 
 async function refreshRules() {
   const st = await state();
@@ -89,23 +83,7 @@ api.runtime.onInstalled.addListener(async () => {
   refreshRules();
 });
 
-// An unpacked (developer) install reloads itself when a new build lands
-// in its folder, so testing never needs the reload button on
-// chrome://extensions. build.mjs writes build-id.txt last; Chrome serves
-// an unpacked extension's files straight from disk.
-const BUILD_ID = typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : 'dev';
-async function checkForNewBuild() {
-  if (!(await isDevBuild())) return;
-  try {
-    const r = await fetch(api.runtime.getURL('build-id.txt'), { cache: 'no-store' });
-    if (!r.ok) return;
-    const onDisk = (await r.text()).trim();
-    if (onDisk && onDisk !== BUILD_ID) api.runtime.reload();
-  } catch (e) {} // mid-build: the folder is being rewritten
-}
-function watchBuilds() {
-  isDevBuild().then((dev) => { if (dev) api.alarms.create('dev-update', { periodInMinutes: 0.5 }); });
-}
+// Developer builds reload themselves when a new build lands (dev-reload.js).
 watchBuilds();
 
 api.runtime.onStartup.addListener(async () => {

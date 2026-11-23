@@ -93,12 +93,19 @@ extension's menu.
 
 ## Publishing (not done yet)
 
+Everything for the Chrome Web Store (listing text, permission
+justifications, images, the policy check) is in
+`store/chrome-web-store/README.md`. `node build.mjs --store` makes the
+store packages: no developer self-reload, no TikTok until it has had a
+live pass, and `node store-check.mjs` fails on anything a store package
+must not carry.
+
 - Publish from a **Google account used only for Tame Scroll**, never the
   account behind Hijri First. The Chrome Web Store's repeat-abuse policy
   can suspend "related developer accounts".
 - The name and icon are our own glyph, never a platform's logo.
-- The listing declares no data collection; `web/privacy.html` needs an
-  extension section first.
+- The listing declares no data collection; `web/privacy.html` has an
+  extension section.
 
 ## Safari on TestFlight
 

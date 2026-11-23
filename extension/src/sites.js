@@ -15,7 +15,7 @@
 // script's body is ever fetched: MV3 forbids remote code, and the repo's
 // own rule is that code never travels over the air.
 
-export const SITES = [
+const ALL_SITES = [
   {
     id: 'youtube',
     label: 'YouTube',
@@ -167,6 +167,9 @@ export const SITES = [
   {
     id: 'tiktok',
     label: 'TikTok',
+    // Never checked live (TikTok is blocked in India), so store builds
+    // leave it out: a listing must not offer what nobody has seen work.
+    notInStore: true,
     root: 'tiktok.com',
     hosts: ['www.tiktok.com'],
     matches: ['https://www.tiktok.com/*'],
@@ -178,9 +181,17 @@ export const SITES = [
   },
 ];
 
+// `node build.mjs --store` defines __STORE__ true: the package sent to a
+// store serves only the sites that have had a live pass.
+const STORE = typeof __STORE__ !== 'undefined' && __STORE__ === true;
+export function sitesFor(store) {
+  return store ? ALL_SITES.filter((s) => !s.notInStore) : ALL_SITES;
+}
+export const SITES = sitesFor(STORE);
+
 /** Every page pattern the extension serves, for the manifest. */
-export function allMatches() {
-  return SITES.flatMap((s) => s.matches);
+export function allMatches(store = STORE) {
+  return sitesFor(store).flatMap((s) => s.matches);
 }
 
 /** The site a page host belongs to: the root itself or any subdomain. */

@@ -10,6 +10,7 @@ import { BUNDLED } from './bundled.js';
 import { seed } from './settings.js';
 import { wantedScripts } from './scripts.js';
 import { parseKill } from './kill.js';
+import { checkFromPopup } from './dev-reload.js';
 
 const VERSION = chrome.runtime.getManifest().version;
 let settings = null;
@@ -175,18 +176,6 @@ async function loadHiddenHere() {
   home();
 }
 
-// Opening the popup checks for a newer build at once (unpacked installs).
-async function checkBuild() {
-  try {
-    const [{ id }, onDisk] = await Promise.all([
-      chrome.runtime.sendMessage({ type: 'build-id' }),
-      fetch(chrome.runtime.getURL('build-id.txt'), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')),
-    ]);
-    const me = await chrome.management.getSelf();
-    if (me.installType === 'development' && onDisk.trim() && id && onDisk.trim() !== id) chrome.runtime.reload();
-  } catch (e) {}
-}
-
 async function main() {
   const st = await chrome.storage.local.get(['settings', 'ota']);
   otaState = st.ota && st.ota.version === VERSION ? st.ota : null;
@@ -230,9 +219,9 @@ async function main() {
   render();
   show('home');
   loadHiddenHere();
-  // After the popup has drawn: never let the update check (which wakes
+  // After the popup has drawn: never let the developer-build check (which wakes
   // the background) hold up the first paint.
-  setTimeout(checkBuild, 1200);
+  setTimeout(checkFromPopup, 1200);
 }
 
 main();
