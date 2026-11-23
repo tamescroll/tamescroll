@@ -43,8 +43,25 @@ function syncScripts(settings) {
   return syncing;
 }
 
+// An unpacked (developer) install runs the rules it was built with:
+// rules OTA reads main, so a branch being tested would otherwise be
+// shadowed by main's older rules the moment it loads (2026-11-23, the
+// Reddit fix that never reached the page).
+async function isDevBuild() {
+  try {
+    const me = await api.management.getSelf();
+    return me.installType === 'development';
+  } catch (e) {
+    return false;
+  }
+}
+
 async function refreshRules() {
   const st = await state();
+  if (await isDevBuild()) {
+    await api.storage.local.set({ ota: { version: VERSION, files: {}, checkedAt: Date.now(), outcome: 'dev build' } });
+    return;
+  }
   try {
     const files = await refresh({
       fetchText: async (url) => {
