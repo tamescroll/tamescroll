@@ -27,7 +27,10 @@ shipped 0.986 -- do not call it "unmeasured" again); NULL_MINT_NM_FLOOR
 stays 5 (6 measured +30% exposure); GENDER_IMAGE_NM_FLOOR 6 (thumbnail
 junk); grey is ON over OTA (`GENDER_GREY` 1); NULL_HOLD_PASSES ships 1
 (weak read refused once, then covered); home icon must be OUR glyph,
-never YouTube's logo.
+never YouTube's logo. **Test browsers run with BLUR ON** (his word, 2026-11-23): any
+automated browser opening a served site loads the built extension with
+every site's Blur pictures on at Strong before the first page, and every
+screenshot is taken that way.
 
 **OPEN WORK LIVES IN GITHUB ISSUES** (since 2026-10-22), not in this
 file, WORKLIST.md or docs/owner-issues.md:
