@@ -39,22 +39,6 @@
 reddit.com##shreddit-app[pagetype="popular"] shreddit-feed
 reddit.com##shreddit-app[pagetype="all"] shreddit-feed
 
-! Recommended posts mixed into a feed. Reddit tags every post with a
-! recommendation-source naming why it was picked; these values are the
-! algorithm's own picks (popular, geo, ML, "because you visited").
-! Posts from your own communities carry none of these and stay.
-! [live] signed out 2026-11-23: global_good_visits, geo_popular_hot_sort,
-! local_geo_ml_posts, user_to_post (every post on / and /?feed=home).
-! [unverified] signed in: the owner saw a "For you" style feed in Chrome.
-! test: on https://www.reddit.com/?feed=home ->
-!   document.querySelectorAll('shreddit-post[recommendation-source]') all hidden
-reddit.com##shreddit-post[recommendation-source*="good_visits"]
-reddit.com##shreddit-post[recommendation-source*="popular"]
-reddit.com##shreddit-post[recommendation-source*="geo"]
-reddit.com##shreddit-post[recommendation-source*="_ml"]
-reddit.com##shreddit-post[recommendation-source="user_to_post"]
-reddit.com##shreddit-post[recommendation-source*="recommend"]
-
 ! Trending searches shown when the search box is focused.
 ! [unverified] renders only on search focus
 ! test: focus the search box on any page ->
@@ -74,6 +58,51 @@ reddit.com##community-highlight-carousel
 ! DOM and was replaced.
 ! test: document.querySelectorAll('recent-posts').length >= 1
 reddit.com##recent-posts
+
+
+! ============================================================
+! SUGGESTED POSTS -- only what you follow stays in the home feed
+! ============================================================
+
+!surface: suggested Suggested posts
+
+! Signed in, the home feed (For You and Following tabs alike) mixes in
+! posts from communities you never joined. Reddit marks the ones you did
+! join with is-subscribed, and the home feed's reload-url names
+! home-feed (interest-home-feed?feed=for-you). Same markers the
+! clean-reddit and FrontFilter extensions key on (read 2026-11-23).
+! [live] the owner's signed-in For You feed showed r/lumo and
+! r/degoogle with Join buttons (2026-11-23, screenshot).
+! test: signed in, on https://www.reddit.com/ -> every visible
+!   shreddit-post in the feed has is-subscribed
+reddit.com##shreddit-app[user-logged-in="true"] shreddit-feed[reload-url*="home-feed"] > shreddit-post:not([is-subscribed])
+reddit.com##shreddit-app[user-logged-in="true"] shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post:not([is-subscribed]))
+reddit.com##shreddit-app[user-logged-in="true"] shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post:not([is-subscribed])) + hr
+
+! Any post Reddit itself says it recommended: recommendation-source is
+! empty on posts you asked for and names the reason on the rest
+! (user_to_post, good_visits_on_subreddit, geo_popular, ...). Scoped to
+! the home feed, where signed out every post is a recommendation.
+! [live] signed out 2026-11-23: every post on / carried one.
+reddit.com##shreddit-feed[reload-url*="home-feed"] > shreddit-post[recommendation-source]:not([recommendation-source=""])
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post[recommendation-source]:not([recommendation-source=""]))
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post[recommendation-source]:not([recommendation-source=""])) + hr
+
+! A Join button inside a post means you do not follow its community;
+! posts from joined communities never carry one. jvt.me's uBlock list
+! keys on this too (March 2026).
+! [live] signed out 2026-11-23: 28 of 28 home posts had one, at
+! article > shreddit-post > span[slot="credit-bar"] > span >
+! shreddit-join-button; 0 of 27 posts inside r/AskReddit did.
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(shreddit-join-button)
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(shreddit-join-button) + hr
+
+! "Communities you might like" blocks inside the feed, and the
+! suggested posts under an opened post.
+! [unverified] names from clean-reddit's stylesheet and an MIT uBlock list
+reddit.com##in-feed-community-recommendations
+reddit.com##in-feed-community-recommendations + hr
+reddit.com##faceplate-tracker[noun="discovery_unit"]
 
 
 ! ============================================================

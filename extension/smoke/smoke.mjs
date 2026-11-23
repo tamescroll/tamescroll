@@ -28,10 +28,11 @@ const REDDIT = `<!doctype html><html><head></head><body>
 <shreddit-app pagetype="popular"><shreddit-feed id="feed">popular</shreddit-feed></shreddit-app></body></html>`;
 
 const REDDIT_HOME = `<!doctype html><html><head></head><body>
-<shreddit-app pagetype="home"><div role="tablist">
-<button role="tab" aria-selected="true" id="fy">For You</button>
-<button role="tab" aria-selected="false" id="fo" onclick="this.setAttribute('aria-selected','true');document.getElementById('fy').setAttribute('aria-selected','false');window.__clicked=(window.__clicked||0)+1">Following</button>
-</div></shreddit-app></body></html>`;
+<shreddit-app pagetype="home" user-logged-in="true"><shreddit-feed reload-url="/svc/shreddit/feeds/interest-home-feed?feed=for-you">
+<article id="a1"><shreddit-post is-subscribed="" recommendation-source="">mine</shreddit-post></article><hr id="h1">
+<article id="a2"><shreddit-post recommendation-source="good_visits_on_subreddit">suggested</shreddit-post></article><hr id="h2">
+<shreddit-post id="p3">not joined</shreddit-post>
+</shreddit-feed></shreddit-app></body></html>`;
 
 const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'ts-ext-')), {
   headless: true,
@@ -65,7 +66,7 @@ try {
   });
   const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
   console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
-  assert.deepEqual(regs.map((r) => r.id).sort(), ['reddit-foryou', 'youtube-autoplay', 'youtube-shorts']);
+  assert.deepEqual(regs.map((r) => r.id).sort(), ['youtube-autoplay', 'youtube-shorts']);
 
   const page = await ctx.newPage();
   const display = (sel) => page.$eval(sel, (el) => getComputedStyle(el).display);
@@ -143,10 +144,13 @@ try {
   assert.equal(await rp.$eval('#feed', (el) => getComputedStyle(el).display), 'none');
   console.log('reddit: r/popular feed hidden');
   await rp.goto('https://www.reddit.com/');
-  await rp.waitForFunction(() => window.__clicked === 1 && getComputedStyle(document.getElementById('fy')).display === 'none');
-  await rp.waitForTimeout(800);
-  assert.equal(await rp.evaluate(() => window.__clicked), 1, 'Following clicked once, not in a loop');
-  console.log('reddit home: For You tab hidden, Following opened');
+  await rp.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
+  const d = (id) => rp.$eval('#' + id, (el) => getComputedStyle(el).display);
+  assert.notEqual(await d('a1'), 'none', 'a post from a joined community stays');
+  assert.equal(await d('a2'), 'none', 'a suggested post is hidden');
+  assert.equal(await d('h2'), 'none', 'and its divider');
+  assert.equal(await d('p3'), 'none', 'a post from a community not joined is hidden');
+  console.log('reddit home: only joined communities stay');
   console.log('SMOKE OK');
 } finally {
   await ctx.close();

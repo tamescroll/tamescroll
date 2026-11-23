@@ -93,7 +93,6 @@ async function bundle(outdir) {
       content: join(here, 'src/content.js'),
       popup: join(here, 'src/popup-main.js'),
       'youtube-shorts': join(here, 'src/main-shorts.js'),
-      'reddit-foryou': join(here, 'src/reddit-foryou.js'),
     },
     outdir,
     bundle: true,
