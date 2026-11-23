@@ -1,0 +1,9 @@
+/* tamescroll — Pinterest blur (opt-in). Pin and board images. Board cover
+ * and gated pin images verified live 2026-11-23, signed out. */
+[data-test-id="pin"] img,
+[data-test-id="pinWrapper"] img,
+[data-test-id="gated-pin-image"] img,
+[data-test-id="cover-image"] img,
+[data-test-id="pin"] video {
+  filter: blur(var(--ts-blur, 16px));
+}

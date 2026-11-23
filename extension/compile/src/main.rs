@@ -25,6 +25,9 @@ const HOSTS: &[&str] = &[
     "www.instagram.com",
     "www.facebook.com",
     "www.tiktok.com",
+    "www.twitch.tv",
+    "www.linkedin.com",
+    "www.pinterest.com",
 ];
 
 // Keep in step with `hosts` in extension/src/sites.js (test/engine.test.mjs checks).

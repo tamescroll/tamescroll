@@ -28,6 +28,9 @@ const FILES = [
   'tiktok.txt',
   'instagram.txt',
   'facebook.txt',
+  'twitch.txt',
+  'linkedin.txt',
+  'pinterest.txt',
   'scriptlets.txt',
   'tuning.json',
   'blur/youtube.css',
@@ -36,6 +39,9 @@ const FILES = [
   'blur/tiktok.css',
   'blur/instagram.css',
   'blur/facebook.css',
+  'blur/twitch.css',
+  'blur/linkedin.css',
+  'blur/pinterest.css',
   // The browser extension's remote off switches (extension/src/kill.js).
   // Data only; the app has no use for it and ignores the name.
   'kill.json',

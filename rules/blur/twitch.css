@@ -1,0 +1,10 @@
+/* tamescroll — Twitch blur (opt-in). Stream previews, category art, the
+ * player and the carousel; avatars stay sharp. Verified live 2026-11-23,
+ * signed out: preview-card-image-link and tw-card-image hold the
+ * thumbnails. */
+[data-a-target="preview-card-image-link"] img,
+[data-a-target="tw-card-image"] img,
+[data-a-target="front-page-carousel"] img,
+[data-a-target="video-player"] video {
+  filter: blur(var(--ts-blur, 16px));
+}

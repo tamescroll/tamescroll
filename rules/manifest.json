@@ -11,13 +11,22 @@
       "sha256": "de5e4bc2043cc8265707c5ea181a02e4c5df2151b99e0911ce0e92cb68a713fe"
     },
     "tiktok.txt": {
-      "sha256": "15484d53d0d29762afe2c409545fee535dac2574f3eaa4c6c2a9e07b3ddf7d21"
+      "sha256": "55f5d5a2d915a8556e8f3707d687dc5052cef80577cddbe0218bde3d4c4d4ed7"
     },
     "instagram.txt": {
       "sha256": "94ff1c48112c517fd071dc5e2c84ce7761d3d11d17df9c6b95d0cef92c62f096"
     },
     "facebook.txt": {
       "sha256": "67ab4e1a83c9c9742e37d4b9572f36f50732b4569d2b2cac4a44b7da6716d96f"
+    },
+    "twitch.txt": {
+      "sha256": "539a9597cf4703f4c2d30ab15b90fe9ecc134bbae41e645dedeb78d2c7f8cd13"
+    },
+    "linkedin.txt": {
+      "sha256": "8bd40b374e2f20ec04605d9e761bf7d06bbb6d51021b24f25b0e780f3e9c987e"
+    },
+    "pinterest.txt": {
+      "sha256": "542fa471ee49107efbd6b7898c418e0aefc5db0adfdb568836900e75a8b393b0"
     },
     "scriptlets.txt": {
       "sha256": "e81524a60b99aef425d9a17adac8af9e6d4a325c5787c854076e32f415be6b9e"
@@ -42,6 +51,15 @@
     },
     "blur/facebook.css": {
       "sha256": "9f133d2c237002eab50bcb7449a48ef73bdaec75ce8b12a40b5485306610ecfd"
+    },
+    "blur/twitch.css": {
+      "sha256": "d97d0fce36b1dd4c0a74b5cbff76deb8e7368952391dcdae6966b66b4fafb096"
+    },
+    "blur/linkedin.css": {
+      "sha256": "813e940901fd77a56ed4fd503be5f041c14067ad10a30c42d4747c6748e45438"
+    },
+    "blur/pinterest.css": {
+      "sha256": "bebc14a2f6ba0a368aace1ecbb05f23277d5d89caf3860f4e8d90e90dfb71d99"
     },
     "kill.json": {
       "sha256": "aabd1f0e31adbf8ff30672ccac2f6e92f31cfe15c6eb5c4bf972ad0ea3e65491"

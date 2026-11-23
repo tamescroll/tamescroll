@@ -167,14 +167,64 @@ const ALL_SITES = [
   {
     id: 'tiktok',
     label: 'TikTok',
-    // Never checked live (TikTok is blocked in India), so store builds
-    // leave it out: a listing must not offer what nobody has seen work.
-    notInStore: true,
+    // Checked live 2026-11-23 through ZV's VPN (TikTok is blocked in
+    // India), signed out: explore, Following, a profile. Opened videos
+    // were last checked in August.
     root: 'tiktok.com',
     hosts: ['www.tiktok.com'],
     matches: ['https://www.tiktok.com/*'],
     rulesFile: 'tiktok.txt',
     blurFile: 'blur/tiktok.css',
+    adsDefaultShown: false,
+    pageSurfaces: [],
+    scripts: [],
+  },
+  {
+    id: 'twitch',
+    label: 'Twitch',
+    // Checked live 2026-11-23, signed out.
+    root: 'twitch.tv',
+    hosts: ['www.twitch.tv'],
+    matches: ['https://www.twitch.tv/*'],
+    rulesFile: 'twitch.txt',
+    blurFile: 'blur/twitch.css',
+    adsDefaultShown: false,
+    pageSurfaces: [],
+    scripts: [],
+  },
+  {
+    id: 'linkedin',
+    label: 'LinkedIn',
+    // Checked live 2026-11-23, signed in (ZV's feed), read-only.
+    root: 'linkedin.com',
+    hosts: ['www.linkedin.com'],
+    matches: ['https://www.linkedin.com/*'],
+    rulesFile: 'linkedin.txt',
+    blurFile: 'blur/linkedin.css',
+    adsDefaultShown: false,
+    pageSurfaces: [
+      { id: 'suggested', label: 'Posts from people you don\'t follow', defaultShown: false },
+    ],
+    scripts: [
+      {
+        id: 'linkedin-feed',
+        file: 'linkedin-feed.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('suggested'),
+      },
+    ],
+  },
+  {
+    id: 'pinterest',
+    label: 'Pinterest',
+    // Only Explore is checked (signed out); the signed-in home feed is
+    // not, so store builds leave Pinterest out for now.
+    notInStore: true,
+    root: 'pinterest.com',
+    hosts: ['www.pinterest.com'],
+    matches: ['https://www.pinterest.com/*'],
+    rulesFile: 'pinterest.txt',
+    blurFile: 'blur/pinterest.css',
     adsDefaultShown: false,
     pageSurfaces: [],
     scripts: [],

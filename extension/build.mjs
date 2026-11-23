@@ -145,6 +145,7 @@ async function bundle(outdir, { store }) {
       'login-nags': join(here, 'src/login-nags.js'),
       'instagram-suggested': join(here, 'src/instagram-suggested.js'),
       'old-reddit': join(here, 'src/old-reddit.js'),
+      'linkedin-feed': join(here, 'src/linkedin-feed.js'),
     },
     outdir,
     define: { __BUILD_ID__: JSON.stringify(store ? 'store' : BUILD_ID), __STORE__: String(!!store) },

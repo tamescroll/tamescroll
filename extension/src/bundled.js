@@ -12,6 +12,12 @@ import xBlur from '../../rules/blur/x.css';
 import instagramBlur from '../../rules/blur/instagram.css';
 import facebookBlur from '../../rules/blur/facebook.css';
 import tiktokBlur from '../../rules/blur/tiktok.css';
+import twitchTxt from '../../rules/twitch.txt';
+import linkedinTxt from '../../rules/linkedin.txt';
+import pinterestTxt from '../../rules/pinterest.txt';
+import twitchBlur from '../../rules/blur/twitch.css';
+import linkedinBlur from '../../rules/blur/linkedin.css';
+import pinterestBlur from '../../rules/blur/pinterest.css';
 import killJson from '../../rules/kill.json';
 import engine from '../gen/engine.json';
 
@@ -28,6 +34,12 @@ export const BUNDLED = {
   'blur/instagram.css': instagramBlur,
   'blur/facebook.css': facebookBlur,
   'blur/tiktok.css': tiktokBlur,
+  'twitch.txt': twitchTxt,
+  'linkedin.txt': linkedinTxt,
+  'pinterest.txt': pinterestTxt,
+  'blur/twitch.css': twitchBlur,
+  'blur/linkedin.css': linkedinBlur,
+  'blur/pinterest.css': pinterestBlur,
   // Text, like every other entry: kill.js parses it.
   'kill.json': JSON.stringify(killJson, null, 2) + '\n',
 };

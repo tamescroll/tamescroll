@@ -56,6 +56,13 @@ const IG_HOME = `<!doctype html><html><head></head><body><main><div><div id="fee
 <article id="s3"><header><a href="/x3/">x3</a><div role="button">Follow</div></header>suggested</article>
 </div><div id="loader"><svg aria-label="Loading..."></svg></div></div></main></body></html>`;
 
+const LI_FEED = `<!doctype html><html><head></head><body><main><div data-testid="mainFeed">
+<div data-lazy-mount-id="a" id="li1"><div componentkey="expandedA">Friend<br>a post</div></div>
+<div data-lazy-mount-id="b" id="li2"><div componentkey="expandedB">Stranger <button>Follow</button></div></div>
+<div data-lazy-mount-id="c" id="li3"><div componentkey="expandedC">Promoted\nBuy this</div></div>
+<div data-lazy-mount-id="d" id="li4"><div componentkey="expandedD">Other <button>+ Follow</button></div></div>
+</div></main></body></html>`;
+
 const FB_BODIES = { '/age': FB_AGE, '/me': FB_SIGNED_IN, '/buttons': FB_BUTTONS };
 
 // The toolbar icon state for a tab, waiting up to 5s for `want`.
@@ -84,6 +91,7 @@ try {
     const u = new URL(route.request().url());
     route.fulfill({ status: 200, contentType: 'text/html', body: u.pathname === '/' ? REDDIT_HOME : REDDIT });
   });
+  await ctx.route(/^https:\/\/www\.linkedin\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: LI_FEED }));
   await ctx.route(/^https:\/\/www\.instagram\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: IG_HOME }));
   await ctx.route(/^https:\/\/www\.facebook\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: FB_BODIES[new URL(route.request().url()).pathname] || FB_PAGE }));
   await ctx.route(/^https:\/\/raw\.githubusercontent\.com\//, (route) => route.abort());
@@ -103,7 +111,7 @@ try {
   });
   const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
   console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
-  assert.deepEqual(regs.map((r) => r.id).sort(), ['facebook-login-nags', 'instagram-login-nags', 'instagram-suggested', 'reddit-discovery', 'reddit-login-nags', 'x-login-nags', 'youtube-autoplay', 'youtube-shorts']);
+  assert.deepEqual(regs.map((r) => r.id).sort(), ['facebook-login-nags', 'instagram-login-nags', 'instagram-suggested', 'linkedin-feed', 'reddit-discovery', 'reddit-login-nags', 'x-login-nags', 'youtube-autoplay', 'youtube-shorts']);
 
   const page = await ctx.newPage();
   const display = (sel) => page.$eval(sel, (el) => getComputedStyle(el).display);
@@ -243,6 +251,13 @@ try {
   for (const id of ['s1', 's2', 's3']) assert.equal(await igd(id), 'none', 'a suggested post is hidden');
   assert.equal(await igd('loader'), 'none', 'loading stops once only suggestions are left');
   console.log("instagram: suggested posts hidden, caught-up line shown");
+  const li = await ctx.newPage();
+  await li.goto('https://www.linkedin.com/feed/');
+  await li.waitForSelector('#tamescroll-li-caught-up');
+  const lid = (id) => li.$eval('#' + id, (el) => getComputedStyle(el).display);
+  assert.notEqual(await lid('li1'), 'none', 'a post from someone you follow stays');
+  for (const id of ['li2', 'li3', 'li4']) assert.equal(await lid(id), 'none', 'a post from someone you do not follow, or Promoted, is hidden');
+  console.log('linkedin: unfollowed and promoted posts hidden');
   console.log('SMOKE OK');
 } finally {
   await ctx.close();
