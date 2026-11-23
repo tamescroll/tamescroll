@@ -3,30 +3,101 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tame Scroll</title>
+<title>tamescroll</title>
 <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-<header class="top">
-  <img src="icons/icon-32.png" alt="" width="24" height="24">
-  <h1>Tame Scroll</h1>
-</header>
-<main id="sites"></main>
-<section class="card" aria-labelledby="look-title">
-  <div class="setting-row">
-    <span class="setting-label" id="look-title">Look</span>
-    <div class="toggle" id="look"></div>
+<!-- Home: the site you are on, the app's "How calm should it be?" sheet,
+     then your sites as tiles. Settings: Blur, Look, About, the app's
+     three tabs (app-polish/ideas). -->
+<div id="view-home" class="view">
+  <header class="bar">
+    <svg class="wordmark" viewBox="0 0 330 64" role="img" aria-label="tamescroll"><g transform="translate(6 6) scale(1.3)"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.6" stroke-linecap="round"/></g><text x="80" y="45" font-family="Spectral, Georgia, 'Times New Roman', serif" font-size="40" font-weight="600" letter-spacing="-0.4" fill="currentColor">tamescroll</text></svg>
+    <button class="icon-btn" id="open-settings" type="button" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2"/><circle cx="10" cy="16" r="2"/></svg>
+    </button>
+  </header>
+
+  <div id="reload-note" class="notice" hidden>
+    <span>Reload the page to finish the change.</span>
+    <button id="reload" class="btn-solid small" type="button">Reload</button>
   </div>
-  <div class="setting-row">
-    <span class="setting-label">Blur strength</span>
-    <div class="toggle" id="strength"></div>
-  </div>
-</section>
-<footer>
-  <p id="reload-note" class="caption" hidden>Shorts, ads and autoplay change when the page reloads.
-    <button id="reload" class="link">Reload this tab</button></p>
-  <p class="caption" id="rules-status"></p>
-</footer>
+
+  <section id="sheet" class="sheet"></section>
+
+  <section id="here" class="here" hidden>
+    <div class="eyebrow">Kept out of sight on this page</div>
+    <div class="list" id="here-list"></div>
+  </section>
+
+  <section class="sites">
+    <div class="tiles-head">
+      <span class="eyebrow">Your sites</span>
+      <span class="legend"><i></i>tamed</span>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+</div>
+
+<div id="view-settings" class="view" hidden>
+  <header class="bar settings-bar">
+    <button class="icon-btn" id="close-settings" type="button" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <span class="bar-title">Settings</span>
+    <span class="bar-spacer"></span>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Settings">
+    <button role="tab" type="button" data-pane="blur">Blur</button>
+    <button role="tab" type="button" data-pane="look">Look</button>
+    <button role="tab" type="button" data-pane="about">About</button>
+  </nav>
+
+  <section class="pane" id="pane-blur" role="tabpanel">
+    <h2>Blur</h2>
+    <p class="pane-sub">Blurs pictures and previews on the sites you choose. The video you open plays normally.</p>
+    <div class="eyebrow">Strength</div>
+    <div class="seg" id="strength"></div>
+    <div class="eyebrow">Blur on</div>
+    <div class="list" id="blur-sites"></div>
+  </section>
+
+  <section class="pane" id="pane-look" role="tabpanel" hidden>
+    <h2>Look</h2>
+    <p class="pane-sub">Night is easy on the eyes after dark. Paper is warm white for bright rooms.</p>
+    <div class="looks" id="looks"></div>
+    <div class="eyebrow">Text</div>
+    <div class="seg" id="text-size"></div>
+  </section>
+
+  <section class="pane" id="pane-about" role="tabpanel" hidden>
+    <div class="about-head">
+      <div class="app-mark"><svg viewBox="0 0 48 48" aria-hidden="true"><g transform="translate(5 6) scale(1.05)"><path d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></g></svg></div>
+      <div>
+        <div class="about-name">tamescroll</div>
+        <div class="about-version"><span id="version"></span> <span class="pill" id="rules-pill"></span></div>
+      </div>
+    </div>
+    <p class="pane-sub">A calmer social media: the sites you already use, without the endless feeds.</p>
+    <div class="promises">
+      <div class="promise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-3.6 4-5 7-5s5.8 1.4 7 5"/><path d="M4 4l16 16"/></svg><span>No account</span></div>
+      <div class="promise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>No tracking</span></div>
+      <div class="promise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span>In your browser</span></div>
+    </div>
+    <div class="list">
+      <button class="row-btn" type="button" id="check-rules">
+        <span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg></span>
+        <span class="grow"><span class="row-title">Check for filter updates</span><span class="row-sub" id="rules-status"></span></span>
+      </button>
+      <a class="row-btn" href="https://github.com/tamescroll/tamescroll" target="_blank" rel="noopener">
+        <span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg></span>
+        <span class="grow"><span class="row-title">Open source and credits</span><span class="row-sub">Filters from EasyList and uBlock Origin</span></span>
+        <span class="chev" aria-hidden="true">›</span>
+      </a>
+    </div>
+    <p class="footnote">Not made by or linked to any of the sites it tames.</p>
+  </section>
+</div>
 <script src="popup.js"></script>
 </body>
 </html>

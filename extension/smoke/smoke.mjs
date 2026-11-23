@@ -83,17 +83,22 @@ try {
   await page.goto('https://www.youtube.com/');
   await page.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
   const popup = await ctx.newPage();
-  await popup.goto(`chrome-extension://${extId}/popup.html`);
-  await popup.click('details summary >> nth=0');
-  const homeRow = popup.locator('.setting-row', { hasText: 'Home feed' }).first();
-  await homeRow.getByRole('button', { name: 'Shown' }).click();
-  await popup.locator('.card').first().locator('.setting-row', { hasText: 'Blur images' }).getByRole('button', { name: 'On' }).click();
+  const ytTab = await sw.evaluate(async () => (await chrome.tabs.query({ url: 'https://www.youtube.com/*' }))[0].id);
+  await popup.goto(`chrome-extension://${extId}/popup.html?tab=${ytTab}`);
+  await popup.waitForSelector('#here:not([hidden])');
+  await popup.setViewportSize({ width: 360, height: 900 });
+  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-home-night.png'), fullPage: true });
+  await popup.click('details.custom summary');
+  await popup.getByRole('switch', { name: 'Home feed' }).click();
+  await popup.click('#open-settings');
+  await popup.getByRole('switch', { name: 'Blur on YouTube' }).click();
+  await popup.click('#close-settings');
   await page.waitForFunction(() => getComputedStyle(document.getElementById('grid')).display !== 'none');
   await page.waitForFunction(() => getComputedStyle(document.getElementById('thumb')).filter.includes('blur'));
   console.log('popup: home feed brought back and blur on, applied live');
 
   // Ads hidden on YouTube registers the ad scriptlets.
-  await popup.locator('.card').first().locator('.setting-row', { hasText: /^Ads/ }).getByRole('button', { name: 'Hidden' }).click();
+  await popup.getByRole('switch', { name: 'Ads' }).click();
   await sw.evaluate(async () => {
     for (let i = 0; i < 50; i++) {
       const regs = await chrome.scripting.getRegisteredContentScripts();
@@ -117,12 +122,21 @@ try {
   assert.equal(slots.video, 'v');
   console.log('ads hidden: ad scriptlets run after reload');
 
-  await popup.click('text=Paper');
+  await popup.click('#open-settings');
+  await popup.getByRole('tab', { name: 'Look' }).click();
+  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-look-night.png'), fullPage: true });
+  await popup.click('.look-card >> text=Paper');
   assert.equal(await popup.evaluate(() => document.documentElement.dataset.look), 'paper');
-  await popup.setViewportSize({ width: 360, height: 900 });
-  await popup.screenshot({ path: join(here, 'popup-paper.png'), fullPage: true });
-  await popup.click('text=Night');
-  await popup.screenshot({ path: join(here, 'popup-night.png'), fullPage: true });
+  await popup.getByRole('tab', { name: 'Blur' }).click();
+  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-blur-paper.png'), fullPage: true });
+  await popup.getByRole('tab', { name: 'About' }).click();
+  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-about-paper.png'), fullPage: true });
+  await popup.click('#close-settings');
+  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-home-paper.png'), fullPage: true });
+  await popup.click('#open-settings');
+  await popup.getByRole('tab', { name: 'Look' }).click();
+  await popup.click('.look-card >> text=Night');
+  await popup.click('#close-settings');
 
   const rp = await ctx.newPage();
   await rp.goto('https://www.reddit.com/r/popular/');

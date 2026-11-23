@@ -39,6 +39,22 @@
 reddit.com##shreddit-app[pagetype="popular"] shreddit-feed
 reddit.com##shreddit-app[pagetype="all"] shreddit-feed
 
+! Recommended posts mixed into a feed. Reddit tags every post with a
+! recommendation-source naming why it was picked; these values are the
+! algorithm's own picks (popular, geo, ML, "because you visited").
+! Posts from your own communities carry none of these and stay.
+! [live] signed out 2026-11-23: global_good_visits, geo_popular_hot_sort,
+! local_geo_ml_posts, user_to_post (every post on / and /?feed=home).
+! [unverified] signed in: the owner saw a "For you" style feed in Chrome.
+! test: on https://www.reddit.com/?feed=home ->
+!   document.querySelectorAll('shreddit-post[recommendation-source]') all hidden
+reddit.com##shreddit-post[recommendation-source*="good_visits"]
+reddit.com##shreddit-post[recommendation-source*="popular"]
+reddit.com##shreddit-post[recommendation-source*="geo"]
+reddit.com##shreddit-post[recommendation-source*="_ml"]
+reddit.com##shreddit-post[recommendation-source="user_to_post"]
+reddit.com##shreddit-post[recommendation-source*="recommend"]
+
 ! Trending searches shown when the search box is focused.
 ! [unverified] renders only on search focus
 ! test: focus the search box on any page ->
