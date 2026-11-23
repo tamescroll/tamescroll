@@ -198,6 +198,12 @@ reddit.com##shreddit-dynamic-ad-link
 
 !surface: mobile_nags App install nags
 
+! Signed out: the "Join the most real place on the internet / Sign in
+! with Apple" banner in the left rail.
+! [live] r/AskReddit signed out 2026-11-23
+reddit.com##faceplate-tracker[noun="static_left_rail_banner"]
+
+
 ! Any intent:// link is an open-in-native-app punt. Inside our app the
 ! WebView has no handler for the scheme, so an un-hidden one navigates
 ! the single webview to a Chromium error page that replaces the whole
