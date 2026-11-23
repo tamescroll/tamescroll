@@ -94,6 +94,7 @@ async function bundle(outdir) {
       popup: join(here, 'src/popup-main.js'),
       'youtube-shorts': join(here, 'src/main-shorts.js'),
       'reddit-discovery': join(here, 'src/reddit-discovery.js'),
+      'login-nags': join(here, 'src/login-nags.js'),
     },
     outdir,
     bundle: true,

@@ -64,7 +64,9 @@ export const SITES = [
     rulesFile: 'reddit.txt',
     blurFile: 'blur/reddit.css',
     adsDefaultShown: false,
-    pageSurfaces: [],
+    pageSurfaces: [
+      { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
+    ],
     scripts: [
       {
         // r/popular, r/all, News and Explore open your home feed instead.
@@ -73,6 +75,13 @@ export const SITES = [
         file: 'reddit-discovery.js',
         world: 'ISOLATED',
         when: (shown) => !shown.includes('discovery'),
+      },
+      {
+        // Signed-out "log in to see more" pop-ups: overlay hidden, scroll back.
+        id: 'reddit-login-nags',
+        file: 'login-nags.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('login_nags'),
       },
     ],
   },
@@ -90,8 +99,18 @@ export const SITES = [
     rulesFile: 'x.txt',
     blurFile: 'blur/x.css',
     adsDefaultShown: false,
-    pageSurfaces: [],
-    scripts: [],
+    pageSurfaces: [
+      { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
+    ],
+    scripts: [
+      {
+        // Signed-out "log in to see more" pop-ups: overlay hidden, scroll back.
+        id: 'x-login-nags',
+        file: 'login-nags.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('login_nags'),
+      },
+    ],
   },
   {
     id: 'instagram',
@@ -102,8 +121,18 @@ export const SITES = [
     rulesFile: 'instagram.txt',
     blurFile: 'blur/instagram.css',
     adsDefaultShown: false,
-    pageSurfaces: [],
-    scripts: [],
+    pageSurfaces: [
+      { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
+    ],
+    scripts: [
+      {
+        // Signed-out "log in to see more" pop-ups: overlay hidden, scroll back.
+        id: 'instagram-login-nags',
+        file: 'login-nags.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('login_nags'),
+      },
+    ],
   },
   {
     id: 'facebook',
@@ -114,8 +143,18 @@ export const SITES = [
     rulesFile: 'facebook.txt',
     blurFile: 'blur/facebook.css',
     adsDefaultShown: false,
-    pageSurfaces: [],
-    scripts: [],
+    pageSurfaces: [
+      { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
+    ],
+    scripts: [
+      {
+        // Signed-out "log in to see more" pop-ups: overlay hidden, scroll back.
+        id: 'facebook-login-nags',
+        file: 'login-nags.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('login_nags'),
+      },
+    ],
   },
   {
     id: 'tiktok',

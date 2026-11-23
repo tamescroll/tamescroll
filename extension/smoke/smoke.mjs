@@ -34,6 +34,11 @@ const REDDIT_HOME = `<!doctype html><html><head></head><body>
 <shreddit-post id="p3">not joined</shreddit-post>
 </shreddit-feed></shreddit-app></body></html>`;
 
+const FB_PAGE = `<!doctype html><html><head><style>html{overflow:hidden}</style></head><body><div id="root">
+<div id="page"><div role="main">public page</div></div>
+<div id="layer"><div><div role="dialog"><h2>See more on Facebook</h2><input name="email"><input name="pass" type="password"></div></div></div>
+</div></body></html>`;
+
 const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'ts-ext-')), {
   headless: true,
   channel: 'chromium',
@@ -49,6 +54,7 @@ try {
     const u = new URL(route.request().url());
     route.fulfill({ status: 200, contentType: 'text/html', body: u.pathname === '/' ? REDDIT_HOME : REDDIT });
   });
+  await ctx.route(/^https:\/\/www\.facebook\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: FB_PAGE }));
   await ctx.route(/^https:\/\/raw\.githubusercontent\.com\//, (route) => route.abort());
 
   let [sw] = ctx.serviceWorkers();
@@ -66,7 +72,7 @@ try {
   });
   const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
   console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
-  assert.deepEqual(regs.map((r) => r.id).sort(), ['reddit-discovery', 'youtube-autoplay', 'youtube-shorts']);
+  assert.deepEqual(regs.map((r) => r.id).sort(), ['facebook-login-nags', 'instagram-login-nags', 'reddit-discovery', 'reddit-login-nags', 'x-login-nags', 'youtube-autoplay', 'youtube-shorts']);
 
   const page = await ctx.newPage();
   const display = (sel) => page.$eval(sel, (el) => getComputedStyle(el).display);
@@ -150,6 +156,15 @@ try {
   assert.equal(await d('h2'), 'none', 'and its divider');
   assert.equal(await d('p3'), 'none', 'a post from a community not joined is hidden');
   console.log('reddit home: only joined communities stay');
+  const fb = await ctx.newPage();
+  await fb.goto('https://www.facebook.com/NASA');
+  await fb.waitForFunction(() => getComputedStyle(document.getElementById('layer')).display === 'none');
+  assert.notEqual(await fb.$eval('#page', (el) => getComputedStyle(el).display), 'none', 'the public page stays');
+  assert.equal(await fb.evaluate(() => getComputedStyle(document.documentElement).overflow), 'auto', 'scroll given back');
+  await fb.goto('https://www.facebook.com/login/');
+  await fb.waitForTimeout(500);
+  assert.notEqual(await fb.$eval('#layer', (el) => getComputedStyle(el).display), 'none', 'a real login page is left alone');
+  console.log('facebook: sign-in pop-up hidden, scroll back, login page untouched');
   console.log('SMOKE OK');
 } finally {
   await ctx.close();
