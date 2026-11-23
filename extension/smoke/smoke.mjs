@@ -85,19 +85,20 @@ try {
   const popup = await ctx.newPage();
   const ytTab = await sw.evaluate(async () => (await chrome.tabs.query({ url: 'https://www.youtube.com/*' }))[0].id);
   await popup.goto(`chrome-extension://${extId}/popup.html?tab=${ytTab}`);
-  await popup.waitForSelector('#here:not([hidden])');
-  await popup.setViewportSize({ width: 360, height: 900 });
-  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-home-night.png'), fullPage: true });
-  await popup.click('details.custom summary');
+  await popup.waitForFunction(() => document.getElementById('site-status').textContent.startsWith('Hiding'));
+  await popup.setViewportSize({ width: 320, height: 300 });
+  await popup.waitForTimeout(300); await popup.screenshot({ path: join(here, 'popup-home.png'), fullPage: true });
+  await popup.click('#open-parts');
   await popup.getByRole('switch', { name: 'Home feed' }).click();
-  await popup.click('#open-settings');
-  await popup.getByRole('switch', { name: 'Blur on YouTube' }).click();
-  await popup.click('#close-settings');
+  await popup.waitForTimeout(300); await popup.screenshot({ path: join(here, 'popup-bring-back.png'), fullPage: true });
+  await popup.click('#view-parts .back');
+  await popup.getByRole('switch', { name: 'Blur pictures' }).click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('grid')).display !== 'none');
   await page.waitForFunction(() => getComputedStyle(document.getElementById('thumb')).filter.includes('blur'));
   console.log('popup: home feed brought back and blur on, applied live');
 
   // Ads hidden on YouTube registers the ad scriptlets.
+  await popup.click('#open-parts');
   await popup.getByRole('switch', { name: 'Ads' }).click();
   await sw.evaluate(async () => {
     for (let i = 0; i < 50; i++) {
@@ -107,7 +108,7 @@ try {
     }
     throw new Error('ads script never registered');
   });
-  assert.ok(await popup.isVisible('#reload-note'), 'popup says a reload is needed');
+  assert.equal(await popup.evaluate(() => document.getElementById('reload-note').hidden), false, 'popup says a reload is needed');
   await page.reload();
   assert.equal(await page.evaluate(() => window.__TS_EXT_ADS__), 1);
   // The scriptlets pin the player response: YouTube's own later
@@ -122,21 +123,10 @@ try {
   assert.equal(slots.video, 'v');
   console.log('ads hidden: ad scriptlets run after reload');
 
+  await popup.click('#view-parts .back');
+  await popup.waitForTimeout(300); await popup.screenshot({ path: join(here, 'popup-home-reload.png'), fullPage: true });
   await popup.click('#open-settings');
-  await popup.getByRole('tab', { name: 'Look' }).click();
-  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-look-night.png'), fullPage: true });
-  await popup.click('.look-card >> text=Paper');
-  assert.equal(await popup.evaluate(() => document.documentElement.dataset.look), 'paper');
-  await popup.getByRole('tab', { name: 'Blur' }).click();
-  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-blur-paper.png'), fullPage: true });
-  await popup.getByRole('tab', { name: 'About' }).click();
-  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-about-paper.png'), fullPage: true });
-  await popup.click('#close-settings');
-  await popup.waitForTimeout(350); await popup.screenshot({ path: join(here, 'popup-home-paper.png'), fullPage: true });
-  await popup.click('#open-settings');
-  await popup.getByRole('tab', { name: 'Look' }).click();
-  await popup.click('.look-card >> text=Night');
-  await popup.click('#close-settings');
+  await popup.waitForTimeout(300); await popup.screenshot({ path: join(here, 'popup-settings.png'), fullPage: true });
 
   const rp = await ctx.newPage();
   await rp.goto('https://www.reddit.com/r/popular/');

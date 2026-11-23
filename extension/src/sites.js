@@ -18,8 +18,6 @@
 export const SITES = [
   {
     id: 'youtube',
-    // Balanced: what comes back under the Balanced choice in the popup.
-    balanced: ['watch_recs', 'home_chips'],
     label: 'YouTube',
     root: 'youtube.com',
     hosts: ['www.youtube.com', 'm.youtube.com'],
@@ -59,7 +57,6 @@ export const SITES = [
   },
   {
     id: 'reddit',
-    balanced: [],
     label: 'Reddit',
     root: 'reddit.com',
     hosts: ['www.reddit.com'],
@@ -77,7 +74,6 @@ export const SITES = [
   // never breaks the page.
   {
     id: 'x',
-    balanced: ['sidebar'],
     label: 'X',
     root: 'x.com',
     hosts: ['x.com'],
@@ -90,7 +86,6 @@ export const SITES = [
   },
   {
     id: 'instagram',
-    balanced: [],
     label: 'Instagram',
     root: 'instagram.com',
     hosts: ['www.instagram.com'],
@@ -103,7 +98,6 @@ export const SITES = [
   },
   {
     id: 'facebook',
-    balanced: ['marketplace'],
     label: 'Facebook',
     root: 'facebook.com',
     hosts: ['www.facebook.com'],
@@ -116,7 +110,6 @@ export const SITES = [
   },
   {
     id: 'tiktok',
-    balanced: ['suggested'],
     label: 'TikTok',
     root: 'tiktok.com',
     hosts: ['www.tiktok.com'],
