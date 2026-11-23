@@ -1,7 +1,7 @@
 /* The popup, option A "Status card" (his pick of three, 2026-11-23):
    the app's Night colours only, one face (Inter, bundled so Windows
    shows it), crisp cards with small radii, icons on the rows. */
-@font-face { font-family: "Inter"; src: url("fonts/inter.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+@font-face { font-family: "Inter"; src: url("fonts/inter.woff2") format("woff2"); font-weight: 100 900; font-display: fallback; }
 
 :root {
   --bg: #121212; --card: #1a1a19; --chip: #262625; --hover: rgba(255, 255, 255, 0.035);

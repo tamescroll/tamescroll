@@ -188,7 +188,6 @@ async function checkBuild() {
 }
 
 async function main() {
-  checkBuild();
   const st = await chrome.storage.local.get(['settings', 'ota']);
   otaState = st.ota && st.ota.version === VERSION ? st.ota : null;
   overrides = otaState && otaState.files ? otaState.files : {};
@@ -231,6 +230,9 @@ async function main() {
   render();
   show('home');
   loadHiddenHere();
+  // After the popup has drawn: never let the update check (which wakes
+  // the background) hold up the first paint.
+  setTimeout(checkBuild, 1200);
 }
 
 main();
