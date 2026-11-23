@@ -24,7 +24,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 .bar { display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 4px; }
 .brand { display: inline-flex; align-items: center; gap: 7px; }
-.mark { width: 18px; height: 14px; color: var(--gold); }
+.mark { width: 18px; height: 14px; color: var(--ink); }
 .mark path { stroke-width: 2.4; }
 .brand-name { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
 .icon-btn {
