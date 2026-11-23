@@ -65,7 +65,16 @@ export const SITES = [
     blurFile: 'blur/reddit.css',
     adsDefaultShown: false,
     pageSurfaces: [],
-    scripts: [],
+    scripts: [
+      {
+        // r/popular, r/all, News and Explore open your home feed instead.
+        // Follows the rules file's Discovery feeds switch.
+        id: 'reddit-discovery',
+        file: 'reddit-discovery.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('discovery'),
+      },
+    ],
   },
   // Phase 2. These rules were checked on the mobile sites the app loads
   // (x.txt on desktop in August; instagram.txt partly, facebook.txt and

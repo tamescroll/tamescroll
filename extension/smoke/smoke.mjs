@@ -66,7 +66,7 @@ try {
   });
   const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
   console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
-  assert.deepEqual(regs.map((r) => r.id).sort(), ['youtube-autoplay', 'youtube-shorts']);
+  assert.deepEqual(regs.map((r) => r.id).sort(), ['reddit-discovery', 'youtube-autoplay', 'youtube-shorts']);
 
   const page = await ctx.newPage();
   const display = (sel) => page.$eval(sel, (el) => getComputedStyle(el).display);
@@ -140,9 +140,8 @@ try {
 
   const rp = await ctx.newPage();
   await rp.goto('https://www.reddit.com/r/popular/');
-  await rp.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
-  assert.equal(await rp.$eval('#feed', (el) => getComputedStyle(el).display), 'none');
-  console.log('reddit: r/popular feed hidden');
+  await rp.waitForURL('https://www.reddit.com/');
+  console.log('reddit: r/popular sent home');
   await rp.goto('https://www.reddit.com/');
   await rp.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
   const d = (id) => rp.$eval('#' + id, (el) => getComputedStyle(el).display);
