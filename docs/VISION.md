@@ -40,8 +40,10 @@ The user installs ONE thing. Nothing else. Ever.
 
 ## Corrections that are settled — do not reopen
 
-- "Desktop extension first" (original handoff §8): DEAD. Owner rejected
-  it explicitly. The app is the only product.
+- "Desktop extension first" (original handoff §8): the app stays first.
+  The owner rejected an extension in August, then asked for one on
+  2026-11-21 so Tame Scroll reaches every platform: it now exists beside
+  the app as `extension/`, built from the same rules and engine.
 - "Pair with Brave / point users at Brave": DEAD. Owner rejected it.
   Self-contained or nothing.
 - "The app cannot block ads" (said mid-session): WRONG. Tauri's inability

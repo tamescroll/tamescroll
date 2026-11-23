@@ -1,0 +1,56 @@
+Tame Scroll browser extension: third-party notices
+==================================================
+
+Tame Scroll itself is licensed under the Mozilla Public License 2.0.
+Its own filter rules (rules/*.txt in the source repository) are
+dedicated to the public domain under CC0 1.0.
+
+Parts of this extension are built from other people's work. Their
+licences apply to those parts, and we thank them.
+
+Filter lists (filter data, compiled at build time into gen/engine.json
+and from there into content.js and youtube-ads.js)
+----------------------------------------------------------------------
+
+EasyList
+  https://easylist.to/easylist/easylist.txt
+  Copyright The EasyList authors. Dual licensed under the GNU General
+  Public License v3 and Creative Commons Attribution-ShareAlike 3.0
+  Unported (CC BY-SA 3.0), at the user's choice.
+  https://easylist.to/pages/licence.html
+
+EasyPrivacy
+  https://easylist.to/easylist/easyprivacy.txt
+  Copyright The EasyList authors. Dual licensed GPLv3 / CC BY-SA 3.0,
+  as above.
+
+uBlock Origin filter lists (uAssets: filters.txt, quick-fixes.txt,
+unbreak.txt)
+  https://github.com/uBlockOrigin/uAssets
+  Copyright Raymond Hill and the uAssets contributors. GNU General
+  Public License v3. https://www.gnu.org/licenses/gpl-3.0.html
+  Only the list DATA is used. No uBlock Origin code is included: the
+  scriptlets these lists name are Tame Scroll's own clean-room MPL-2.0
+  implementations.
+
+Brave adblock resources (resources.json)
+  https://github.com/brave/adblock-resources
+  Mozilla Public License 2.0. https://mozilla.org/MPL/2.0/
+
+The unmodified upstream snapshots, with their sources, live in
+rules/vendor/ of the source repository:
+  https://github.com/tamescroll/tamescroll/tree/main/rules/vendor
+
+Code
+----
+
+adblock-rust (used at build time to compile the lists above)
+  https://github.com/brave/adblock-rust
+  Mozilla Public License 2.0.
+
+Font
+----
+
+Inter, by Rasmus Andersson
+  https://rsms.me/inter/
+  SIL Open Font License 1.1. Full text: fonts/LICENSE-inter.txt

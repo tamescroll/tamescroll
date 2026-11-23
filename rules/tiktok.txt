@@ -63,6 +63,9 @@ tiktok.com##[data-e2e="nav-foryou"]
 tiktok.com##[data-e2e="explore-item-list"]
 tiktok.com##[data-e2e="explore-category-chip"]
 tiktok.com##[data-e2e="nav-explore"]
+! Signed out, "/" now opens /explore with a hero row of auto-playing
+! videos above the grid (seen live 2026-11-23, via ZV's VPN).
+tiktok.com##[data-e2e="explore-hero-section"]
 
 
 ! ============================================================
@@ -105,11 +108,17 @@ tiktok.com##[data-e2e="feed-navigation-prev"]
 
 !surface: suggested Suggested accounts
 
-! [live] "Suggested accounts" expander on profile pages. The
-! /following logged-out recommend-card grid is NOT hidden — logged out,
-! those cards are that page's only content.
+! [live] "Suggested accounts" expander on profile pages.
+! The signed-out /following recommend-card grid WAS left visible in
+! August as that page's only content. Reversed 2026-11-23: each card
+! now plays a stranger's video behind it, which is discovery, not your
+! Following (ZV: "avoid all the filth"). The page is an empty room
+! signed out, like "/".
 ! test: on a profile page -> no suggested-accounts section
 tiktok.com##[data-e2e="show-suggested-accounts"]
+! Signed out, Following is a wall of creator cards, each playing a video
+! behind it (live 2026-11-23).
+tiktok.com##[data-e2e="recommend-card"]
 
 
 ! ============================================================
@@ -124,3 +133,5 @@ tiktok.com##[data-e2e="show-suggested-accounts"]
 ! test: no CapCut pill under descriptions, no coin button top-right
 tiktok.com##[data-e2e="capcut-tag"]
 tiktok.com##[data-e2e="top-right-action-bar-get-coin"]
+tiktok.com##[data-e2e="side-nav-utilities-get-coin"]
+tiktok.com##[data-e2e="side-nav-utilities-get-app"]

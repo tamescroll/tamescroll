@@ -106,6 +106,13 @@ x.com##[data-testid="primaryColumn"] [data-testid="trend"]
 
 !surface: mobile_nags App install nags
 
+
+! Signed out: the fixed "See <name>'s full profile / Continue to X" wall
+! at the bottom and the sticky "Log in or sign up for X" box in the right
+! column. Both are asides whose links go to /i/jf/onboarding/web.
+! [live] x.com/NASA signed out 2026-11-23
+x.com##aside:has(a[href*="/i/jf/onboarding/web"])
+
 ! Same rationale as reddit.txt/youtube.txt: intent:// links punt to the
 ! native app; un-hidden ones would land the single Android webview on a
 ! Chromium error page (no scheme handler). Scheme-based, drift-proof.

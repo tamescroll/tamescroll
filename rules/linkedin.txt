@@ -1,0 +1,20 @@
+! Title: tamescroll — LinkedIn
+! Description: Removes LinkedIn's discovery surfaces — LinkedIn News and
+!              Premium upsells here; posts from people you don't follow
+!              and Promoted posts are hidden by the extension's
+!              linkedin-feed script (LinkedIn's markup has no stable
+!              hook for them).
+! Version: 1
+! Expires: 1 day
+! License: CC0-1.0 (see rules/LICENSE)
+!
+! VERIFIED LIVE 2026-11-23, www.linkedin.com/feed signed in, images
+! blurred, read-only.
+
+!surface: news LinkedIn News
+linkedin.com##aside:has(a[href*="/news/story/"])
+linkedin.com##aside:has(a[href*="/news/"])
+
+!surface: promoted Promoted and upsells
+linkedin.com##a[href^="https://www.linkedin.com/premium/"]
+linkedin.com##a[href^="/premium/"]

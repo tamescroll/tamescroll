@@ -39,6 +39,40 @@
 reddit.com##shreddit-app[pagetype="popular"] shreddit-feed
 reddit.com##shreddit-app[pagetype="all"] shreddit-feed
 
+! The doors to the discovery feeds in the left sidebar: Popular, News,
+! Explore and All. Both Reddit's own tracker names (home_menu and
+! popular_menu observed live 2026-11-23) and the links themselves, so a
+! renamed tracker still loses its link. The pages behind them are also
+! sent home by page code (reddit-discovery.js).
+! [live] the owner's sidebar showed Popular, News, Explore (2026-11-23)
+reddit.com##faceplate-tracker[noun="popular_menu"]
+reddit.com##faceplate-tracker[noun="news_menu"]
+reddit.com##faceplate-tracker[noun="explore_menu"]
+reddit.com##faceplate-tracker[noun="all_menu"]
+reddit.com##faceplate-tracker:has(> a[href="/r/popular/"])
+reddit.com##faceplate-tracker:has(> a[href="/news/"])
+reddit.com##faceplate-tracker:has(> a[href="/explore/"])
+reddit.com##faceplate-tracker:has(> a[href="/r/all/"])
+reddit.com##li:has(> faceplate-tracker > a[href="/r/popular/"])
+reddit.com##li:has(> faceplate-tracker > a[href="/news/"])
+reddit.com##li:has(> faceplate-tracker > a[href="/explore/"])
+reddit.com##li:has(> faceplate-tracker > a[href="/r/all/"])
+
+! The News and Explore pages themselves, while the page code sends
+! them home (the MIT uBlock list's pagetype values).
+reddit.com##shreddit-app[pagetype="news"] #main-content
+reddit.com##shreddit-app[pagetype="explore"] #main-content
+
+! The right rail's Popular Communities box on the home feed, and the
+! "Best of Reddit" (rereddit) links in the left nav and footer.
+! [live] signed out 2026-11-23: aside[aria-label="Popular Communities"],
+! tracker nouns rereddit_menu, rereddit_translated_*_menu, links to
+! /posts/2026/...
+reddit.com##aside[aria-label="Popular Communities"]
+reddit.com##faceplate-tracker[noun^="rereddit"]
+reddit.com##faceplate-tracker:has(> a[href^="/posts/20"])
+reddit.com##li:has(> faceplate-tracker > a[href^="/posts/20"])
+
 ! Trending searches shown when the search box is focused.
 ! [unverified] renders only on search focus
 ! test: focus the search box on any page ->
@@ -58,6 +92,75 @@ reddit.com##community-highlight-carousel
 ! DOM and was replaced.
 ! test: document.querySelectorAll('recent-posts').length >= 1
 reddit.com##recent-posts
+
+
+! ============================================================
+! SUGGESTED POSTS -- only what you follow stays in the home feed
+! ============================================================
+
+!surface: suggested Suggested posts
+
+! Signed in, the home feed (For You and Following tabs alike) mixes in
+! posts from communities you never joined. Reddit marks the ones you did
+! join with is-subscribed, and the home feed's reload-url names
+! home-feed (interest-home-feed?feed=for-you). Same markers the
+! clean-reddit and FrontFilter extensions key on (read 2026-11-23).
+! [live] the owner's signed-in For You feed showed r/lumo and
+! r/degoogle with Join buttons (2026-11-23, screenshot).
+! test: signed in, on https://www.reddit.com/ -> every visible
+!   shreddit-post in the feed has is-subscribed
+reddit.com##shreddit-app[user-logged-in="true"] shreddit-feed[reload-url*="home-feed"] > shreddit-post:not([is-subscribed])
+reddit.com##shreddit-app[user-logged-in="true"] shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post:not([is-subscribed]))
+reddit.com##shreddit-app[user-logged-in="true"] shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post:not([is-subscribed])) + hr
+
+! Any post Reddit itself says it recommended: recommendation-source is
+! empty on posts you asked for and names the reason on the rest
+! (user_to_post, good_visits_on_subreddit, geo_popular, ...). Scoped to
+! the home feed, where signed out every post is a recommendation.
+! [live] signed out 2026-11-23: every post on / carried one.
+reddit.com##shreddit-feed[reload-url*="home-feed"] > shreddit-post[recommendation-source]:not([recommendation-source=""])
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post[recommendation-source]:not([recommendation-source=""]))
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(> shreddit-post[recommendation-source]:not([recommendation-source=""])) + hr
+
+! A Join button inside a post means you do not follow its community;
+! posts from joined communities never carry one. jvt.me's uBlock list
+! keys on this too (March 2026).
+! [live] signed out 2026-11-23: 28 of 28 home posts had one, at
+! article > shreddit-post > span[slot="credit-bar"] > span >
+! shreddit-join-button; 0 of 27 posts inside r/AskReddit did.
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(shreddit-join-button)
+reddit.com##shreddit-feed[reload-url*="home-feed"] > article:has(shreddit-join-button) + hr
+
+! Signed out, every home-feed post is a recommendation, so the posts
+! above hide all of it -- and Reddit's loader then fetches page after
+! page into an empty column (178 posts in 12 s, 2026-11-23). Hiding the
+! whole feed stops that: its load-more marker is never on screen.
+! [live] signed out 2026-11-23: 178 loaded, 0 visible, still loading
+reddit.com##shreddit-app[pagetype="home"]:not([user-logged-in="true"]) shreddit-feed
+
+! "Communities you might like" blocks inside the feed, and the
+! suggested posts under an opened post.
+! [unverified] names from clean-reddit's stylesheet and an MIT uBlock list
+reddit.com##in-feed-community-recommendations
+reddit.com##in-feed-community-recommendations + hr
+reddit.com##faceplate-tracker[noun="discovery_unit"]
+
+
+! ============================================================
+! NSFW -- never shown, anywhere on the site
+! ============================================================
+
+!surface: nsfw NSFW posts
+
+! Posts marked 18+ carry an nsfw attribute on shreddit-post, in any feed,
+! search or community page. Hidden with their wrapper and divider, and
+! the NSFW community rows search shows.
+! [unverified] attribute name from shreddit's post element (2026)
+reddit.com##shreddit-post[nsfw]
+reddit.com##article:has(> shreddit-post[nsfw])
+reddit.com##article:has(> shreddit-post[nsfw]) + hr
+reddit.com##search-telemetry-tracker:has(shreddit-post[nsfw])
+reddit.com##faceplate-tracker:has([nsfw])
 
 
 ! ============================================================
@@ -94,6 +197,12 @@ reddit.com##shreddit-dynamic-ad-link
 ! ============================================================
 
 !surface: mobile_nags App install nags
+
+! Signed out: the "Join the most real place on the internet / Sign in
+! with Apple" banner in the left rail.
+! [live] r/AskReddit signed out 2026-11-23
+reddit.com##faceplate-tracker[noun="static_left_rail_banner"]
+
 
 ! Any intent:// link is an open-in-native-app punt. Inside our app the
 ! WebView has no handler for the scheme, so an un-hidden one navigates

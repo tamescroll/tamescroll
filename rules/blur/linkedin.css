@@ -1,0 +1,6 @@
+/* tamescroll — LinkedIn blur (opt-in). Images and videos inside feed
+ * posts; profile photos in the nav stay sharp. */
+[data-testid="mainFeed"] img,
+[data-testid="mainFeed"] video {
+  filter: blur(var(--ts-blur, 16px));
+}
