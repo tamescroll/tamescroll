@@ -111,6 +111,12 @@ m.youtube.com##ytm-browse ytm-section-list-renderer
 
 !surface: home_shelves Feed shelves
 
+! Subscriptions with no subscriptions (or few): YouTube fills the page
+! with shelves of channels to subscribe to, by topic ("Beauty &
+! Fashion", seen signed in 2026-11-23). Discovery, not your feed.
+youtube.com##ytd-browse[page-subtype="subscriptions"] ytd-item-section-renderer:has(ytd-grid-channel-renderer)
+youtube.com##ytd-browse[page-subtype="subscriptions"] ytd-shelf-renderer:has(ytd-grid-channel-renderer)
+
 ! THE SHELVES NEEDED A SURFACE OF THEIR OWN, AND THIS IS WHY.
 !
 ! Owner 2026-08-30: "breaking news still shows on the homepage", then
