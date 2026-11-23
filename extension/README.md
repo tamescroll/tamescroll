@@ -96,7 +96,7 @@ extension's menu.
 Everything for the Chrome Web Store (listing text, permission
 justifications, images, the policy check) is in
 `store/chrome-web-store/README.md`. `node build.mjs --store` makes the
-store packages: no developer self-reload, no TikTok until it has had a
+store packages: no developer self-reload, no site without a
 live pass, and `node store-check.mjs` fails on anything a store package
 must not carry.
 

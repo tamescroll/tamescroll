@@ -157,8 +157,8 @@ const FRAMES = [
     popup: shots.showing, page: WATCH_PAGE,
   })],
   ['screenshot-4', frame({
-    title: 'Five sites, one switch each.',
-    body: 'YouTube, Reddit, X, Instagram and Facebook. Optional picture blur in three strengths. No account, and nothing about you leaves your browser.',
+    title: 'Eight sites, one switch each.',
+    body: 'YouTube, Reddit, X, Instagram, TikTok, Twitch, LinkedIn and Facebook. Optional picture blur in three strengths. No account, and nothing about you leaves your browser.',
     popup: shots.settings, popupWidth: 390, page: CALM_PAGE,
   })],
 ];

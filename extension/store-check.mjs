@@ -13,6 +13,14 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ALLOWED_PERMISSIONS = ['alarms', 'scripting', 'storage'];
+// The sites the listing and its host-permission justification name
+// (store/chrome-web-store/README.md). A new one fails here until the
+// listing, the justification and web/privacy.html name it too.
+const LISTED_HOSTS = [
+  'https://www.youtube.com/*', 'https://m.youtube.com/*', 'https://www.reddit.com/*', 'https://x.com/*',
+  'https://www.instagram.com/*', 'https://www.facebook.com/*', 'https://www.tiktok.com/*',
+  'https://www.twitch.tv/*', 'https://www.linkedin.com/*',
+];
 const fails = [];
 
 function files(dir) {
@@ -27,7 +35,8 @@ export function checkPackage(dir) {
   const extra = (m.permissions || []).filter((p) => !ALLOWED_PERMISSIONS.includes(p));
   if (extra.length) out.push(`unjustified permissions: ${extra.join(', ')}`);
   if ((m.optional_permissions || []).length) out.push('optional_permissions are not in the listing');
-  if ((m.host_permissions || []).some((h) => /tiktok|<all_urls>|\*:\/\/\*\//.test(h))) out.push('host_permissions reach past the listed sites');
+  const unlisted = (m.host_permissions || []).filter((h) => !LISTED_HOSTS.includes(h));
+  if (unlisted.length) out.push(`host_permissions not in the listing: ${unlisted.join(', ')}`);
   for (const f of files(dir).filter((p) => p.endsWith('.js'))) {
     // Line comments out: the scriptlets' own comments mention fetch().
     const js = readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
