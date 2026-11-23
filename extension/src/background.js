@@ -127,8 +127,8 @@ api.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-// The toolbar badge, per tab, from what the page reports: a green count
-// of what is hidden here; gold when something you brought back is on the
+// The toolbar badge, per tab, from what the page reports: blank when all
+// is tamed; a gold dot when something you brought back is on the
 // page; red "!" when something set to hide is still visible; grey "off"
 // when the site is paused.
 const BADGE = { green: '#86a893', gold: '#c9a45e', red: '#c96a5e', grey: '#6f6b65' };
@@ -136,7 +136,10 @@ function setBadge(tabId, s) {
   let text, color;
   if (s.off) { text = 'off'; color = BADGE.grey; }
   else if (s.slipped) { text = '!'; color = BADGE.red; }
-  else { text = s.hidden ? String(s.hidden) : ''; color = s.showing ? BADGE.gold : BADGE.green; if (!text && s.showing) text = '•'; }
+  // All tamed: blank. A count on the icon reads like a notification,
+  // the very pull this extension removes (ZV, 2026-11-23).
+  else if (s.showing) { text = '•'; color = BADGE.gold; }
+  else { text = ''; color = BADGE.green; }
   api.action.setBadgeText({ tabId, text }).catch(() => {});
   api.action.setBadgeBackgroundColor({ tabId, color }).catch(() => {});
   if (api.action.setBadgeTextColor) api.action.setBadgeTextColor({ tabId, color: '#121212' }).catch(() => {});
