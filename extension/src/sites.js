@@ -123,8 +123,16 @@ export const SITES = [
     adsDefaultShown: false,
     pageSurfaces: [
       { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
+      { id: 'suggested', label: 'Suggested posts', defaultShown: false },
     ],
     scripts: [
+      {
+        // Home feed posts from accounts you don't follow.
+        id: 'instagram-suggested',
+        file: 'instagram-suggested.js',
+        world: 'ISOLATED',
+        when: (shown) => !shown.includes('suggested'),
+      },
       {
         // Signed-out "log in to see more" pop-ups: overlay hidden, scroll back.
         id: 'instagram-login-nags',

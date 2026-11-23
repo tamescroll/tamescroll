@@ -46,6 +46,13 @@ const FB_SIGNED_IN = FB_PAGE.replace('<div role="main">', '<a aria-label="Your p
 const FB_BUTTONS = FB_PAGE.replace('<div role="main">public page</div>', `<div role="main">public page
 <button id="open-box" onclick="const d=document.createElement('div');d.id='mine';d.setAttribute('role','dialog');d.innerHTML='<input type=password>';document.body.append(d)">Comment</button>
 <button id="log-in">Log in</button></div>`);
+const IG_HOME = `<!doctype html><html><head></head><body><main><div><div id="feed">
+<article id="mine"><header><a href="/friend/">friend</a></header>followed</article>
+<article id="s1"><header><a href="/x1/">x1</a><div role="button">Follow</div></header>suggested</article>
+<article id="s2"><header><a href="/x2/">x2</a><div role="button">Follow</div></header>suggested</article>
+<article id="s3"><header><a href="/x3/">x3</a><div role="button">Follow</div></header>suggested</article>
+</div><div id="loader"><svg aria-label="Loading..."></svg></div></div></main></body></html>`;
+
 const FB_BODIES = { '/age': FB_AGE, '/me': FB_SIGNED_IN, '/buttons': FB_BUTTONS };
 
 const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'ts-ext-')), {
@@ -63,6 +70,7 @@ try {
     const u = new URL(route.request().url());
     route.fulfill({ status: 200, contentType: 'text/html', body: u.pathname === '/' ? REDDIT_HOME : REDDIT });
   });
+  await ctx.route(/^https:\/\/www\.instagram\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: IG_HOME }));
   await ctx.route(/^https:\/\/www\.facebook\.com\//, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: FB_BODIES[new URL(route.request().url()).pathname] || FB_PAGE }));
   await ctx.route(/^https:\/\/raw\.githubusercontent\.com\//, (route) => route.abort());
 
@@ -81,7 +89,7 @@ try {
   });
   const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
   console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
-  assert.deepEqual(regs.map((r) => r.id).sort(), ['facebook-login-nags', 'instagram-login-nags', 'reddit-discovery', 'reddit-login-nags', 'x-login-nags', 'youtube-autoplay', 'youtube-shorts']);
+  assert.deepEqual(regs.map((r) => r.id).sort(), ['facebook-login-nags', 'instagram-login-nags', 'instagram-suggested', 'reddit-discovery', 'reddit-login-nags', 'x-login-nags', 'youtube-autoplay', 'youtube-shorts']);
 
   const page = await ctx.newPage();
   const display = (sel) => page.$eval(sel, (el) => getComputedStyle(el).display);
@@ -190,6 +198,14 @@ try {
   await fb.waitForTimeout(300);
   assert.notEqual(await layer(), 'none', 'using Log in brings back what was hidden');
   console.log('facebook: age gate, signed in, and boxes you open are all left alone');
+  const ig = await ctx.newPage();
+  await ig.goto('https://www.instagram.com/');
+  await ig.waitForSelector('#tamescroll-ig-caught-up');
+  const igd = (id) => ig.$eval('#' + id, (el) => getComputedStyle(el).display);
+  assert.notEqual(await igd('mine'), 'none', 'a post from someone you follow stays');
+  for (const id of ['s1', 's2', 's3']) assert.equal(await igd(id), 'none', 'a suggested post is hidden');
+  assert.equal(await igd('loader'), 'none', 'loading stops once only suggestions are left');
+  console.log("instagram: suggested posts hidden, caught-up line shown");
   console.log('SMOKE OK');
 } finally {
   await ctx.close();
