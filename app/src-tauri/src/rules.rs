@@ -130,6 +130,23 @@ pub fn build_engine() -> Engine {
     load_or_build_engine(crate::ota::cache_dir().as_deref())
 }
 
+/// The tracker lists: what stays blocked on a page whose ads the user
+/// let through. EasyPrivacy names trackers rather than ads, and the
+/// unbreak list keeps its exceptions so a tracker rule never breaks a page
+/// the full engine would have left working.
+const TRACKER_LISTS: [&str; 2] = ["vendor/easyprivacy.txt", "vendor/ubo-unbreak.txt"];
+
+/// Builds the tracker-only engine (TRACKER_LISTS), through the OTA layer
+/// like the full one. Network rules only, so no scriptlet resources and
+/// no serialised cache: it is a fifth of the full set (about 0.2s on a
+/// desktop) and is warmed off the critical path.
+pub fn build_tracker_engine() -> Engine {
+    let mut set = adblock::lists::FilterSet::new(false);
+    for list in TRACKER_LISTS {
+        set.add_filter_list(crate::ota::rules_text(list), adblock::lists::ParseOptions::default());
+    }
+    Engine::new_with_filter_set(set)
+}
 
 /// THE COLD START PAID 3-25 SECONDS FOR THIS ON HIS PHONE (queue item h),
 /// and paid it TWICE: the warm-up thread in `run()` and the rebuild after

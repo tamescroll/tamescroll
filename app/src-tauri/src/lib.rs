@@ -791,6 +791,20 @@ fn page_css(url: &str, platform_id: &str, blur: bool, shown: &[String]) -> Strin
 /// that cost on the first tile click.
 static ENGINE: RwLock<Option<Arc<Engine>>> = RwLock::new(None);
 
+/// Trackers only (rules::build_tracker_engine). Asked instead of the full
+/// engine when the user let a site's ads through, so allowing ads never
+/// turns tracker blocking off with them.
+static TRACKER_ENGINE: RwLock<Option<Arc<Engine>>> = RwLock::new(None);
+
+fn tracker_engine() -> Arc<Engine> {
+    if let Some(e) = TRACKER_ENGINE.read().unwrap().as_ref() {
+        return e.clone();
+    }
+    let built = Arc::new(rules::build_tracker_engine());
+    let mut w = TRACKER_ENGINE.write().unwrap();
+    w.get_or_insert(built).clone()
+}
+
 fn engine() -> Arc<Engine> {
     if let Some(e) = ENGINE.read().unwrap().as_ref() {
         return e.clone();
@@ -923,23 +937,44 @@ pub(crate) fn blocks_request(url: &str, source_url: &str, resource_type: &str) -
     // a platform whose ads the user turned back on. A top-level load has
     // no source yet, so the request's own host stands in for it.
     let page = if source_url.is_empty() { url } else { source_url };
-    if ads_let_through(page, *SHOWN_PLATFORM.lock().unwrap(), &SHOWN_STATE.lock().unwrap()) {
-        return false;
-    }
+    let ads_allowed =
+        ads_let_through(page, *SHOWN_PLATFORM.lock().unwrap(), &SHOWN_STATE.lock().unwrap());
     // An unparseable URL is not something we can reason about, and this
     // runs inside every page load: degrade to "allow" rather than panic.
     let Ok(req) = adblock::request::Request::new(url, source_url, resource_type, "GET") else {
         return false;
     };
-    // should_block() rather than `filter.is_some()`: a blocking rule can
-    // be cancelled by an exception rule, and the unbreak lists exist
-    // precisely to cancel over-broad blocks. Reading the raw match would
-    // ignore every one of them and break the sites we are cleaning.
-    let blocked = engine().check_network_request(&req).should_block();
+    let blocked = if ads_allowed {
+        blocks_with_ads_allowed(&tracker_engine(), &req)
+    } else {
+        // should_block() rather than `filter.is_some()`: a blocking rule
+        // can be cancelled by an exception rule, and the unbreak lists
+        // exist precisely to cancel over-broad blocks. Reading the raw
+        // match would ignore every one of them and break the sites we
+        // are cleaning.
+        engine().check_network_request(&req).should_block()
+    };
     if blocked {
         REQ_BLOCKED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
     blocked
+}
+
+/// The decision on a page whose ads the user let through (ADS_SURFACE).
+///
+/// TRACKERS STAY BLOCKED. Until 2026-11-23 the ads switch returned early
+/// and let EVERY request through, trackers included -- and YouTube starts
+/// with ads shown, so YouTube got no tracker blocking at all. Now only the
+/// ad lists step aside: third-party trackers (analytics, social pixels,
+/// tag managers) are still checked against the tracker engine.
+///
+/// The site's OWN requests pass. Allowing ads means the site's ads work as
+/// the site built them, and its ads report their own impressions to its own
+/// host (youtube.com/api/stats/ads is an EasyPrivacy rule). Blocking that
+/// would be ad blocking by another name on the platform where blocking is
+/// the user's act (ADS_SURFACE). Pure, so it can be tested.
+fn blocks_with_ads_allowed(trackers: &Engine, req: &adblock::request::Request) -> bool {
+    req.is_third_party && trackers.check_network_request(req).should_block()
 }
 
 /// Bridge for the Android WebViewClient (`shouldInterceptRequest`) and
@@ -1148,6 +1183,7 @@ pub extern "system" fn Java_app_tamescroll_client_MainActivity_nativeSyntheticRe
 pub(crate) fn rebuild_rules() {
     let built = Arc::new(rules::build_engine());
     *ENGINE.write().unwrap() = Some(built);
+    *TRACKER_ENGINE.write().unwrap() = Some(Arc::new(rules::build_tracker_engine()));
     rules::rebuild_surfaces();
 }
 
@@ -2322,8 +2358,9 @@ pub fn run() {
         #[cfg(debug_assertions)]
         let started = std::time::Instant::now();
         engine();
+        tracker_engine();
         #[cfg(debug_assertions)]
-        eprintln!("adblock engine warmed in {:?}", started.elapsed());
+        eprintln!("adblock engines warmed in {:?}", started.elapsed());
     });
 
     let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
@@ -2674,6 +2711,35 @@ mod tests {
         assert!(!ads_let_through(watch, "reddit", &ads), "another platform's switch");
         assert!(!ads_let_through("https://www.reddit.com/", "youtube", &ads));
         assert!(!ads_let_through("https://example.com/", "youtube", &ads));
+    }
+
+    /// Allowing a site's ads keeps third-party trackers blocked and lets
+    /// the site's own ad requests through (blocks_with_ads_allowed).
+    #[test]
+    fn trackers_stay_blocked_when_ads_are_allowed() {
+        let trackers = rules::build_tracker_engine();
+        let page = "https://m.youtube.com/watch?v=E4lnTIJaz-g";
+        let req = |url: &str, ty: &str| adblock::request::Request::new(url, page, ty, "GET").unwrap();
+        for (url, ty) in [
+            ("https://www.google-analytics.com/analytics.js", "script"),
+            ("https://www.googletagmanager.com/gtag/js?id=G-1", "script"),
+            ("https://connect.facebook.net/en_US/fbevents.js", "script"),
+        ] {
+            assert!(blocks_with_ads_allowed(&trackers, &req(url, ty)), "{url} is a tracker");
+        }
+        for (url, ty) in [
+            // The site's own ad reporting: an EasyPrivacy rule, first-party.
+            ("https://m.youtube.com/api/stats/ads?ver=2", "xhr"),
+            // Ads themselves: EasyList, not the tracker lists.
+            ("https://googleads.g.doubleclick.net/pagead/id", "xhr"),
+            ("https://static.doubleclick.net/instream/ad_status.js", "script"),
+            ("https://rr3---sn-x.googlevideo.com/videoplayback?id=1", "media"),
+        ] {
+            assert!(!blocks_with_ads_allowed(&trackers, &req(url, ty)), "{url} must pass with ads allowed");
+        }
+        // With ads hidden the full engine still blocks the ad requests.
+        let ad = req("https://googleads.g.doubleclick.net/pagead/id", "xhr");
+        assert!(engine().check_network_request(&ad).should_block());
     }
 
     /// Shown drops the vendor cosmetics and our own ad and promo
