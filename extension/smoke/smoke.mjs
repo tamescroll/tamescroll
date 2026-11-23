@@ -28,6 +28,8 @@ const REDDIT = `<!doctype html><html><head></head><body>
 <shreddit-app pagetype="popular"><shreddit-feed id="feed">popular</shreddit-feed></shreddit-app></body></html>`;
 
 const REDDIT_HOME = `<!doctype html><html><head></head><body>
+<left-nav-top-section id="nav"></left-nav-top-section><nav><div id="games"><faceplate-tracker noun="games_drawer">Games on Reddit</faceplate-tracker></div><div><faceplate-tracker noun="communities_menu">Communities</faceplate-tracker></div></nav>
+<script>document.getElementById("nav").attachShadow({mode:"open"}).innerHTML='<ul><li id="h"><a href="/">Home</a></li><li id="pop"><a href="/r/popular/">Popular</a></li><li id="news"><a href="/news/">News</a></li></ul>';</script>
 <shreddit-app pagetype="home" user-logged-in="true"><shreddit-feed reload-url="/svc/shreddit/feeds/interest-home-feed?feed=for-you">
 <article id="a1"><shreddit-post is-subscribed="" recommendation-source="">mine</shreddit-post></article><hr id="h1">
 <article id="a2"><shreddit-post recommendation-source="good_visits_on_subreddit">suggested</shreddit-post></article><hr id="h2">
@@ -172,7 +174,12 @@ try {
   assert.equal(await d('a2'), 'none', 'a suggested post is hidden');
   assert.equal(await d('h2'), 'none', 'and its divider');
   assert.equal(await d('p3'), 'none', 'a post from a community not joined is hidden');
-  console.log('reddit home: only joined communities stay');
+  await rp.waitForFunction(() => getComputedStyle(document.getElementById('games')).display === 'none');
+  const inNav = (id) => rp.evaluate((i) => getComputedStyle(document.getElementById('nav').shadowRoot.getElementById(i)).display, id);
+  assert.equal(await inNav('pop'), 'none', 'Popular in the signed-in nav is hidden');
+  assert.equal(await inNav('news'), 'none', 'News in the signed-in nav is hidden');
+  assert.notEqual(await inNav('h'), 'none', 'Home stays');
+  console.log('reddit home: only joined communities stay; Popular, News and Games gone from the menu');
   const fb = await ctx.newPage();
   await fb.goto('https://www.facebook.com/NASA');
   await fb.waitForFunction(() => getComputedStyle(document.getElementById('layer')).display === 'none');
