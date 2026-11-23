@@ -17,6 +17,11 @@
 twitch.tv##[data-a-target="front-page-carousel"]
 twitch.tv##[data-a-target="root-scroller"]:has([data-a-target="front-page-carousel"])
 twitch.tv##[data-a-target="root-scroller"]:has([aria-label="Live Channels"])
+! m.twitch.tv (the app's phone pages), checked 2026-11-24 signed out: the
+! home page's "Live on Twitch" and "Categories we think you'll like"
+! shelves are the one list holding shelfItems; Browse, search and channel
+! pages have none.
+m.twitch.tv##main div[role="list"]:has([class*="shelfItems--"])
 
 !surface: side_recs Recommended channels
 ! Side bar cards Twitch picks for you; followed channels stay.
@@ -28,3 +33,8 @@ twitch.tv##[data-a-target="browse-link"]
 !surface: promoted Promoted and upsells
 twitch.tv##[data-a-target="prime-offers-icon"]
 twitch.tv##[class*="upsell-bottom-banner"]
+
+!surface: mobile_nags App install nags
+! m.twitch.tv (the app's phone pages), signed out 2026-11-24: the "Open
+! App" button in the top bar, tagged mweb_upsell in its own link.
+m.twitch.tv##a[href*="utm_campaign=mweb_upsell"]
