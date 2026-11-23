@@ -89,6 +89,10 @@ class MainActivity : TauriActivity() {
     private const val PROBE_URL = "https://youtu.be/jNQXAC9IVRw?ts_probe=1"
     // Manifest activity-alias that puts YouTube in the app list (1140).
     private const val YOUTUBE_ENTRY = "YouTubeEntry"
+    // Every platform a shortcut or intent may name (lib.rs PLATFORMS).
+    private val PLATFORM_IDS = setOf(
+      "youtube", "reddit", "x", "tiktok", "instagram", "facebook", "twitch", "linkedin", "pinterest",
+    )
     private const val LINKS_PREFS = "tamescroll.links"
     private const val LINKS_PROBED = "probed"
     // The browser bar below every site (installBrowserBar), its folded
@@ -128,7 +132,7 @@ class MainActivity : TauriActivity() {
     // component name it was launched through is the platform.
     if (intent?.component?.className == "$packageName.$YOUTUBE_ENTRY") return "youtube"
     val id = intent?.getStringExtra("ts_platform") ?: return null
-    return if (id in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) id else null
+    return if (id in PLATFORM_IDS) id else null
   }
 
   // A LINK IS A REQUEST FOR ONE PAGE ON ONE PLATFORM (1107). Two ways
@@ -469,7 +473,7 @@ class MainActivity : TauriActivity() {
     fun pinNamed(id: String?, name: String?): String = pin(id, name)
 
     private fun pin(id: String?, name: String?): String {
-      if (id == null || id !in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) return "refused"
+      if (id == null || id !in PLATFORM_IDS) return "refused"
       // JavascriptInterface runs off the UI thread and WebView.getUrl()
       // throws there (measured 1117 first cut: "Java exception was raised").
       val onLauncher = java.util.concurrent.FutureTask<Boolean> { fromLauncher() }
@@ -1268,16 +1272,19 @@ class MainActivity : TauriActivity() {
   private class BarColors(
     val bg: Int, val pill: Int, val surface: Int, val ink: Int, val muted: Int,
     val faint: Int, val hair: Int, val line: Int, val rule: Int, val green: Int,
+    val gold: Int,
   )
   private val nightColors = BarColors(
     bg = 0xFF141414.toInt(), pill = 0xFF262523.toInt(), surface = 0xFF1C1C1C.toInt(),
     ink = 0xFFE7E5E1.toInt(), muted = 0xFFA8A49D.toInt(), faint = 0xFF7A766E.toInt(),
     hair = 0x14FFFFFF, line = 0xFF363636.toInt(), rule = 0xFF262626.toInt(), green = 0xFF86A893.toInt(),
+    gold = 0xFFC9A45E.toInt(),
   )
   private val paperColors = BarColors(
     bg = 0xFFF7F5F0.toInt(), pill = 0xFFEFECE5.toInt(), surface = 0xFFFFFFFF.toInt(),
     ink = 0xFF1D1C19.toInt(), muted = 0xFF57534C.toInt(), faint = 0xFF857F74.toInt(),
     hair = 0x1A281420, line = 0xFFD9D4CA.toInt(), rule = 0xFFE6E2DA.toInt(), green = 0xFF4F8A66.toInt(),
+    gold = 0xFFA8801F.toInt(),
   )
   private fun colors() = if (paperLook) paperColors else nightColors
 
@@ -1413,6 +1420,7 @@ class MainActivity : TauriActivity() {
       val d = getDrawable(R.drawable.ic_bar_shield)?.mutate()
       d?.setBounds(0, 0, dp(14), dp(14))
       d?.setTint(c.green)
+      barShieldIcon = d
       it.setCompoundDrawables(d, null, null, null)
     }
     barTabs?.let {
@@ -1424,12 +1432,70 @@ class MainActivity : TauriActivity() {
     paintFindBar(c)
   }
 
-  /** The shield chip's number: this page's stopped requests. UI thread. */
+  private var barShieldIcon: android.graphics.drawable.Drawable? = null
+
+  /** The shield chip's number: this page's stopped requests, with the
+   * what's-hidden dot after it (#76), as the extension's toolbar icon
+   * shows it: calm green when the site's taming hid something here, gold
+   * when something you brought back is on the page. UI thread. */
   private fun refreshShieldChip() {
     val n = blockedOnPage.get()
-    barShield?.text = "$n"
-    barShield?.contentDescription =
-      if (n == 1) "1 ad or tracker stopped on this page" else "$n ads and trackers stopped on this page"
+    val hidden = hiddenHere
+    val showing = showingHere
+    barShield?.let { chip ->
+      chip.text = "$n"
+      val c = colors()
+      val dotColor = when {
+        showing.isNotEmpty() -> c.gold
+        hidden.isNotEmpty() -> c.green
+        else -> 0
+      }
+      val dot = if (dotColor == 0) null else GradientDrawable().apply {
+        shape = GradientDrawable.OVAL
+        setColor(dotColor)
+        setBounds(0, 0, dp(6), dp(6))
+      }
+      chip.setCompoundDrawables(barShieldIcon, null, dot, null)
+      val stopped = if (n == 1) "1 ad or tracker stopped on this page" else "$n ads and trackers stopped on this page"
+      chip.contentDescription = when {
+        hidden.isNotEmpty() -> "$stopped. Hidden here: ${hidden.joinToString()}"
+        else -> stopped
+      }
+    }
+  }
+
+  // WHAT'S HIDDEN ON THIS PAGE (#76), reported by the page's own count
+  // (app/gaze/src/page/hidden-status.mjs) through HiddenBridge. Labels
+  // only, from the rules' own surface names. Cleared with each new
+  // document; an in-page move keeps the count, which reports again when
+  // the page changes.
+  @Volatile private var hiddenHere: List<String> = emptyList()
+  @Volatile private var showingHere: List<String> = emptyList()
+
+  /** Every page can reach this, so it takes only short plain labels, at
+   * most twelve of each, and only while a site we tame is showing. */
+  inner class HiddenBridge {
+    @JavascriptInterface
+    fun report(json: String?) {
+      if (json == null || json.length > 8 * 1024) return
+      val o = try { JSONObject(json) } catch (_: Throwable) { return }
+      fun labels(key: String): List<String> {
+        val a = o.optJSONArray(key) ?: return emptyList()
+        return (0 until minOf(a.length(), 12))
+          .mapNotNull { a.opt(it) as? String }
+          .map { it.filter { ch -> !ch.isISOControl() }.trim().take(48) }
+          .filter { it.isNotEmpty() }
+          .distinct()
+      }
+      val h = labels("h")
+      val sh = labels("s")
+      mainHandler.post {
+        if (!isTamedHost(Uri.parse(barUrl).host ?: "")) return@post
+        hiddenHere = h
+        showingHere = sh
+        refreshShieldChip()
+      }
+    }
   }
 
   // The interceptor counts on a worker thread; the chip catches up at most
@@ -1573,10 +1639,32 @@ class MainActivity : TauriActivity() {
       },
       14f, c.muted,
     ))
+    // HIDDEN ON THIS PAGE (#76, mockup 5): what the site's taming hid
+    // here, as chips, and what you brought back that is on the page.
+    fun chips(title: String, items: List<String>, color: Int) {
+      if (items.isEmpty()) return
+      box.addView(text(title.uppercase(), 11f, c.faint, bold = true).apply {
+        letterSpacing = 0.1f
+        setPadding(0, dp(18), 0, dp(8))
+      })
+      val group = com.google.android.material.chip.ChipGroup(this).apply {
+        chipSpacingHorizontal = dp(6)
+        chipSpacingVertical = dp(6)
+      }
+      items.forEach { label ->
+        group.addView(text(label, 12.5f, color).apply {
+          background = rounded(c.pill, 6)
+          setPadding(dp(9), dp(4), dp(9), dp(4))
+        })
+      }
+      box.addView(group)
+    }
+    chips("Hidden on this page", hiddenHere, c.muted)
+    chips("Brought back", showingHere, c.gold)
     box.addView(text(
       "Pictures follow your blur choice. On the sites we tame, feeds are hidden too.",
       13f, c.faint,
-    ).apply { setPadding(0, dp(12), 0, 0) })
+    ).apply { setPadding(0, dp(16), 0, 0) })
     box.addView(text("Change what's hidden here", 14f, c.bg, bold = true).apply {
       gravity = Gravity.CENTER
       background = rounded(c.ink, 10)
@@ -1752,6 +1840,7 @@ class MainActivity : TauriActivity() {
   private val tamedRoots = listOf(
     "youtube.com", "youtu.be", "reddit.com", "x.com", "twitter.com",
     "tiktok.com", "instagram.com", "facebook.com",
+    "twitch.tv", "linkedin.com", "pinterest.com",
   )
 
   private fun isTamedHost(host: String): Boolean {
@@ -2157,6 +2246,8 @@ class MainActivity : TauriActivity() {
         if (request.isForMainFrame) {
           perfTokenServed = false
           blockedOnPage.set(0)
+          hiddenHere = emptyList()
+          showingHere = emptyList()
           queueShieldRefresh()
           rollStatsDay()
           saveStats()
@@ -2746,6 +2837,8 @@ class MainActivity : TauriActivity() {
     // hostile page cannot turn it into anything but a wasted disk write.
     webView.addJavascriptInterface(DiagBridge(), "TsDiag")
     webView.addJavascriptInterface(StatsBridge(), "TsStats")
+    // Short labels only, and only taken while a tamed site shows (#76).
+    webView.addJavascriptInterface(HiddenBridge(), "TsHidden")
     webView.addJavascriptInterface(LibraryBridge(), "TsLibrary")
     webView.addJavascriptInterface(NativePortBridge(), "TsNativePort")
     // Perf dials (PerfBridge): reachable from every platform page like

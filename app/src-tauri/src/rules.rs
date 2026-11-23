@@ -41,6 +41,9 @@ const X_RULES: &str = include_str!("../../../rules/x.txt");
 const TIKTOK_RULES: &str = include_str!("../../../rules/tiktok.txt");
 const INSTAGRAM_RULES: &str = include_str!("../../../rules/instagram.txt");
 const FACEBOOK_RULES: &str = include_str!("../../../rules/facebook.txt");
+const TWITCH_RULES: &str = include_str!("../../../rules/twitch.txt");
+const LINKEDIN_RULES: &str = include_str!("../../../rules/linkedin.txt");
+const PINTEREST_RULES: &str = include_str!("../../../rules/pinterest.txt");
 
 /// Upstream filter lists. These block ads and trackers by network pattern
 /// and cosmetic selector; the scriptlet resources below are what actually
@@ -62,6 +65,12 @@ const BLUR_X: &str = include_str!("../../../rules/blur/x.css");
 const BLUR_TIKTOK: &str = include_str!("../../../rules/blur/tiktok.css");
 const BLUR_INSTAGRAM: &str = include_str!("../../../rules/blur/instagram.css");
 const BLUR_FACEBOOK: &str = include_str!("../../../rules/blur/facebook.css");
+const BLUR_TWITCH: &str = include_str!("../../../rules/blur/twitch.css");
+const BLUR_LINKEDIN: &str = include_str!("../../../rules/blur/linkedin.css");
+const BLUR_PINTEREST: &str = include_str!("../../../rules/blur/pinterest.css");
+/// Remote off switches (#76), shared with the extension: two lists of
+/// names, never code. Read by lib.rs `kill_switch`.
+const KILL_JSON: &str = include_str!("../../../rules/kill.json");
 const SCRIPTLET_RULES: &str = include_str!("../../../rules/scriptlets.txt");
 pub const TUNING_JSON: &str = include_str!("../../../rules/tuning.json");
 
@@ -80,13 +89,20 @@ pub const FILES: &[&str] = &[
     "tiktok.txt",
     "instagram.txt",
     "facebook.txt",
+    "twitch.txt",
+    "linkedin.txt",
+    "pinterest.txt",
     "scriptlets.txt",
+    "kill.json",
     "blur/youtube.css",
     "blur/reddit.css",
     "blur/x.css",
     "blur/tiktok.css",
     "blur/instagram.css",
     "blur/facebook.css",
+    "blur/twitch.css",
+    "blur/linkedin.css",
+    "blur/pinterest.css",
     "vendor/easylist.txt",
     "vendor/easyprivacy.txt",
     "vendor/ubo-filters.txt",
@@ -102,6 +118,10 @@ pub fn embedded(name: &str) -> Option<&'static str> {
         "tiktok.txt" => Some(TIKTOK_RULES),
         "instagram.txt" => Some(INSTAGRAM_RULES),
         "facebook.txt" => Some(FACEBOOK_RULES),
+        "twitch.txt" => Some(TWITCH_RULES),
+        "linkedin.txt" => Some(LINKEDIN_RULES),
+        "pinterest.txt" => Some(PINTEREST_RULES),
+        "kill.json" => Some(KILL_JSON),
         "scriptlets.txt" => Some(SCRIPTLET_RULES),
         // NUMBERS, NOT CODE. Whitelisted and clamped page-side by
         // app/gaze/src/tuning.mjs; see the header there for why each
@@ -113,6 +133,9 @@ pub fn embedded(name: &str) -> Option<&'static str> {
         "blur/tiktok.css" => Some(BLUR_TIKTOK),
         "blur/instagram.css" => Some(BLUR_INSTAGRAM),
         "blur/facebook.css" => Some(BLUR_FACEBOOK),
+        "blur/twitch.css" => Some(BLUR_TWITCH),
+        "blur/linkedin.css" => Some(BLUR_LINKEDIN),
+        "blur/pinterest.css" => Some(BLUR_PINTEREST),
         "vendor/easylist.txt" => Some(EASYLIST),
         "vendor/easyprivacy.txt" => Some(EASYPRIVACY),
         "vendor/ubo-filters.txt" => Some(UBO_FILTERS),
@@ -303,6 +326,9 @@ fn build_surfaces() -> &'static Vec<(&'static str, Vec<Surface>)> {
         ("tiktok", parse_surfaces(leaked("tiktok.txt"))),
         ("instagram", parse_surfaces(leaked("instagram.txt"))),
         ("facebook", parse_surfaces(leaked("facebook.txt"))),
+        ("twitch", parse_surfaces(leaked("twitch.txt"))),
+        ("linkedin", parse_surfaces(leaked("linkedin.txt"))),
+        ("pinterest", parse_surfaces(leaked("pinterest.txt"))),
     ]))
 }
 
