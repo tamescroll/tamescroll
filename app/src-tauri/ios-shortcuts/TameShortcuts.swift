@@ -6,8 +6,8 @@ import UIKit
 /// each site is an App Shortcut. Spotlight lists it when the person
 /// searches the site's name, Siri knows its phrases, and the Shortcuts app
 /// can put it on the home screen. It opens the app through its own
-/// tamescroll:// address, the same validated way in the widgets and quick
-/// actions use (launcher_query_for_open in lib.rs). The symbol is a plain
+/// tamescroll:// address, the same validated way in the quick actions use
+/// (launcher_query_for_open in lib.rs). The symbol is a plain
 /// letter, never the site's logo, and the home-screen name is "Y-Tamed",
 /// "R-Tamed" and so on, never the bare site name (ZV, 2026-11-17); the
 /// title and phrases still say the site so search finds it. TikTok took

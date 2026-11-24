@@ -2,7 +2,7 @@
 """Compile the blur's Core ML models into the iPhone app.
 
 `tauri ios init --ci` regenerates gen/apple/project.yml on every CI run,
-so CI runs this after init (and after ios-widget/add-to-project.py): it
+so CI runs this after init (before ios-shortcuts/add-to-project.py): it
 adds both .mlpackages to the app target's sources, where Xcode compiles
 each into a .mlmodelc inside the app. TsInfer.swift loads them by
 name. Run from app/src-tauri/gen/apple. Fails loudly if the template's

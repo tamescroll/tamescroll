@@ -91,11 +91,6 @@ jobs:
           printf '%s' "${{ secrets.APPLE_API_KEY_P8 }}" > "$KEY"
           echo "APPLE_API_KEY_PATH=$KEY" >> "$GITHUB_ENV"
 
-      # Export can sign a new bundle ID but not register one, so the
-      # widget's ID is registered through the API first (no-op once it exists).
-      - name: Widget bundle ID registered
-        run: python3 ../.github/scripts/asc-bundle-id.py app.tamescroll.client.widgets "Tame Scroll Widgets"
-
       - name: Generate the Xcode project
         run: pnpm tauri ios init --ci
 
@@ -122,17 +117,15 @@ jobs:
           grep -rh "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | sort | uniq -c
           ! grep -rq 'TARGETED_DEVICE_FAMILY.*1,2' --include=project.yml --include=project.pbxproj .
 
-      # Home-screen widgets (our glyphs, added only by the person). The
-      # extension is not in Tauri's project template, so it is appended to
-      # project.yml and the project regenerated.
-      - name: Home-screen widgets
+      # The blur models and the App Shortcuts are not in Tauri's project
+      # template, so they are added to project.yml and the project
+      # regenerated. No widgets: shortcuts only (ZV, 2026-11-24).
+      - name: App Shortcuts and blur models
         run: |
           cd src-tauri/gen/apple
-          python3 ../../ios-widget/add-to-project.py
           python3 ../../ios-models/add-to-project.py
           python3 ../../ios-shortcuts/add-to-project.py
           xcodegen generate
-          grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
           grep -q "faceres.mlpackage" *.xcodeproj/project.pbxproj
           grep -q "TameShortcuts.swift" *.xcodeproj/project.pbxproj
 
@@ -142,21 +135,6 @@ jobs:
           pnpm tauri ios build --ci --target aarch64
           --export-method app-store-connect
           --build-number ${{ github.run_number }}
-
-      # What the phone gets: the widget inside the signed .ipa, its plist,
-      # signature and entitlements (the widget did not show on ZV's
-      # iPhone from build 39).
-      - name: Widget in the signed build
-        run: |
-          IPA=$(find src-tauri/gen/apple/build -name '*.ipa' | head -1)
-          D=$(mktemp -d); unzip -q "$IPA" -d "$D"
-          W=$(find "$D" -name 'TameScrollWidget.appex' -type d | head -1)
-          [ -n "$W" ] || { echo "no widget in the .ipa"; find "$D" -maxdepth 4; exit 1; }
-          /usr/libexec/PlistBuddy -c Print "$W/Info.plist"
-          codesign -dvv "$W" 2>&1 | grep -v "^CDHash\|^Hash" || true
-          codesign -d --entitlements - "$W" 2>&1 || true
-          security cms -D -i "$W/embedded.mobileprovision" 2>/dev/null | grep -A1 -E "<key>(Name|application-identifier|ExpirationDate)</key>" || echo "no embedded profile in the widget"
-          codesign --verify --deep --strict "$(dirname "$(dirname "$W")")" && echo "signature verifies"
 
       - name: Upload to TestFlight
         run: |
