@@ -490,6 +490,12 @@ b { font-weight: 600; }
 .mini.paper { --m-bg: #f7f5f0; --m-line: #e1dcd2; --m-field: #ffffff; --m-ink: #1d1c19; --m-tile: #ffffff; }
 .ob-looks { margin: var(--s4) 0 var(--s2); }
 
+/* iPhone home screen steps: in a card and on the welcome screens. */
+.ios-home-steps .steps { margin: var(--s2) 0 0; }
+.ios-home-sub { font-weight: 600; margin-top: var(--s3); }
+.ios-open-shortcuts { margin-top: var(--s2); }
+.ios-home-steps.left { text-align: left; max-width: 420px; margin: var(--s3) auto 0; }
+.ios-home-nudge { margin-top: var(--s4); }
 /* ---------- update prompt (#55) ----------
    A bottom sheet over the launcher: the one surface in the app that
    interrupts, so it is the quietest card that still asks. */
@@ -508,3 +514,101 @@ b { font-weight: 600; }
 @keyframes update-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes update-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .update-scrim, .update-panel { animation: none; } }
+
+:root { --chip: #262523; }
+:root[data-look="paper"] { --chip: #efece5; }
+
+/* ---------- new tab page (#73, mockup 2) ----------
+   A browser's new tab: the wordmark small, the question in Spectral,
+   Favourites as letter tiles, the last pages, and the address field in
+   a bar at the bottom, in thumb reach. Flat 10-12px corners. */
+#view-launcher { padding-bottom: 96px; }
+.ntp-head { display: flex; align-items: center; min-height: 40px; padding-top: var(--s1); }
+.ntp-head .wordmark { height: 30px; width: auto; color: var(--ink); }
+.ntp-head .wordmark .mark { stroke: var(--gold); }
+#view-launcher .home-q { margin-top: var(--s4); }
+#view-launcher .tile .dot { width: 48px; height: 48px; border-radius: 12px; font-size: 22px; }
+#view-launcher .tile.is-tamed .dot::after { width: 11px; height: 11px; }
+.jump .eyebrow { margin-top: var(--s4); }
+.week-stat {
+  display: flex; align-items: center; gap: 6px; margin-top: var(--s5);
+  color: var(--muted); font-size: var(--t-sm);
+}
+.week-stat svg { width: 15px; height: 15px; color: var(--green); flex: none; }
+.week-stat b { color: var(--ink); font-size: var(--t-base); font-variant-numeric: tabular-nums; }
+
+/* Lists: one card, hairline rows (mockup .list / .row). */
+.list { display: grid; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-sm); overflow: hidden; }
+.lrow { display: flex; align-items: center; gap: var(--s2); min-height: 48px; padding: 0 var(--s2) 0 0; width: 100%; text-align: left; }
+.lrow + .lrow { border-top: 1px solid var(--hairline); }
+.lrow-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s3); padding: var(--s2) 0 var(--s2) var(--s3); text-align: left; }
+button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
+.lrow .dot {
+  flex: none; width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center;
+  border: 1px solid var(--hairline); background: var(--tile-bg);
+  font-family: var(--font-display); font-size: 15px; color: var(--ink);
+}
+.lrow .grow { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.lrow .t { font-size: var(--t-md); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow .s { font-size: var(--t-xs); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow .v { flex: none; font-size: var(--t-xs); color: var(--faint); padding-right: var(--s2); white-space: nowrap; }
+.lrow-ic { width: 19px; height: 19px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: var(--ink); }
+.pin-btn { flex: none; min-height: 30px; padding: 0 var(--s3); }
+.pin-btn.on { color: var(--green); border-color: var(--green); }
+.rm-btn { flex: none; width: 36px; height: 36px; color: var(--faint); font-size: 20px; line-height: 1; border-radius: var(--r-sm); }
+.rm-btn:hover { color: var(--ink); }
+
+/* The bar at the bottom of the new tab page (mockup 2, the tall one). */
+.ntp-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; align-items: center; gap: var(--s1);
+  padding: 10px 10px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg); border-top: 1px solid var(--hairline);
+}
+.ntp-bar .open-link { flex: 1; min-width: 0; margin: 0; }
+.ntp-bar .addr {
+  flex: 1; min-width: 0; height: 46px; display: flex; align-items: center; gap: var(--s2);
+  padding: 0 var(--s3); border-radius: var(--r-sm); background: var(--chip); border: 1px solid var(--line);
+  color: var(--faint);
+}
+:root[data-look="paper"] .ntp-bar .addr { border-color: transparent; }
+.ntp-bar .addr:focus-within { border-color: var(--muted); }
+.ntp-bar .addr svg { width: 16px; height: 16px; flex: none; }
+.ntp-bar .open-link input {
+  flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0;
+  background: transparent; font-size: var(--t-base); color: var(--ink);
+}
+.ntp-bar .open-link input::placeholder { color: var(--faint); }
+.ntp-bar .open-link input::-webkit-search-cancel-button { display: none; }
+.ntp-bar .ib { width: 44px; height: 44px; flex: none; display: grid; place-items: center; color: var(--ink); border-radius: var(--r-sm); }
+.ntp-bar .ib svg { width: 20px; height: 20px; }
+.tabsn {
+  width: 21px; height: 21px; border: 1.7px solid currentColor; border-radius: 5px;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700;
+}
+
+/* The menu on the new tab page (mockup 7). */
+.menu-panel { background: var(--bg); padding: var(--s3) var(--s4) calc(var(--s4) + env(safe-area-inset-bottom, 0px)); display: grid; gap: var(--s3); }
+.menu-panel::before { content: ""; justify-self: center; width: 34px; height: 4px; border-radius: 2px; background: var(--line); }
+.menu-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.menu-tile {
+  display: grid; justify-items: center; gap: 5px; padding: 11px 0 9px;
+  font-size: var(--t-xs); color: var(--muted);
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-sm);
+}
+.menu-tile svg { width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Bookmarks and history (mockup 8). */
+#view-library .narrow { display: grid; gap: var(--s3); align-content: start; }
+.lib-seg { display: flex; width: 100%; gap: 2px; padding: 3px; border: 0; border-radius: 9px; background: var(--chip); }
+.lib-seg .toggle-opt { flex: 1; justify-content: center; border: 0; border-radius: 7px; padding: 6px 0; color: var(--muted); font-weight: 500; }
+.lib-seg .toggle-opt + .toggle-opt { border-left: 0; }
+.lib-seg .toggle-opt.active { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+#lib-bookmarks, #lib-history { display: grid; gap: var(--s2); }
+#lib-history .eyebrow { margin: var(--s3) 0 var(--s1); }
+.search-field {
+  width: 100%; height: 40px; padding: 0 var(--s3); border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--surface); outline: none; font-size: var(--t-md);
+}
+.search-field:focus { border-color: var(--muted); }
+#history-clear { color: var(--gold); font-weight: 600; }

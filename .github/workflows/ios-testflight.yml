@@ -1,0 +1,179 @@
+name: iOS TestFlight
+
+# Builds a signed iPhone build and uploads it to TestFlight (#16). Run it
+# by hand from the Actions tab ("Run workflow"), push an ios-* tag, or push
+# a commit with [testflight] in its message. Nothing here needs a Mac:
+# signing is done by Xcode on the runner with an App Store Connect API
+# key, which creates and renews the certificate and profile itself.
+#
+# The key must have the ADMIN role. Xcode's cloud-managed signing refuses
+# an App Manager key ("Cloud signing permission error"), and a key's role
+# cannot be changed after it is made (first run, 2026-10-27).
+#
+# Repository secrets it needs (Settings -> Secrets and variables -> Actions):
+#   APPLE_API_KEY_ID      the key's ID, e.g. 2X9R4HXF34
+#   APPLE_API_ISSUER      the issuer ID shown above the keys list
+#   APPLE_API_KEY_P8      the contents of the downloaded AuthKey_<ID>.p8
+#   APPLE_DEVELOPMENT_TEAM  the 10-character team ID
+
+on:
+  workflow_dispatch:
+  # Or push a tag like ios-b1, or a commit whose message contains
+  # [testflight]. Both work from any branch, so a build can go out
+  # before this workflow reaches main (workflow_dispatch only sees
+  # workflows on the default branch).
+  push:
+    tags: ['ios-*']
+    branches: ['**']
+
+jobs:
+  testflight:
+    name: Build and upload to TestFlight
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/ios-') ||
+      contains(github.event.head_commit.message, '[testflight]')
+    runs-on: macos-15
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: app
+    env:
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secrets present
+        run: |
+          for v in APPLE_API_KEY APPLE_API_ISSUER APPLE_DEVELOPMENT_TEAM; do
+            [ -n "${!v}" ] || { echo "missing secret for $v (see the top of this file)"; exit 1; }
+          done
+
+      # App Store Connect refuses uploads built with an SDK older than
+      # iOS 26 (first upload, 2026-10-27), so use the newest Xcode 26
+      # on the runner. The simulator job uses the same one, so what CI
+      # tests is what ships.
+      - name: Xcode 26
+        working-directory: .
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$X" ] || { echo "no Xcode 26 on this runner:"; ls /Applications | grep -i xcode; exit 1; }
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+          key: ios-device
+
+      - name: Tools
+        run: brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: API key on disk
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          KEY=~/.appstoreconnect/private_keys/AuthKey_${APPLE_API_KEY}.p8
+          printf '%s' "${{ secrets.APPLE_API_KEY_P8 }}" > "$KEY"
+          echo "APPLE_API_KEY_PATH=$KEY" >> "$GITHUB_ENV"
+
+      # Export can sign a new bundle ID but not register one, so the
+      # widget's ID is registered through the API first (no-op once it exists).
+      - name: Widget bundle ID registered
+        run: python3 ../.github/scripts/asc-bundle-id.py app.tamescroll.client.widgets "Tame Scroll Widgets"
+
+      - name: Generate the Xcode project
+        run: pnpm tauri ios init --ci
+
+      # tauri ios init writes Tauri's own placeholder icon; ours lives in
+      # icons/ios (full-bleed and opaque, iOS rounds the corners itself).
+      - name: Our app icon
+        run: |
+          SET=src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset
+          for f in "$SET"/*.png; do
+            n=$(basename "$f")
+            [ -f "src-tauri/icons/ios/$n" ] || { echo "no icons/ios/$n"; exit 1; }
+            cp "src-tauri/icons/ios/$n" "$f"
+          done
+          ls "$SET"
+
+      # iPhone only for now: an iPad listing needs its own screenshots and
+      # the launcher has no iPad layout. tauri ios init asks for both.
+      - name: iPhone only
+        run: |
+          cd src-tauri/gen/apple
+          grep -rl "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | while read -r f; do
+            sed -i '' -E 's/TARGETED_DEVICE_FAMILY( *[:=] *)"?1,2"?/TARGETED_DEVICE_FAMILY\1"1"/' "$f"
+          done
+          grep -rh "TARGETED_DEVICE_FAMILY" --include=project.yml --include=project.pbxproj . | sort | uniq -c
+          ! grep -rq 'TARGETED_DEVICE_FAMILY.*1,2' --include=project.yml --include=project.pbxproj .
+
+      # Home-screen widgets (our glyphs, added only by the person). The
+      # extension is not in Tauri's project template, so it is appended to
+      # project.yml and the project regenerated.
+      - name: Home-screen widgets
+        run: |
+          cd src-tauri/gen/apple
+          python3 ../../ios-widget/add-to-project.py
+          python3 ../../ios-models/add-to-project.py
+          python3 ../../ios-shortcuts/add-to-project.py
+          xcodegen generate
+          grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
+          grep -q "faceres.mlpackage" *.xcodeproj/project.pbxproj
+          grep -q "TameShortcuts.swift" *.xcodeproj/project.pbxproj
+
+      # The build number must rise with every upload; the run number does.
+      - name: Build the signed app
+        run: >
+          pnpm tauri ios build --ci --target aarch64
+          --export-method app-store-connect
+          --build-number ${{ github.run_number }}
+
+      # What the phone gets: the widget inside the signed .ipa, its plist,
+      # signature and entitlements (the widget did not show on ZV's
+      # iPhone from build 39).
+      - name: Widget in the signed build
+        run: |
+          IPA=$(find src-tauri/gen/apple/build -name '*.ipa' | head -1)
+          D=$(mktemp -d); unzip -q "$IPA" -d "$D"
+          W=$(find "$D" -name 'TameScrollWidget.appex' -type d | head -1)
+          [ -n "$W" ] || { echo "no widget in the .ipa"; find "$D" -maxdepth 4; exit 1; }
+          /usr/libexec/PlistBuddy -c Print "$W/Info.plist"
+          codesign -dvv "$W" 2>&1 | grep -v "^CDHash\|^Hash" || true
+          codesign -d --entitlements - "$W" 2>&1 || true
+          security cms -D -i "$W/embedded.mobileprovision" 2>/dev/null | grep -A1 -E "<key>(Name|application-identifier|ExpirationDate)</key>" || echo "no embedded profile in the widget"
+          codesign --verify --deep --strict "$(dirname "$(dirname "$W")")" && echo "signature verifies"
+
+      - name: Upload to TestFlight
+        run: |
+          IPA=$(find src-tauri/gen/apple/build -name '*.ipa' | head -1)
+          [ -n "$IPA" ] || { echo "no .ipa produced"; exit 1; }
+          echo "uploading $IPA"
+          xcrun altool --upload-app -t ios -f "$IPA" \
+            --apiKey "$APPLE_API_KEY" --apiIssuer "$APPLE_API_ISSUER"
+
+      - name: Remove the key
+        if: always()
+        run: rm -rf ~/.appstoreconnect/private_keys
+
+  testers:
+    name: Testers
+    needs: testflight
+    uses: ./.github/workflows/ios-testers.yml
+    with:
+      build: ${{ github.run_number }}
+    secrets: inherit

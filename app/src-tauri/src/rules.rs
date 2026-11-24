@@ -41,6 +41,9 @@ const X_RULES: &str = include_str!("../../../rules/x.txt");
 const TIKTOK_RULES: &str = include_str!("../../../rules/tiktok.txt");
 const INSTAGRAM_RULES: &str = include_str!("../../../rules/instagram.txt");
 const FACEBOOK_RULES: &str = include_str!("../../../rules/facebook.txt");
+const TWITCH_RULES: &str = include_str!("../../../rules/twitch.txt");
+const LINKEDIN_RULES: &str = include_str!("../../../rules/linkedin.txt");
+const PINTEREST_RULES: &str = include_str!("../../../rules/pinterest.txt");
 
 /// Upstream filter lists. These block ads and trackers by network pattern
 /// and cosmetic selector; the scriptlet resources below are what actually
@@ -62,6 +65,12 @@ const BLUR_X: &str = include_str!("../../../rules/blur/x.css");
 const BLUR_TIKTOK: &str = include_str!("../../../rules/blur/tiktok.css");
 const BLUR_INSTAGRAM: &str = include_str!("../../../rules/blur/instagram.css");
 const BLUR_FACEBOOK: &str = include_str!("../../../rules/blur/facebook.css");
+const BLUR_TWITCH: &str = include_str!("../../../rules/blur/twitch.css");
+const BLUR_LINKEDIN: &str = include_str!("../../../rules/blur/linkedin.css");
+const BLUR_PINTEREST: &str = include_str!("../../../rules/blur/pinterest.css");
+/// Remote off switches (#76), shared with the extension: two lists of
+/// names, never code. Read by lib.rs `kill_switch`.
+const KILL_JSON: &str = include_str!("../../../rules/kill.json");
 const SCRIPTLET_RULES: &str = include_str!("../../../rules/scriptlets.txt");
 pub const TUNING_JSON: &str = include_str!("../../../rules/tuning.json");
 
@@ -80,13 +89,20 @@ pub const FILES: &[&str] = &[
     "tiktok.txt",
     "instagram.txt",
     "facebook.txt",
+    "twitch.txt",
+    "linkedin.txt",
+    "pinterest.txt",
     "scriptlets.txt",
+    "kill.json",
     "blur/youtube.css",
     "blur/reddit.css",
     "blur/x.css",
     "blur/tiktok.css",
     "blur/instagram.css",
     "blur/facebook.css",
+    "blur/twitch.css",
+    "blur/linkedin.css",
+    "blur/pinterest.css",
     "vendor/easylist.txt",
     "vendor/easyprivacy.txt",
     "vendor/ubo-filters.txt",
@@ -102,6 +118,10 @@ pub fn embedded(name: &str) -> Option<&'static str> {
         "tiktok.txt" => Some(TIKTOK_RULES),
         "instagram.txt" => Some(INSTAGRAM_RULES),
         "facebook.txt" => Some(FACEBOOK_RULES),
+        "twitch.txt" => Some(TWITCH_RULES),
+        "linkedin.txt" => Some(LINKEDIN_RULES),
+        "pinterest.txt" => Some(PINTEREST_RULES),
+        "kill.json" => Some(KILL_JSON),
         "scriptlets.txt" => Some(SCRIPTLET_RULES),
         // NUMBERS, NOT CODE. Whitelisted and clamped page-side by
         // app/gaze/src/tuning.mjs; see the header there for why each
@@ -113,6 +133,9 @@ pub fn embedded(name: &str) -> Option<&'static str> {
         "blur/tiktok.css" => Some(BLUR_TIKTOK),
         "blur/instagram.css" => Some(BLUR_INSTAGRAM),
         "blur/facebook.css" => Some(BLUR_FACEBOOK),
+        "blur/twitch.css" => Some(BLUR_TWITCH),
+        "blur/linkedin.css" => Some(BLUR_LINKEDIN),
+        "blur/pinterest.css" => Some(BLUR_PINTEREST),
         "vendor/easylist.txt" => Some(EASYLIST),
         "vendor/easyprivacy.txt" => Some(EASYPRIVACY),
         "vendor/ubo-filters.txt" => Some(UBO_FILTERS),
@@ -130,6 +153,57 @@ pub fn build_engine() -> Engine {
     load_or_build_engine(crate::ota::cache_dir().as_deref())
 }
 
+/// The tracker lists: what stays blocked on a page whose ads the user
+/// let through. EasyPrivacy names trackers rather than ads, and the
+/// unbreak list keeps its exceptions so a tracker rule never breaks a page
+/// the full engine would have left working.
+const TRACKER_LISTS: [&str; 2] = ["vendor/easyprivacy.txt", "vendor/ubo-unbreak.txt"];
+
+/// Builds the tracker-only engine (TRACKER_LISTS), through the OTA layer
+/// like the full one. Network rules only, so no scriptlet resources and
+/// no serialised cache: it is a fifth of the full set (about 0.2s on a
+/// desktop) and is warmed off the critical path.
+pub fn build_tracker_engine() -> Engine {
+    let mut set = adblock::lists::FilterSet::new(false);
+    for list in TRACKER_LISTS {
+        set.add_filter_list(crate::ota::rules_text(list), adblock::lists::ParseOptions::default());
+    }
+    Engine::new_with_filter_set(set)
+}
+
+/// iOS NETWORK BLOCKING (#16). WKWebView cannot intercept requests, so
+/// the network half of the engine goes to WebKit as a content-blocker
+/// list instead: the same lists as `ENGINE_LISTS`, minus our scriptlet
+/// list, converted by the adblock crate's own Safari exporter.
+///
+/// Element-hiding rules are dropped. Cosmetics already ride the injected
+/// page payload, and as content-blocker rules they would apply on every
+/// site with no exceptions, where the injected sheet is scoped.
+///
+/// Returns the list as JSON and how many rules it holds. WebKit refuses
+/// a list over `CONTENT_BLOCKER_LIMIT` rules outright, which is why the
+/// count is checked in a test rather than discovered on a phone.
+#[cfg_attr(not(any(target_os = "ios", test)), allow(dead_code))]
+pub(crate) fn content_blocker_json() -> (String, usize) {
+    use adblock::content_blocking::CbType;
+    let mut set = adblock::lists::FilterSet::new(true);
+    for list in ENGINE_LISTS.iter().filter(|l| **l != "scriptlets.txt") {
+        set.add_filter_list(crate::ota::rules_text(list), adblock::lists::ParseOptions::default());
+    }
+    let rules: Vec<_> = match set.into_content_blocking() {
+        Ok((rules, _unconverted)) => rules
+            .into_iter()
+            .filter(|r| r.action.typ != CbType::CssDisplayNone)
+            .collect(),
+        Err(()) => Vec::new(),
+    };
+    let count = rules.len();
+    (serde_json::to_string(&rules).unwrap_or_else(|_| "[]".into()), count)
+}
+
+/// WebKit's ceiling on rules in one content-blocker list.
+#[cfg_attr(not(any(target_os = "ios", test)), allow(dead_code))]
+pub(crate) const CONTENT_BLOCKER_LIMIT: usize = 150_000;
 
 /// THE COLD START PAID 3-25 SECONDS FOR THIS ON HIS PHONE (queue item h),
 /// and paid it TWICE: the warm-up thread in `run()` and the rebuild after
@@ -286,6 +360,9 @@ fn build_surfaces() -> &'static Vec<(&'static str, Vec<Surface>)> {
         ("tiktok", parse_surfaces(leaked("tiktok.txt"))),
         ("instagram", parse_surfaces(leaked("instagram.txt"))),
         ("facebook", parse_surfaces(leaked("facebook.txt"))),
+        ("twitch", parse_surfaces(leaked("twitch.txt"))),
+        ("linkedin", parse_surfaces(leaked("linkedin.txt"))),
+        ("pinterest", parse_surfaces(leaked("pinterest.txt"))),
     ]))
 }
 
@@ -595,5 +672,30 @@ mod engine_timing_probe {
         let t = std::time::Instant::now();
         d.use_resources(resources());
         eprintln!("use_res2   {:?}", t.elapsed());
+    }
+}
+
+#[cfg(test)]
+mod content_blocker_tests {
+    use super::*;
+
+    #[test]
+    fn content_blocker_list_fits_webkit_and_blocks_network_only() {
+        let (json, count) = content_blocker_json();
+        // An empty list would mean the conversion failed silently and the
+        // iPhone app would block nothing.
+        assert!(count > 10_000, "only {count} rules converted");
+        assert!(count < CONTENT_BLOCKER_LIMIT, "{count} rules: WebKit refuses the list");
+        let rules: Vec<serde_json::Value> = serde_json::from_str(&json).unwrap();
+        assert_eq!(rules.len(), count);
+        assert!(
+            rules.iter().all(|r| r["action"]["type"] != "css-display-none"),
+            "element hiding must stay in the scoped page payload"
+        );
+        // The pre-roll host Android's interceptor is known to stop.
+        assert!(
+            json.contains("doubleclick"),
+            "the ad network rules did not make it across"
+        );
     }
 }

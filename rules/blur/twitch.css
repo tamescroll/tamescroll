@@ -8,3 +8,10 @@
 [data-a-target="video-player"] video {
   filter: blur(var(--ts-blur, 16px));
 }
+
+/* m.twitch.tv (the app's phone pages), checked 2026-11-24 signed out on
+ * home, Browse and search: thumbnails and box art are img.tw-image;
+ * avatars carry tw-image-avatar instead, so they stay sharp. */
+img.tw-image {
+  filter: blur(var(--ts-blur, 16px));
+}

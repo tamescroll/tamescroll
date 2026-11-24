@@ -89,11 +89,21 @@ class MainActivity : TauriActivity() {
     private const val PROBE_URL = "https://youtu.be/jNQXAC9IVRw?ts_probe=1"
     // Manifest activity-alias that puts YouTube in the app list (1140).
     private const val YOUTUBE_ENTRY = "YouTubeEntry"
+    // Every platform a shortcut or intent may name (lib.rs PLATFORMS).
+    private val PLATFORM_IDS = setOf(
+      "youtube", "reddit", "x", "tiktok", "instagram", "facebook", "twitch", "linkedin", "pinterest",
+    )
     private const val LINKS_PREFS = "tamescroll.links"
     private const val LINKS_PROBED = "probed"
-    // Height of the top bar above every site (installTopBar).
-    private const val TOP_BAR_DP = 52
-    private const val TOP_STRIP_DP = 24
+    // The browser bar below every site (installBrowserBar), its folded
+    // strip, and how far a drag goes before it folds or comes back.
+    private const val BAR_DP = 56
+    private const val BAR_STRIP_DP = 26
+    private const val BAR_FOLD_DRAG_DP = 24
+    private const val BAR_SHOW_DRAG_DP = 32
+    // Bookmarks and history (#73), kept on this phone only.
+    private const val LIBRARY_PREFS = "tamescroll.library"
+    private const val HISTORY_MAX = 500
     private const val STATS_PREFS = "tamescroll.stats"
     private const val LOOK_PREFS = "tamescroll.look"
     private const val SETTINGS_PREFS = "tamescroll.settings"
@@ -122,7 +132,7 @@ class MainActivity : TauriActivity() {
     // component name it was launched through is the platform.
     if (intent?.component?.className == "$packageName.$YOUTUBE_ENTRY") return "youtube"
     val id = intent?.getStringExtra("ts_platform") ?: return null
-    return if (id in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) id else null
+    return if (id in PLATFORM_IDS) id else null
   }
 
   // A LINK IS A REQUEST FOR ONE PAGE ON ONE PLATFORM (1107). Two ways
@@ -266,7 +276,8 @@ class MainActivity : TauriActivity() {
   // THE LOOK (his 2026-10-28): Night or Paper on the launcher. The strips
   // behind the clock and the nav bar belong to the window, not the page,
   // so the launcher tells us which look it wears and we paint them to
-  // match. Sites keep the dark strips and the dark top bar either way.
+  // match. Since the browser bar (#73) the strips and the bar wear the
+  // look on sites too, so the app reads as one browser.
   // Visible to every page like any interface; it only takes one of two
   // words and only acts while the launcher is showing.
   @Volatile
@@ -353,7 +364,8 @@ class MainActivity : TauriActivity() {
   }
 
   private fun applyStrips(url: String) {
-    val light = paperLook && url.startsWith("http://tauri.localhost/")
+    // The bar below every site wears the look too (#73), so the strips do.
+    val light = paperLook
     val bg = if (light) PAPER_BG else NIGHT_BG
     window.decorView.setBackgroundColor(bg)
     if (this::webView.isInitialized) webView.setBackgroundColor(bg)
@@ -461,7 +473,7 @@ class MainActivity : TauriActivity() {
     fun pinNamed(id: String?, name: String?): String = pin(id, name)
 
     private fun pin(id: String?, name: String?): String {
-      if (id == null || id !in setOf("youtube", "reddit", "x", "tiktok", "instagram", "facebook")) return "refused"
+      if (id == null || id !in PLATFORM_IDS) return "refused"
       // JavascriptInterface runs off the UI thread and WebView.getUrl()
       // throws there (measured 1117 first cut: "Java exception was raised").
       val onLauncher = java.util.concurrent.FutureTask<Boolean> { fromLauncher() }
@@ -1096,8 +1108,10 @@ class MainActivity : TauriActivity() {
       override fun onConsoleMessage(consoleMessage: ConsoleMessage) =
         wry.onConsoleMessage(consoleMessage)
 
-      override fun onReceivedTitle(view: WebView, title: String) =
+      override fun onReceivedTitle(view: WebView, title: String) {
+        titleHistory(view.url, title)
         wry.onReceivedTitle(view, title)
+      }
     }
   }
 
@@ -1233,88 +1247,268 @@ class MainActivity : TauriActivity() {
     }
   }
 
-  // THE TOP BAR (his 2026-10-27, #33: "make it look more like a
-  // browser"). Above every site, never on the launcher: home, the page's
-  // address (tap it to search or type a new one, on the launcher's own
-  // box) and a shield that opens this site's settings. Native, OUTSIDE
-  // the WebView: the page only sees a shorter viewport, the way it would
-  // under Chrome's toolbar, so nothing the gaze page measures moves
-  // inside it. Video fullscreen sits on the decor view and covers it.
-  private var topBar: View? = null
-  private var topStrip: TextView? = null
-  private var topBarAddress: TextView? = null
-  private var topBarHost: View? = null
-  private var topBarUrl = ""
+  // THE BROWSER BAR (#73, step 1 of the approved browser redesign; it
+  // replaces the top bar of 2026-10-27, #33). At the BOTTOM of every
+  // site, in thumb reach, never on the launcher, which draws its own:
+  // back, the page's address with this page's stopped count beside it,
+  // the tabs square and the menu. Native, OUTSIDE the WebView: the page
+  // only sees a shorter viewport, the way it would under Chrome's
+  // toolbar, so nothing the gaze page measures moves inside it. Video
+  // fullscreen sits on the decor view and covers it. It wears the
+  // launcher's look (Paper or Night), so the app reads as one browser.
+  private var bar: LinearLayout? = null
+  private var barStrip: TextView? = null
+  private var barAddress: TextView? = null
+  private var barPill: LinearLayout? = null
+  private var barShield: TextView? = null
+  private var barTabs: TextView? = null
+  private val barIcons = mutableListOf<ImageButton>()
+  private var barHost: View? = null
+  private var barUrl = ""
+  private var barPaintedPaper: Boolean? = null
 
-  private fun installTopBar() {
+  /** The launcher's two looks, from app/src/styles.css. Opaque `rule` is
+   * the hairline over `bg`, so it reads the same over any page. */
+  private class BarColors(
+    val bg: Int, val pill: Int, val surface: Int, val ink: Int, val muted: Int,
+    val faint: Int, val hair: Int, val line: Int, val rule: Int, val green: Int,
+    val gold: Int,
+  )
+  private val nightColors = BarColors(
+    bg = 0xFF141414.toInt(), pill = 0xFF262523.toInt(), surface = 0xFF1C1C1C.toInt(),
+    ink = 0xFFE7E5E1.toInt(), muted = 0xFFA8A49D.toInt(), faint = 0xFF7A766E.toInt(),
+    hair = 0x14FFFFFF, line = 0xFF363636.toInt(), rule = 0xFF262626.toInt(), green = 0xFF86A893.toInt(),
+    gold = 0xFFC9A45E.toInt(),
+  )
+  private val paperColors = BarColors(
+    bg = 0xFFF7F5F0.toInt(), pill = 0xFFEFECE5.toInt(), surface = 0xFFFFFFFF.toInt(),
+    ink = 0xFF1D1C19.toInt(), muted = 0xFF57534C.toInt(), faint = 0xFF857F74.toInt(),
+    hair = 0x1A281420, line = 0xFFD9D4CA.toInt(), rule = 0xFFE6E2DA.toInt(), green = 0xFF4F8A66.toInt(),
+    gold = 0xFFA8801F.toInt(),
+  )
+  private fun colors() = if (paperLook) paperColors else nightColors
+
+  private fun dp(v: Number) = (v.toFloat() * resources.displayMetrics.density).toInt()
+
+  private fun rounded(color: Int, radiusDp: Int, stroke: Int = 0, strokeDp: Float = 1f) =
+    GradientDrawable().apply {
+      cornerRadius = dp(radiusDp).toFloat()
+      setColor(color)
+      if (stroke != 0) setStroke(maxOf(1, dp(strokeDp)), stroke)
+    }
+
+  private fun rippleRes(): Int = TypedValue().also {
+    theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, it, true)
+  }.resourceId
+
+  private fun installBrowserBar() {
     val content = findViewById<FrameLayout>(android.R.id.content) ?: return
     // The child of content that holds the WebView (the WebView itself
-    // when wry sets it as the content view): the bar pushes it down.
+    // when wry sets it as the content view): the bar lifts its bottom.
     var host: View = webView
     while (host.parent != null && host.parent !== content) {
       host = host.parent as? View ?: return
     }
     if (host.parent !== content) return
-    val dp = resources.displayMetrics.density
-    val px = { v: Int -> (v * dp).toInt() }
-    val ripple = TypedValue().also {
-      theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, it, true)
-    }.resourceId
+    val ripple = rippleRes()
     fun icon(res: Int, label: String, onTap: () -> Unit) = ImageButton(this).apply {
       setImageResource(res)
       contentDescription = label
       setBackgroundResource(ripple)
-      layoutParams = LinearLayout.LayoutParams(px(44), px(44))
+      layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
       setOnClickListener { onTap() }
-    }
-    val bar = LinearLayout(this).apply {
+    }.also { barIcons.add(it) }
+    val row = LinearLayout(this).apply {
       orientation = LinearLayout.HORIZONTAL
       gravity = Gravity.CENTER_VERTICAL
-      setBackgroundColor(0xFF141414.toInt())
-      setPadding(px(4), 0, px(4), 0)
+      setPadding(dp(4), dp(1), dp(4), 0)
       visibility = View.GONE
     }
     val address = TextView(this).apply {
-      setTextColor(0xFFE7E5E1.toInt())
       setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
       maxLines = 1
       ellipsize = TextUtils.TruncateAt.END
       gravity = Gravity.CENTER_VERTICAL
-      setPadding(px(14), 0, px(14), 0)
-      background = GradientDrawable().apply {
-        cornerRadius = px(18).toFloat()
-        setColor(0xFF242320.toInt())
-      }
-      contentDescription = "Search or type a site"
-      layoutParams = LinearLayout.LayoutParams(0, px(36), 1f).apply {
-        marginStart = px(4)
-        marginEnd = px(4)
-      }
-      setOnClickListener { webView.loadUrl("http://tauri.localhost/?search=" + Uri.encode(topBarUrl)) }
+      layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
     }
-    bar.addView(icon(R.drawable.ic_bar_home, "Home") { webView.loadUrl(launcherUrl(null)) })
-    bar.addView(address)
-    bar.addView(icon(R.drawable.ic_bar_shield, "What was tamed on this page") { showShieldSheet() })
+    val shield = TextView(this).apply {
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+      setTypeface(typeface, android.graphics.Typeface.BOLD)
+      gravity = Gravity.CENTER
+      compoundDrawablePadding = dp(3)
+      setPadding(dp(7), 0, dp(8), 0)
+      layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(26))
+      setOnClickListener { showShieldSheet() }
+    }
+    // The address opens the launcher's box holding this page's address,
+    // selected, the way a browser's address bar works (unchanged from #33).
+    val pill = LinearLayout(this).apply {
+      orientation = LinearLayout.HORIZONTAL
+      gravity = Gravity.CENTER_VERTICAL
+      setPadding(dp(12), 0, dp(6), 0)
+      contentDescription = "Search or type a site"
+      layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply {
+        marginStart = dp(2)
+        marginEnd = dp(2)
+      }
+      setOnClickListener { webView.loadUrl("http://tauri.localhost/?search=" + Uri.encode(barUrl)) }
+      addView(address)
+      addView(shield)
+    }
+    // One page at a time until tabs land (step 3): the square says 1 and
+    // opens the new tab page.
+    val tabs = TextView(this).apply {
+      text = "1"
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+      setTypeface(typeface, android.graphics.Typeface.BOLD)
+      gravity = Gravity.CENTER
+      layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+    }
+    val tabsButton = FrameLayout(this).apply {
+      setBackgroundResource(ripple)
+      contentDescription = "New tab"
+      layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+      addView(tabs)
+      setOnClickListener { webView.loadUrl(launcherUrl(null)) }
+    }
+    // Back is the system Back, so the launcher-on-exhausted-back rule and
+    // the child lock hold for the button exactly as for the gesture.
+    row.addView(icon(R.drawable.ic_bar_back, "Back") { onBackPressedDispatcher.onBackPressed() })
+    row.addView(pill)
+    row.addView(tabsButton)
+    row.addView(icon(R.drawable.ic_bar_dots, "Menu") { showMenuSheet() })
     // The folded bar: a slim strip with the site's name, under the full
     // bar so the bar covers it when out. Tapping it brings the bar back.
     val strip = TextView(this).apply {
-      setTextColor(0xFFA8A49D.toInt())
       setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
       maxLines = 1
       ellipsize = TextUtils.TruncateAt.END
       gravity = Gravity.CENTER
-      setBackgroundColor(0xFF141414.toInt())
       contentDescription = "Show the address bar"
       visibility = View.GONE
       setOnClickListener { foldBar(true) }
     }
-    content.addView(strip, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(TOP_STRIP_DP), Gravity.TOP))
-    content.addView(bar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(TOP_BAR_DP), Gravity.TOP))
-    topBar = bar
-    topStrip = strip
-    topBarAddress = address
-    topBarHost = host
-    updateTopBar(webView.url)
+    content.addView(strip, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_STRIP_DP), Gravity.BOTTOM))
+    content.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_DP), Gravity.BOTTOM))
+    bar = row
+    barStrip = strip
+    barAddress = address
+    barPill = pill
+    barShield = shield
+    barTabs = tabs
+    barHost = host
+    installFindBar(content, ripple)
+    updateBrowserBar(webView.url)
+  }
+
+  /** Paints the bar in the launcher's look. Cheap, and skipped when the
+   * look has not changed since the last paint. UI thread. */
+  private fun paintBar() {
+    if (barPaintedPaper == paperLook) return
+    barPaintedPaper = paperLook
+    val c = colors()
+    bar?.background = android.graphics.drawable.LayerDrawable(
+      arrayOf(android.graphics.drawable.ColorDrawable(c.rule), android.graphics.drawable.ColorDrawable(c.bg)),
+    ).apply { setLayerInset(1, 0, maxOf(1, dp(0.7f)), 0, 0) }
+    barStrip?.setBackgroundColor(c.bg)
+    barStrip?.setTextColor(c.muted)
+    barAddress?.setTextColor(c.ink)
+    barPill?.background = rounded(c.pill, 10)
+    barShield?.let {
+      it.setTextColor(c.green)
+      it.background = rounded(c.surface, 7, c.hair)
+      val d = getDrawable(R.drawable.ic_bar_shield)?.mutate()
+      d?.setBounds(0, 0, dp(14), dp(14))
+      d?.setTint(c.green)
+      barShieldIcon = d
+      it.setCompoundDrawables(d, null, null, null)
+    }
+    barTabs?.let {
+      it.setTextColor(c.ink)
+      it.background = rounded(Color.TRANSPARENT, 5, c.ink, 1.6f)
+    }
+    val tint = android.content.res.ColorStateList.valueOf(c.ink)
+    barIcons.forEach { it.imageTintList = tint }
+    paintFindBar(c)
+  }
+
+  private var barShieldIcon: android.graphics.drawable.Drawable? = null
+
+  /** The shield chip's number: this page's stopped requests, with the
+   * what's-hidden dot after it (#76), as the extension's toolbar icon
+   * shows it: calm green when the site's taming hid something here, gold
+   * when something you brought back is on the page. UI thread. */
+  private fun refreshShieldChip() {
+    val n = blockedOnPage.get()
+    val hidden = hiddenHere
+    val showing = showingHere
+    barShield?.let { chip ->
+      chip.text = "$n"
+      val c = colors()
+      val dotColor = when {
+        showing.isNotEmpty() -> c.gold
+        hidden.isNotEmpty() -> c.green
+        else -> 0
+      }
+      val dot = if (dotColor == 0) null else GradientDrawable().apply {
+        shape = GradientDrawable.OVAL
+        setColor(dotColor)
+        setBounds(0, 0, dp(6), dp(6))
+      }
+      chip.setCompoundDrawables(barShieldIcon, null, dot, null)
+      val stopped = if (n == 1) "1 ad or tracker stopped on this page" else "$n ads and trackers stopped on this page"
+      chip.contentDescription = when {
+        hidden.isNotEmpty() -> "$stopped. Hidden here: ${hidden.joinToString()}"
+        else -> stopped
+      }
+    }
+  }
+
+  // WHAT'S HIDDEN ON THIS PAGE (#76), reported by the page's own count
+  // (app/gaze/src/page/hidden-status.mjs) through HiddenBridge. Labels
+  // only, from the rules' own surface names. Cleared with each new
+  // document; an in-page move keeps the count, which reports again when
+  // the page changes.
+  @Volatile private var hiddenHere: List<String> = emptyList()
+  @Volatile private var showingHere: List<String> = emptyList()
+
+  /** Every page can reach this, so it takes only short plain labels, at
+   * most twelve of each, and only while a site we tame is showing. */
+  inner class HiddenBridge {
+    @JavascriptInterface
+    fun report(json: String?) {
+      if (json == null || json.length > 8 * 1024) return
+      val o = try { JSONObject(json) } catch (_: Throwable) { return }
+      fun labels(key: String): List<String> {
+        val a = o.optJSONArray(key) ?: return emptyList()
+        return (0 until minOf(a.length(), 12))
+          .mapNotNull { a.opt(it) as? String }
+          .map { it.filter { ch -> !ch.isISOControl() }.trim().take(48) }
+          .filter { it.isNotEmpty() }
+          .distinct()
+      }
+      val h = labels("h")
+      val sh = labels("s")
+      mainHandler.post {
+        if (!isTamedHost(Uri.parse(barUrl).host ?: "")) return@post
+        hiddenHere = h
+        showingHere = sh
+        refreshShieldChip()
+      }
+    }
+  }
+
+  // The interceptor counts on a worker thread; the chip catches up at most
+  // a few times a second, never once per request.
+  private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+  private val shieldRefreshQueued = java.util.concurrent.atomic.AtomicBoolean(false)
+
+  private fun queueShieldRefresh() {
+    if (!shieldRefreshQueued.compareAndSet(false, true)) return
+    mainHandler.postDelayed({
+      shieldRefreshQueued.set(false)
+      refreshShieldChip()
+    }, 400)
   }
 
   // THE SHIELD SHEET (2026-10-27 redesign, #39): the receipt for this
@@ -1325,14 +1519,26 @@ class MainActivity : TauriActivity() {
   // The page the shield's count belongs to (UI thread only).
   private var shieldPageKey = ""
 
-  // Today's total for the launcher's "today" line. Kept on this phone
-  // only, saved at each page load, and reset when the date changes.
-  // -1 until read back from prefs on the first page load.
+  // Today's total, and the last seven days' for the new tab page's
+  // "this week" line. Kept on this phone only, saved at each page load,
+  // and rolled when the date changes. -1 until read back from prefs on
+  // the first page load.
   private val stoppedToday = java.util.concurrent.atomic.AtomicInteger(-1)
   @Volatile private var statsDay = ""
 
-  private fun statsToday(): String =
-    java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+  private fun statsDayOf(ms: Long): String =
+    java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(ms))
+
+  private fun statsToday(): String = statsDayOf(System.currentTimeMillis())
+
+  /** Today and the six days before it. */
+  private fun statsWeekDays(): Set<String> {
+    val now = System.currentTimeMillis()
+    return (0..6).map { statsDayOf(now - it * 86_400_000L) }.toSet()
+  }
+
+  private fun statsWeek(prefs: android.content.SharedPreferences): JSONObject =
+    try { JSONObject(prefs.getString("week", "{}") ?: "{}") } catch (_: Throwable) { JSONObject() }
 
   @Synchronized private fun rollStatsDay() {
     val day = statsToday()
@@ -1347,77 +1553,59 @@ class MainActivity : TauriActivity() {
     }
   }
 
-  private fun saveStats() {
-    getSharedPreferences(STATS_PREFS, MODE_PRIVATE).edit()
+  @Synchronized private fun saveStats() {
+    val prefs = getSharedPreferences(STATS_PREFS, MODE_PRIVATE)
+    val n = stoppedToday.get().coerceAtLeast(0)
+    val keep = statsWeekDays()
+    val old = statsWeek(prefs)
+    val week = JSONObject()
+    old.keys().forEach { k -> if (k in keep) week.put(k, old.optInt(k)) }
+    if (statsDay.isNotEmpty()) week.put(statsDay, n)
+    prefs.edit()
       .putString("day", statsDay)
-      .putInt("stopped", stoppedToday.get().coerceAtLeast(0))
+      .putInt("stopped", n)
+      .putString("week", week.toString())
       .apply()
   }
 
-  /** A count, never a url or a host: every page can see this bridge. */
+  /** Counts, never a url or a host: every page can see this bridge. */
   inner class StatsBridge {
     @JavascriptInterface
     fun stoppedToday(): Int {
       rollStatsDay()
       return stoppedToday.get().coerceAtLeast(0)
     }
+
+    @JavascriptInterface
+    fun stoppedThisWeek(): Int {
+      rollStatsDay()
+      val today = statsDay
+      val week = statsWeek(getSharedPreferences(STATS_PREFS, MODE_PRIVATE))
+      var sum = stoppedToday.get().coerceAtLeast(0)
+      statsWeekDays().forEach { d -> if (d != today) sum += week.optInt(d, 0) }
+      return sum
+    }
   }
 
-  private fun showShieldSheet() {
-    val dp = resources.displayMetrics.density
-    val px = { v: Int -> (v * dp).toInt() }
-    val host = (Uri.parse(topBarUrl).host ?: "").removePrefix("www.").removePrefix("m.")
-    val stopped = blockedOnPage.get()
-    val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
-    fun text(value: String, sp: Float, color: Int, bold: Boolean = false) = TextView(this).apply {
-      text = value
-      setTextColor(color)
-      setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
-      if (bold) setTypeface(typeface, android.graphics.Typeface.BOLD)
+  /** The rounded top of a bottom sheet, with its grab handle, in the look. */
+  private fun sheetBox(c: BarColors): LinearLayout = LinearLayout(this).apply {
+    orientation = LinearLayout.VERTICAL
+    setPadding(dp(16), dp(10), dp(16), dp(20))
+    background = GradientDrawable().apply {
+      val r = dp(16).toFloat()
+      cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
+      setColor(c.bg)
     }
-    val box = LinearLayout(this).apply {
-      orientation = LinearLayout.VERTICAL
-      setPadding(px(24), px(12), px(24), px(28))
-      background = GradientDrawable().apply {
-        val r = px(20).toFloat()
-        cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
-        setColor(0xFF1C1C1C.toInt())
-      }
-    }
-    box.addView(View(this).apply {
-      background = GradientDrawable().apply { cornerRadius = px(2).toFloat(); setColor(0xFF363636.toInt()) }
-      layoutParams = LinearLayout.LayoutParams(px(36), px(4)).apply {
+    addView(View(this@MainActivity).apply {
+      background = rounded(c.line, 2)
+      layoutParams = LinearLayout.LayoutParams(dp(34), dp(4)).apply {
         gravity = Gravity.CENTER_HORIZONTAL
-        bottomMargin = px(16)
+        bottomMargin = dp(14)
       }
     })
-    box.addView(text(host, 17f, 0xFFE7E5E1.toInt(), bold = true))
-    box.addView(text("$stopped", 34f, 0xFFE7E5E1.toInt()).apply {
-      setPadding(0, px(12), 0, 0)
-    })
-    box.addView(text(
-      when (stopped) {
-        0 -> "ads and trackers stopped on this page. A quiet one."
-        1 -> "ad or tracker stopped on this page."
-        else -> "ads and trackers stopped on this page."
-      },
-      14f, 0xFFA8A49D.toInt(),
-    ))
-    box.addView(text(
-      "Pictures follow your blur choice. On the sites we tame, feeds are hidden too.",
-      13f, 0xFF7A766E.toInt(),
-    ).apply { setPadding(0, px(12), 0, 0) })
-    box.addView(text("Change what's hidden here", 14f, 0xFF141414.toInt(), bold = true).apply {
-      gravity = Gravity.CENTER
-      background = GradientDrawable().apply { cornerRadius = px(10).toFloat(); setColor(0xFFE7E5E1.toInt()) }
-      layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(48)).apply {
-        topMargin = px(20)
-      }
-      setOnClickListener {
-        sheet.dismiss()
-        webView.loadUrl("http://tauri.localhost/?settings=" + Uri.encode(topBarUrl))
-      }
-    })
+  }
+
+  private fun showSheet(sheet: com.google.android.material.bottomsheet.BottomSheetDialog, box: View) {
     sheet.setContentView(box)
     sheet.setOnShowListener {
       // Our rounded box is the sheet; the library's own surface stays clear.
@@ -1427,16 +1615,492 @@ class MainActivity : TauriActivity() {
     sheet.show()
   }
 
-  // THE BAR FOLDS AWAY (his 2026-10-28: "like Safari"). Dragging the
-  // page up folds it to a slim strip with the site's name, and a YouTube
-  // watch page opens folded so the video sits near the top. Only a tap on
-  // the strip (or a new page) brings it back: it used to return on any
-  // drag down, and he found it popping in and out while reading
-  // annoying (2026-10-28, on the 1124 test build). Driven by the
-  // finger, not by WebView scroll events: m.youtube scrolls inside the
-  // page, where onScrollChanged never fires. The touch is only watched,
-  // never consumed. Folding shrinks the WebView's top margin with the
-  // bar, the way Chrome's toolbar gives its height back to the page.
+  private fun showShieldSheet() {
+    val c = colors()
+    val host = (Uri.parse(barUrl).host ?: "").removePrefix("www.").removePrefix("m.")
+    val stopped = blockedOnPage.get()
+    val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+    fun text(value: String, sp: Float, color: Int, bold: Boolean = false) = TextView(this).apply {
+      text = value
+      setTextColor(color)
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+      if (bold) setTypeface(typeface, android.graphics.Typeface.BOLD)
+    }
+    val box = sheetBox(c).apply { setPadding(dp(24), dp(10), dp(24), dp(28)) }
+    box.addView(text(host, 17f, c.ink, bold = true))
+    box.addView(text("$stopped", 34f, c.ink).apply {
+      setPadding(0, dp(12), 0, 0)
+    })
+    box.addView(text(
+      when (stopped) {
+        0 -> "ads and trackers stopped on this page. A quiet one."
+        1 -> "ad or tracker stopped on this page."
+        else -> "ads and trackers stopped on this page."
+      },
+      14f, c.muted,
+    ))
+    // HIDDEN ON THIS PAGE (#76, mockup 5): what the site's taming hid
+    // here, as chips, and what you brought back that is on the page.
+    fun chips(title: String, items: List<String>, color: Int) {
+      if (items.isEmpty()) return
+      box.addView(text(title.uppercase(), 11f, c.faint, bold = true).apply {
+        letterSpacing = 0.1f
+        setPadding(0, dp(18), 0, dp(8))
+      })
+      val group = com.google.android.material.chip.ChipGroup(this).apply {
+        chipSpacingHorizontal = dp(6)
+        chipSpacingVertical = dp(6)
+      }
+      items.forEach { label ->
+        group.addView(text(label, 12.5f, color).apply {
+          background = rounded(c.pill, 6)
+          setPadding(dp(9), dp(4), dp(9), dp(4))
+        })
+      }
+      box.addView(group)
+    }
+    chips("Hidden on this page", hiddenHere, c.muted)
+    chips("Brought back", showingHere, c.gold)
+    box.addView(text(
+      "Pictures follow your blur choice. On the sites we tame, feeds are hidden too.",
+      13f, c.faint,
+    ).apply { setPadding(0, dp(16), 0, 0) })
+    box.addView(text("Change what's hidden here", 14f, c.bg, bold = true).apply {
+      gravity = Gravity.CENTER
+      background = rounded(c.ink, 10)
+      layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48)).apply {
+        topMargin = dp(20)
+      }
+      setOnClickListener {
+        sheet.dismiss()
+        webView.loadUrl("http://tauri.localhost/?settings=" + Uri.encode(barUrl))
+      }
+    })
+    showSheet(sheet, box)
+  }
+
+  // THE MENU (#73, mockup 7): three big actions on top (Private joins
+  // them with tabs, step 3), the everyday browser list underneath.
+  // Forward and reload live here to keep the bar to five things.
+  private fun showMenuSheet() {
+    val c = colors()
+    val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+    val box = sheetBox(c)
+    val ripple = rippleRes()
+    fun glyph(res: Int, color: Int, size: Int) = android.widget.ImageView(this).apply {
+      setImageResource(res)
+      imageTintList = android.content.res.ColorStateList.valueOf(color)
+      layoutParams = LinearLayout.LayoutParams(dp(size), dp(size))
+    }
+    fun act(run: () -> Unit) { sheet.dismiss(); run() }
+
+    val tiles = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+    fun tile(res: Int, label: String, run: () -> Unit) = LinearLayout(this).apply {
+      orientation = LinearLayout.VERTICAL
+      gravity = Gravity.CENTER_HORIZONTAL
+      setPadding(0, dp(11), 0, dp(9))
+      background = rounded(c.surface, 10, c.hair)
+      layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+        marginStart = dp(3)
+        marginEnd = dp(3)
+      }
+      addView(glyph(res, c.ink, 22))
+      addView(TextView(this@MainActivity).apply {
+        text = label
+        setTextColor(c.muted)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+        gravity = Gravity.CENTER
+        setPadding(0, dp(5), 0, 0)
+      })
+      setOnClickListener { act(run) }
+    }
+    tiles.addView(tile(R.drawable.ic_bar_plus, "New tab") { webView.loadUrl(launcherUrl(null)) })
+    tiles.addView(tile(R.drawable.ic_bar_star, "Bookmarks") { webView.loadUrl("http://tauri.localhost/?library=bookmarks") })
+    tiles.addView(tile(R.drawable.ic_bar_clock, "History") { webView.loadUrl("http://tauri.localhost/?library=history") })
+    box.addView(tiles)
+
+    val list = LinearLayout(this).apply {
+      orientation = LinearLayout.VERTICAL
+      background = rounded(c.surface, 10, c.hair)
+      layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+        topMargin = dp(10)
+        marginStart = dp(3)
+        marginEnd = dp(3)
+      }
+    }
+    fun row(res: Int, label: String, enabled: Boolean = true, sub: String? = null, trailing: View? = null, trailingLive: Boolean = false, run: () -> Unit) {
+      if (list.childCount > 0) list.addView(View(this).apply {
+        setBackgroundColor(c.hair)
+        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, maxOf(1, dp(0.7f)))
+      })
+      val words = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(14) }
+        addView(TextView(this@MainActivity).apply {
+          text = label
+          setTextColor(c.ink)
+          setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+        })
+        if (sub != null) addView(TextView(this@MainActivity).apply {
+          text = sub
+          setTextColor(c.faint)
+          setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+        })
+      }
+      list.addView(LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        minimumHeight = dp(48)
+        setPadding(dp(14), dp(4), if (trailing != null) dp(6) else dp(14), dp(4))
+        val icon = glyph(res, c.ink, 19)
+        addView(icon)
+        addView(words)
+        if (trailing != null) addView(trailing)
+        if (enabled) setOnClickListener { act(run) } else {
+          // Dim what is off; a live trailing button (reload) stays usable.
+          icon.alpha = DISABLED_ALPHA
+          words.alpha = DISABLED_ALPHA
+          if (!trailingLive) trailing?.alpha = DISABLED_ALPHA
+        }
+      })
+    }
+
+    val reload = ImageButton(this).apply {
+      setImageResource(R.drawable.ic_bar_reload)
+      imageTintList = android.content.res.ColorStateList.valueOf(c.muted)
+      contentDescription = "Reload"
+      setBackgroundResource(ripple)
+      layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
+      setOnClickListener { act { webView.reload() } }
+    }
+    row(R.drawable.ic_bar_fwd, "Forward", enabled = webView.canGoForward(), trailing = reload, trailingLive = true) { goForward() }
+    val marked = isBookmarked(barUrl)
+    row(R.drawable.ic_bar_star, if (marked) "Remove bookmark" else "Bookmark this page") { toggleBookmark() }
+    row(R.drawable.ic_bar_find, "Find on page") { showFindBar() }
+    row(R.drawable.ic_bar_share, "Share") { sharePage() }
+    // Off on the sites we tame: their rules are written for the mobile
+    // pages, and a desktop page there would be a page the rules never saw.
+    val tamed = isTamedHost(Uri.parse(barUrl).host ?: "")
+    row(
+      R.drawable.ic_bar_desk, "Desktop site", enabled = !tamed,
+      sub = if (tamed) "Not on the sites we tame" else null,
+      trailing = toggleView(c, desktopSite),
+    ) { setDesktopSite(!desktopSite) }
+    row(R.drawable.ic_bar_gear, "Settings") { webView.loadUrl("http://tauri.localhost/?view=settings") }
+    box.addView(list)
+    showSheet(sheet, box)
+  }
+
+  /** How far a disabled menu row is dimmed. */
+  private val DISABLED_ALPHA = 0.45f
+
+  /** The launcher's flat switch (mockup .tog), for the menu's one toggle. */
+  private fun toggleView(c: BarColors, on: Boolean) = FrameLayout(this).apply {
+    background = rounded(if (on) c.green else c.line, 10)
+    layoutParams = LinearLayout.LayoutParams(dp(34), dp(20)).apply { marginEnd = dp(8) }
+    addView(View(this@MainActivity).apply {
+      background = rounded(c.surface, 8)
+      layoutParams = FrameLayout.LayoutParams(dp(16), dp(16), Gravity.CENTER_VERTICAL or (if (on) Gravity.END else Gravity.START)).apply {
+        marginStart = dp(2)
+        marginEnd = dp(2)
+      }
+    })
+  }
+
+  /** Forward, never into the launcher's restored document (see the Back
+   * callback: a history-restored launcher is a detached zombie). */
+  private fun goForward() {
+    val list = webView.copyBackForwardList()
+    val i = list.currentIndex + 1
+    if (i >= list.size) return
+    val url = list.getItemAtIndex(i).url
+    if (url == null || url.contains("tauri.localhost")) webView.loadUrl(launcherUrl(null)) else webView.goForward()
+  }
+
+  private fun sharePage() {
+    if (!recordable(barUrl)) return
+    val send = Intent(Intent.ACTION_SEND).apply {
+      type = "text/plain"
+      putExtra(Intent.EXTRA_TEXT, barUrl)
+    }
+    val chooser = Intent.createChooser(send, null).apply {
+      // Sharing a page to ourselves only puts it back in our address box.
+      putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(android.content.ComponentName(this@MainActivity, MainActivity::class.java)))
+    }
+    try { startActivity(chooser) } catch (_: Throwable) {
+      android.widget.Toast.makeText(this, "No app to share with.", android.widget.Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  // DESKTOP SITE: the page is asked for with a desktop user agent, the way
+  // Chrome's "Desktop site" does, until it is switched off. Never on the
+  // sites we tame (see the menu row); arriving on one switches it off.
+  private var desktopSite = false
+  private var mobileUserAgent: String? = null
+  private val tamedRoots = listOf(
+    "youtube.com", "youtu.be", "reddit.com", "x.com", "twitter.com",
+    "tiktok.com", "instagram.com", "facebook.com",
+    "twitch.tv", "linkedin.com", "pinterest.com",
+  )
+
+  private fun isTamedHost(host: String): Boolean {
+    val h = host.lowercase()
+    return tamedRoots.any { h == it || h.endsWith(".$it") }
+  }
+
+  private fun setDesktopSite(on: Boolean, reload: Boolean = true) {
+    val s = webView.settings
+    val mobile = mobileUserAgent ?: s.userAgentString.also { mobileUserAgent = it }
+    desktopSite = on
+    s.userAgentString = if (on) {
+      mobile.replace(Regex("\\(Linux; Android[^)]*\\)"), "(X11; Linux x86_64)")
+        .replace(" Mobile", "")
+        .replace("; wv", "")
+    } else mobile
+    if (reload) webView.reload()
+  }
+
+  // FIND ON PAGE: a row over the bar, the WebView's own find.
+  private var findBar: LinearLayout? = null
+  private var findInput: android.widget.EditText? = null
+  private var findCount: TextView? = null
+  private val findIcons = mutableListOf<ImageButton>()
+
+  private fun installFindBar(content: FrameLayout, ripple: Int) {
+    fun icon(res: Int, label: String, onTap: () -> Unit) = ImageButton(this).apply {
+      setImageResource(res)
+      contentDescription = label
+      setBackgroundResource(ripple)
+      layoutParams = LinearLayout.LayoutParams(dp(40), dp(44))
+      setOnClickListener { onTap() }
+    }.also { findIcons.add(it) }
+    val input = android.widget.EditText(this).apply {
+      hint = "Find on page"
+      setSingleLine()
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+      imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+      setPadding(dp(12), 0, dp(12), 0)
+      layoutParams = LinearLayout.LayoutParams(0, dp(40), 1f).apply { marginStart = dp(6) }
+      addTextChangedListener(object : android.text.TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, d: Int) {}
+        override fun onTextChanged(s: CharSequence?, a: Int, b: Int, d: Int) {}
+        override fun afterTextChanged(s: android.text.Editable?) {
+          val q = s?.toString() ?: ""
+          if (q.isEmpty()) {
+            webView.clearMatches()
+            findCount?.text = ""
+          } else webView.findAllAsync(q)
+        }
+      })
+      setOnEditorActionListener { _, _, _ -> webView.findNext(true); true }
+    }
+    val count = TextView(this).apply {
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+      gravity = Gravity.CENTER
+      setPadding(dp(8), 0, dp(2), 0)
+    }
+    val row = LinearLayout(this).apply {
+      orientation = LinearLayout.HORIZONTAL
+      gravity = Gravity.CENTER_VERTICAL
+      setPadding(dp(4), dp(1), dp(4), 0)
+      visibility = View.GONE
+      isClickable = true
+      addView(input)
+      addView(count)
+      addView(icon(R.drawable.ic_bar_up, "Previous match") { webView.findNext(false) })
+      addView(icon(R.drawable.ic_bar_down, "Next match") { webView.findNext(true) })
+      addView(icon(R.drawable.ic_bar_close, "Close find") { hideFindBar() })
+    }
+    content.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_DP), Gravity.BOTTOM))
+    findBar = row
+    findInput = input
+    findCount = count
+    webView.setFindListener { active, matches, _ ->
+      findCount?.text = if (matches == 0) "0/0" else "${active + 1}/$matches"
+    }
+  }
+
+  private fun paintFindBar(c: BarColors) {
+    findBar?.background = bar?.background?.constantState?.newDrawable()?.mutate()
+    findInput?.let {
+      it.background = rounded(c.pill, 10)
+      it.setTextColor(c.ink)
+      it.setHintTextColor(c.faint)
+    }
+    findCount?.setTextColor(c.muted)
+    val tint = android.content.res.ColorStateList.valueOf(c.ink)
+    findIcons.forEach { it.imageTintList = tint }
+  }
+
+  private fun showFindBar() {
+    val row = findBar ?: return
+    foldBar(true)
+    row.visibility = View.VISIBLE
+    findInput?.let {
+      it.setText("")
+      it.requestFocus()
+      (getSystemService(INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager)
+        ?.showSoftInput(it, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+    }
+  }
+
+  private fun findBarOpen() = findBar?.visibility == View.VISIBLE
+
+  private fun hideFindBar() {
+    val row = findBar ?: return
+    if (row.visibility != View.VISIBLE) return
+    webView.clearMatches()
+    findCount?.text = ""
+    findInput?.let {
+      (getSystemService(INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager)
+        ?.hideSoftInputFromWindow(it.windowToken, 0)
+      it.clearFocus()
+    }
+    row.visibility = View.GONE
+  }
+
+  // BOOKMARKS AND HISTORY (#73, mockup 8). On this phone only, in app
+  // prefs: for history the address, the title and the time of each
+  // top-level http(s) page, and nothing else. The launcher reads and
+  // edits them through LibraryBridge; no other page can.
+  private val libraryLock = Any()
+
+  private fun libraryPrefs() = getSharedPreferences(LIBRARY_PREFS, MODE_PRIVATE)
+
+  private fun libraryRead(key: String): org.json.JSONArray =
+    try { org.json.JSONArray(libraryPrefs().getString(key, "[]") ?: "[]") } catch (_: Throwable) { org.json.JSONArray() }
+
+  /** A page that belongs in history: http(s), and not one of ours. */
+  private fun recordable(url: String) =
+    (url.startsWith("https://") || url.startsWith("http://")) &&
+      !url.contains("tauri.localhost") && !url.contains("/__tamescroll/")
+
+  private fun libraryKey(url: String) = url.substringBefore('#').take(2048)
+
+  private fun recordHistory(url: String) {
+    if (!recordable(url)) return
+    val key = libraryKey(url)
+    synchronized(libraryLock) {
+      val list = libraryRead("history")
+      val now = System.currentTimeMillis()
+      val last = if (list.length() > 0) list.optJSONObject(list.length() - 1) else null
+      // An SPA reports the same address several times: one visit.
+      if (last != null && last.optString("u") == key) last.put("at", now)
+      else list.put(JSONObject().put("u", key).put("t", "").put("at", now))
+      val out = if (list.length() <= HISTORY_MAX) list else org.json.JSONArray().also {
+        for (i in list.length() - HISTORY_MAX until list.length()) it.put(list.get(i))
+      }
+      libraryPrefs().edit().putString("history", out.toString()).apply()
+    }
+  }
+
+  private fun titleHistory(url: String?, title: String) {
+    if (url == null || !recordable(url)) return
+    val t = title.trim().take(300)
+    if (t.isEmpty() || t == url) return
+    val key = libraryKey(url)
+    synchronized(libraryLock) {
+      val list = libraryRead("history")
+      val last = if (list.length() > 0) list.optJSONObject(list.length() - 1) else null
+      if (last == null || last.optString("u") != key || last.optString("t") == t) return
+      last.put("t", t)
+      libraryPrefs().edit().putString("history", list.toString()).apply()
+    }
+  }
+
+  private fun isBookmarked(url: String): Boolean {
+    val key = libraryKey(url)
+    return synchronized(libraryLock) {
+      val list = libraryRead("bookmarks")
+      (0 until list.length()).any { list.optJSONObject(it)?.optString("u") == key }
+    }
+  }
+
+  private fun toggleBookmark() {
+    if (!recordable(barUrl)) return
+    val key = libraryKey(barUrl)
+    val title = (webView.title ?: "").trim().take(300)
+    val added = synchronized(libraryLock) {
+      val list = libraryRead("bookmarks")
+      val out = org.json.JSONArray()
+      var found = false
+      for (i in 0 until list.length()) {
+        val o = list.optJSONObject(i) ?: continue
+        if (o.optString("u") == key) found = true else out.put(o)
+      }
+      if (!found) {
+        out.put(JSONObject().put("u", key).put("t", if (title == key) "" else title)
+          .put("at", System.currentTimeMillis()).put("pin", false))
+      }
+      libraryPrefs().edit().putString("bookmarks", out.toString()).commit()
+      !found
+    }
+    android.widget.Toast.makeText(
+      this, if (added) "Bookmarked" else "Bookmark removed", android.widget.Toast.LENGTH_SHORT,
+    ).show()
+  }
+
+  /** Launcher-only, both ways: a site can neither read the user's history
+   * and bookmarks nor rewrite them. */
+  inner class LibraryBridge {
+    private fun onLauncher(): Boolean {
+      val task = java.util.concurrent.FutureTask<Boolean> {
+        val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+        here.startsWith("http://tauri.localhost/")
+      }
+      runOnUiThread(task)
+      return try { task.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
+    }
+
+    @JavascriptInterface
+    fun read(): String {
+      if (!onLauncher()) return "{}"
+      return synchronized(libraryLock) {
+        JSONObject()
+          .put("bookmarks", libraryRead("bookmarks"))
+          .put("history", libraryRead("history"))
+          .toString()
+      }
+    }
+
+    /** The launcher's whole bookmark list (pins, removals, seeding). Only
+     * well-formed http(s) entries are kept. */
+    @JavascriptInterface
+    fun saveBookmarks(json: String?): Boolean {
+      if (json == null || json.length > 256 * 1024 || !onLauncher()) return false
+      val list = try { org.json.JSONArray(json) } catch (_: Throwable) { return false }
+      val clean = org.json.JSONArray()
+      for (i in 0 until list.length()) {
+        val o = list.optJSONObject(i) ?: continue
+        val u = o.optString("u")
+        if (!u.startsWith("https://") && !u.startsWith("http://")) continue
+        clean.put(JSONObject().put("u", u.take(2048)).put("t", o.optString("t").take(300))
+          .put("at", o.optLong("at")).put("pin", o.optBoolean("pin")))
+      }
+      return synchronized(libraryLock) {
+        libraryPrefs().edit().putString("bookmarks", clean.toString()).commit()
+      }
+    }
+
+    @JavascriptInterface
+    fun clearHistory(): Boolean {
+      if (!onLauncher()) return false
+      return synchronized(libraryLock) {
+        libraryPrefs().edit().putString("history", "[]").commit()
+      }
+    }
+  }
+
+  // THE BAR FOLDS AWAY (his 2026-10-28: "like Safari"; the approved
+  // redesign, 2026-11-23, mockup 3: "folds away as you scroll down and
+  // comes back on a small scroll up"). Dragging the page up folds it to a
+  // slim strip with the site's name; a deliberate drag back down, or a
+  // tap on the strip, brings it back. A YouTube watch page opens folded
+  // so the video sits clear of it. Driven by the finger, not by WebView
+  // scroll events: m.youtube scrolls inside the page, where
+  // onScrollChanged never fires. The touch is only watched, never
+  // consumed. Folding gives the bar's height back to the WebView, the way
+  // Chrome's toolbar does.
   private var barFraction = 1f
   private var barAnimator: android.animation.ValueAnimator? = null
   private var barPageKey = ""
@@ -1445,26 +2109,26 @@ class MainActivity : TauriActivity() {
   private var dragTravel = 0f
 
   private fun applyBarFraction(f: Float) {
-    val bar = topBar ?: return
-    val host = topBarHost ?: return
+    val bar = bar ?: return
+    val host = barHost ?: return
     barFraction = f
     val density = resources.displayMetrics.density
-    val h = TOP_BAR_DP * density
-    val strip = TOP_STRIP_DP * density
-    bar.translationY = -(1f - f) * h
-    topStrip?.let {
+    val h = BAR_DP * density
+    val strip = BAR_STRIP_DP * density
+    bar.translationY = (1f - f) * h
+    barStrip?.let {
       it.alpha = 1f - f
       it.visibility = if (bar.visibility == View.VISIBLE && f < 1f) View.VISIBLE else View.GONE
     }
     val lp = host.layoutParams as? ViewGroup.MarginLayoutParams ?: return
     val margin = (strip + f * (h - strip)).toInt()
-    if (lp.topMargin == margin) return
-    lp.topMargin = margin
+    if (lp.bottomMargin == margin) return
+    lp.bottomMargin = margin
     host.layoutParams = lp
   }
 
   private fun foldBar(show: Boolean) {
-    if (topBar?.visibility != View.VISIBLE) return
+    if (bar?.visibility != View.VISIBLE) return
     val target = if (show) 1f else 0f
     if (barFraction == target && barAnimator == null) return
     barAnimator?.cancel()
@@ -1481,7 +2145,7 @@ class MainActivity : TauriActivity() {
   }
 
   private fun foldBarOnDrag(ev: MotionEvent) {
-    if (topBar?.visibility != View.VISIBLE) return
+    if (bar?.visibility != View.VISIBLE || findBarOpen()) return
     when (ev.actionMasked) {
       MotionEvent.ACTION_DOWN -> {
         dragLastX = ev.rawX
@@ -1497,8 +2161,9 @@ class MainActivity : TauriActivity() {
         if (Math.abs(dy) <= Math.abs(dx)) return
         if ((dy > 0) != (dragTravel > 0)) dragTravel = 0f
         dragTravel += dy
-        val threshold = 24 * resources.displayMetrics.density
-        if (dragTravel < -threshold) foldBar(false)
+        val density = resources.displayMetrics.density
+        if (dragTravel < -BAR_FOLD_DRAG_DP * density) foldBar(false)
+        else if (dragTravel > BAR_SHOW_DRAG_DP * density) foldBar(true)
       }
     }
   }
@@ -1510,29 +2175,32 @@ class MainActivity : TauriActivity() {
   }
 
   /** Shows the bar on a web page and hides it on the launcher. UI thread. */
-  private fun updateTopBar(url: String?) {
-    val bar = topBar ?: return
+  private fun updateBrowserBar(url: String?) {
+    val bar = bar ?: return
     val u = url ?: ""
     val onSite = (u.startsWith("https://") || u.startsWith("http://")) && !u.contains("tauri.localhost")
     if (!onSite) {
+      hideFindBar()
       if (bar.visibility == View.GONE) return
       barAnimator?.cancel()
       barAnimator = null
       bar.visibility = View.GONE
       applyBarFraction(0f)
       // Off a site the page gets the whole screen back, strip included.
-      (topBarHost?.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-        it.topMargin = 0
-        topBarHost?.layoutParams = it
+      (barHost?.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+        it.bottomMargin = 0
+        barHost?.layoutParams = it
       }
       bar.translationY = 0f
       barPageKey = ""
       return
     }
-    topBarUrl = u
+    barUrl = u
+    paintBar()
     val uri = Uri.parse(u)
-    topBarAddress?.text = (uri.host ?: u).removePrefix("www.").removePrefix("m.")
-    topStrip?.text = topBarAddress?.text
+    barAddress?.text = (uri.host ?: u).removePrefix("www.").removePrefix("m.")
+    barStrip?.text = barAddress?.text
+    refreshShieldChip()
     if (bar.visibility != View.VISIBLE) {
       bar.visibility = View.VISIBLE
       applyBarFraction(1f)
@@ -1578,6 +2246,9 @@ class MainActivity : TauriActivity() {
         if (request.isForMainFrame) {
           perfTokenServed = false
           blockedOnPage.set(0)
+          hiddenHere = emptyList()
+          showingHere = emptyList()
+          queueShieldRefresh()
           rollStatsDay()
           saveStats()
         }
@@ -1606,6 +2277,7 @@ class MainActivity : TauriActivity() {
           if (nativeShouldBlock(url, pageUrlForBlocking, resourceTypeOf(request))) {
             blockedOnPage.incrementAndGet()
             if (stoppedToday.get() >= 0) stoppedToday.incrementAndGet()
+            queueShieldRefresh()
             return blockedResponse()
           }
         } catch (e: Throwable) {
@@ -1622,7 +2294,9 @@ class MainActivity : TauriActivity() {
 
       override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
         pageUrlForBlocking = url
-        updateTopBar(url)
+        updateBrowserBar(url)
+        // Desktop site never reaches a site we tame (see the menu).
+        if (desktopSite && isTamedHost(Uri.parse(url).host ?: "")) view.post { setDesktopSite(false) }
         applyStrips(url)
         // The port is PULLED by the document-start stash (TsNativePort.
         // requestPort), never pushed from here: a WebMessage posted at
@@ -1654,7 +2328,9 @@ class MainActivity : TauriActivity() {
           shieldPageKey = pageKey
         }
         pageUrlForBlocking = url
-        updateTopBar(url)
+        updateBrowserBar(url)
+        refreshShieldChip()
+        if (!isReload) recordHistory(url)
         wry.doUpdateVisitedHistory(view, url, isReload)
       }
 
@@ -2161,6 +2837,9 @@ class MainActivity : TauriActivity() {
     // hostile page cannot turn it into anything but a wasted disk write.
     webView.addJavascriptInterface(DiagBridge(), "TsDiag")
     webView.addJavascriptInterface(StatsBridge(), "TsStats")
+    // Short labels only, and only taken while a tamed site shows (#76).
+    webView.addJavascriptInterface(HiddenBridge(), "TsHidden")
+    webView.addJavascriptInterface(LibraryBridge(), "TsLibrary")
     webView.addJavascriptInterface(NativePortBridge(), "TsNativePort")
     // Perf dials (PerfBridge): reachable from every platform page like
     // any @JavascriptInterface, so every method is gated on the
@@ -2187,7 +2866,7 @@ class MainActivity : TauriActivity() {
     }
     webView.post { installFullscreenClient() }
     webView.post { installBlockingClient() }
-    webView.post { installTopBar() }
+    webView.post { installBrowserBar() }
 
     // tamescroll: on Android everything runs in this one WebView, so the
     // system Back key must always land on our launcher before it is
@@ -2209,6 +2888,8 @@ class MainActivity : TauriActivity() {
           // video, so it does nothing -- not even leave fullscreen --
           // until a parent unlocks on the page.
           pageLocked -> {}
+          // Find on page open: Back closes it, as in every browser.
+          findBarOpen() -> hideFindBar()
           // Fullscreen video first: Back exits fullscreen, not the page —
           // the same contract every browser honors.
           fullscreenView != null -> exitFullscreen()
@@ -2217,7 +2898,12 @@ class MainActivity : TauriActivity() {
           // attach a fresh Activity to an already-initialized process —
           // the relaunch renders permanently blank (emulator evidence
           // 2026-08-18, new Task with zero webview activity).
-          onLauncher -> moveTaskToBack(true)
+          // The launcher's own layers first (#73): its menu sheet closes,
+          // and Bookmarks and history opened from a site's menu returns to
+          // that site. Anything it does not claim backgrounds the app.
+          onLauncher -> webView.evaluateJavascript(
+            "(function(){try{return !!(window.__tsBack&&window.__tsBack())}catch(e){return false}})()",
+          ) { handled -> if (handled != "true") moveTaskToBack(true) }
           // Never history-restore INTO the launcher: goBack() onto the
           // custom-protocol page revives a back/forward-cache zombie
           // document that stays visible but detached — taps land in it

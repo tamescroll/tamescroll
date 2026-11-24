@@ -113,6 +113,11 @@ x.com##[data-testid="primaryColumn"] [data-testid="trend"]
 ! [live] x.com/NASA signed out 2026-11-23
 x.com##aside:has(a[href*="/i/jf/onboarding/web"])
 
+! Phone pages (the app), signed out: a full-screen "Get the full app
+! experience / Open X" dialog whose one link opens the app store.
+! [live] x.com/NASA in the app, 2026-11-24
+x.com##[role="dialog"]:has(a[href*="launch_app_store=true"])
+
 ! Same rationale as reddit.txt/youtube.txt: intent:// links punt to the
 ! native app; un-hidden ones would land the single Android webview on a
 ! Chromium error page (no scheme handler). Scheme-based, drift-proof.

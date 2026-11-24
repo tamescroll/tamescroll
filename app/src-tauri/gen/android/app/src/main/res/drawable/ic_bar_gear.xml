@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Browser bar and menu (#73): settings. Tinted in code to the look. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:pathData="M9,12a3,3 0,1 0,6 0a3,3 0,1 0,-6 0Z" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M12,3.5V5.7M12,18.3V20.5M3.5,12H5.7M18.3,12H20.5M6,6L7.6,7.6M16.4,16.4L18,18M6,18L7.6,16.4M16.4,7.6L18,6" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>
