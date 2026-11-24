@@ -186,9 +186,9 @@ pub fn build_tracker_engine() -> Engine {
 #[cfg_attr(not(any(target_os = "ios", test)), allow(dead_code))]
 pub(crate) fn content_blocker_json() -> (String, usize) {
     use adblock::content_blocking::CbType;
-    let mut set = FilterSet::new(true);
+    let mut set = adblock::lists::FilterSet::new(true);
     for list in ENGINE_LISTS.iter().filter(|l| **l != "scriptlets.txt") {
-        set.add_filter_list(crate::ota::rules_text(list), ParseOptions::default());
+        set.add_filter_list(crate::ota::rules_text(list), adblock::lists::ParseOptions::default());
     }
     let rules: Vec<_> = match set.into_content_blocking() {
         Ok((rules, _unconverted)) => rules
