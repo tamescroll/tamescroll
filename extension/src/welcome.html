@@ -3,28 +3,67 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tame Scroll is on</title>
+<title>Welcome to Tame Scroll</title>
 <link rel="icon" href="icons/icon-32.png">
 <link rel="stylesheet" href="welcome.css">
 </head>
 <body>
+<div class="glow" aria-hidden="true"></div>
 <main class="page">
-  <svg class="mark" viewBox="0 0 34 24" aria-hidden="true"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-  <h1>Tame Scroll is on</h1>
-  <p class="lede">It is working on <span id="sites">your sites</span>. Feeds, Shorts, Reels and ads are hidden wherever a site has them. Nothing to set up.</p>
-  <div class="steps">
-    <div class="step"><span class="tick" aria-hidden="true"></span>The green dot on the icon means a page is tamed.</div>
-    <div class="step"><span class="tick" aria-hidden="true"></span>Pin it: the puzzle piece in the toolbar, then the pin next to Tame Scroll.</div>
-    <div class="step"><span class="tick" aria-hidden="true"></span>To blur pictures, open Tame Scroll on a site and switch on Blur pictures.</div>
-  </div>
-  <section class="pair" id="pair" hidden>
-    <div class="pair-k">Pairs well with</div>
-    <div class="pair-top"><span class="hb" aria-hidden="true">H</span><div><div class="pair-name">HaramBlur</div><div class="pair-sub">Free extension, by its own developers</div></div></div>
-    <p>Tame Scroll takes away what you didn't ask to see, and can blur pictures. HaramBlur blurs people inside the images and videos you do open, on your own computer. Together they cover both.</p>
-    <div class="btns"><a class="btn" id="get" target="_blank" rel="noopener">Add HaramBlur</a><button class="ghost" id="not-now" type="button">Not now</button></div>
+  <header class="top">
+    <span class="brand"><svg class="mark" viewBox="0 0 34 24" aria-hidden="true"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>tamescroll</span>
+    <span class="status"><i></i>Installed and on</span>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy rise">
+      <h1>Social media,<br><em>without the scroll.</em></h1>
+      <p class="lede">Tame Scroll is already working on <span id="sites">your sites</span>. Feeds, Shorts, Reels and ads are hidden wherever a site has them. There's nothing to set up.</p>
+      <div class="chips" id="site-chips"></div>
+    </div>
+    <div class="hero-art rise d1" aria-hidden="true">
+      <div class="win">
+        <div class="win-bar"><span></span><span></span><span></span><div class="win-url"></div><div class="win-ext"><svg viewBox="0 0 34 24"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><b></b></div></div>
+        <div class="win-body">
+          <div class="pop">
+            <div class="pop-row"><span class="pop-chip">Y</span><span class="pop-title">YouTube</span><span class="pop-sw"></span></div>
+            <div class="pop-count"><b>4</b> things hidden</div>
+            <div class="pop-tags"><span>Shorts</span><span>Home feed</span><span>Autoplay</span><span>Ads</span></div>
+          </div>
+          <div class="ghost-feed"><i></i><i></i><i></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="steps rise d2">
+    <div class="step"><span class="num">1</span><div><b>Pin it</b><p>Click the puzzle piece in the toolbar, then the pin next to Tame Scroll.</p></div></div>
+    <div class="step"><span class="num">2</span><div><b>Look for the green dot</b><p>It means the page you're on is tamed. Gold means something is showing because you chose it.</p></div></div>
+    <div class="step"><span class="num">3</span><div><b>Blur pictures if you like</b><p>Open Tame Scroll on any site and switch on Blur pictures.</p></div></div>
+  </section>
+
+  <section class="pair rise d3" id="pair" hidden>
+    <div class="pair-head">
+      <span class="pair-k">Pairs well with</span>
+      <h2>Add HaramBlur for blur inside videos</h2>
+      <p>Tame Scroll takes away what you didn't ask to see. HaramBlur, a free extension by its own developers, blurs people inside the images and videos you do open, on your own computer. Together they cover both.</p>
+    </div>
+    <div class="duo" aria-hidden="true">
+      <div class="duo-card"><svg class="duo-mark" viewBox="0 0 34 24"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><b>Tame Scroll</b><span>Removes feeds, Shorts, Reels and ads</span></div>
+      <span class="plus">+</span>
+      <div class="duo-card hb"><span class="duo-h">H</span><b>HaramBlur</b><span>Blurs people in images and videos</span></div>
+    </div>
+    <div class="btns">
+      <a class="btn" id="get" target="_blank" rel="noopener">Add HaramBlur <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <button class="ghost" id="not-now" type="button">Not now</button>
+    </div>
     <p class="small">Opens HaramBlur's store page. Tame Scroll is not affiliated with HaramBlur.</p>
   </section>
-  <div class="done"><button class="text-btn" id="done" type="button">Done</button></div>
+
+  <footer class="foot rise d4">
+    <span>No account, no tracking. Your settings stay in your browser.</span>
+    <button class="done" id="done" type="button">I'm all set</button>
+  </footer>
 </main>
 <script src="welcome.js"></script>
 </body>

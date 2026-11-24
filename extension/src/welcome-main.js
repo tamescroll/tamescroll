@@ -12,6 +12,14 @@ function listWords(xs) {
 }
 
 $('sites').textContent = listWords(SITES.map((s) => s.label));
+// One chip per site: its initial and its name, never a site's logo.
+$('site-chips').replaceChildren(...SITES.map((s) => {
+  const chip = document.createElement('span');
+  const mono = document.createElement('b');
+  mono.textContent = s.label[0];
+  chip.append(mono, s.label);
+  return chip;
+}));
 
 const url = companionUrl(navigator.userAgent);
 api.storage.local.get('companionDismissed').then((st) => {
