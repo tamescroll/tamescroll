@@ -846,6 +846,19 @@ function homeIconRow(platform: Platform): HTMLElement | null {
     let r = "refused";
     try { r = String(bridge.pinNamed!(platform.id, "")); } catch { /* bridge threw */ }
     paint(SITE_PIN_WORDS[r]);
+    // The launcher's confirm dialog sits over the page and tells the page
+    // nothing when it closes (measured on the emulator: no visibilitychange,
+    // the row kept saying "Confirm..." with Add still showing). Ask the OS
+    // again each second for a minute until the icon is there.
+    if (r === "requested") {
+      let left = 60;
+      const tick = window.setInterval(() => {
+        let pinned = false;
+        try { pinned = JSON.parse(bridge.pinState!(platform.id)).pinned === true; } catch { /* the OS would not say */ }
+        if (pinned) paint();
+        if (pinned || --left <= 0) window.clearInterval(tick);
+      }, 1000);
+    }
   });
   paint();
   text.append(label, note);
