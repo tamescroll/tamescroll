@@ -33,3 +33,11 @@ test('kill.json switches YouTube ad blocking and named scripts off, and nothing 
   assert.deepEqual(parseKill('not json'), { adsBlockingOff: [], disabledScripts: [] });
   assert.deepEqual(parseKill('{"adsBlockingOff":["youtube","<script>"]}').adsBlockingOff, ['youtube']);
 });
+
+test('HaramBlur links to the store of the browser it is opened in, never on Safari', async () => {
+  const { companionUrl, HARAMBLUR } = await import('../src/companion.js');
+  assert.equal(companionUrl('Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36'), HARAMBLUR.chrome);
+  assert.equal(companionUrl('Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 Edg/131.0'), HARAMBLUR.chrome);
+  assert.equal(companionUrl('Mozilla/5.0 (Windows NT 10.0; rv:133.0) Gecko/20100101 Firefox/133.0'), HARAMBLUR.firefox);
+  assert.equal(companionUrl('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'), null);
+});

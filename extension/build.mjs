@@ -146,6 +146,7 @@ async function bundle(outdir, { store }) {
       'instagram-suggested': join(here, 'src/instagram-suggested.js'),
       'old-reddit': join(here, 'src/old-reddit.js'),
       'linkedin-feed': join(here, 'src/linkedin-feed.js'),
+      welcome: join(here, 'src/welcome-main.js'),
     },
     outdir,
     define: { __BUILD_ID__: JSON.stringify(store ? 'store' : BUILD_ID), __STORE__: String(!!store) },
@@ -170,6 +171,8 @@ async function buildTarget(target, out, { store }) {
   writeFileSync(join(out, 'youtube-autoplay.js'), autoplayScript(kid));
   cpSync(join(here, 'src/popup.html'), join(out, 'popup.html'));
   cpSync(join(here, 'src/popup.css'), join(out, 'popup.css'));
+  cpSync(join(here, 'src/welcome.html'), join(out, 'welcome.html'));
+  cpSync(join(here, 'src/welcome.css'), join(out, 'welcome.css'));
   cpSync(join(here, 'src/embed.css'), join(out, 'embed.css'));
   cpSync(join(here, 'icons'), join(out, 'icons'), { recursive: true });
   // The store shows the 128px icon on a light page: the store copy is the
