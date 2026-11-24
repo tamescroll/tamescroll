@@ -176,7 +176,8 @@ strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) 
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-// iPhone: the home screen icon is a widget the person adds. The steps
+// iPhone: the home screen icon is a Shortcuts-app icon the person adds
+// (ZV 2026-11-24: shortcuts only, no widget steps). The steps
 // show in Settings -> Sites and once during the welcome screens.
 if (IOS) {
   const tpl = document.querySelector<HTMLTemplateElement>("#ios-home-steps")!;
