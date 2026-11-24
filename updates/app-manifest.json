@@ -1,7 +1,7 @@
 {
-  "versionCode": 1141,
-  "versionName": "0.1.141",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.141/tamescroll-1141.apk",
-  "sha256": "7bc1043678b44a8061cfa69474bf3c3276d29575c8123309b3711ce12b3c9919",
-  "notes": "One-time reinstall: uninstall Tame Scroll, then install this version. Settings reset once; updates work normally after."
+  "versionCode": 1145,
+  "versionName": "0.1.145",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.145/tamescroll-1145.apk",
+  "sha256": "6b9a76ab820d2d3fd80cf4983c6511605a5f671f4f4b7e81948c88bb146ea985",
+  "notes": "Twitch, LinkedIn and Pinterest are tamed now. A dot on the shield shows what was hidden on the page, and trackers stay blocked even where you allow a site's ads."
 }
