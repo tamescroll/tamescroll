@@ -55,7 +55,7 @@
           <div class="list" id="jump-list"></div>
         </section>
 
-        <p class="week-stat" id="week-stat" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b id="week-num"></b> <span id="week-text"></span></p>
+        <button type="button" class="week-stat" id="week-stat" hidden aria-label="Privacy this week"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b id="week-num"></b> <span id="week-text"></span><span class="week-go" aria-hidden="true">&#8250;</span></button>
 
         <p id="status" role="status"></p>
       </section>
@@ -84,6 +84,29 @@
             <div class="actions center"><button type="button" class="link-btn center" id="history-clear">Clear browsing data</button></div>
             <p class="setting-caption center" id="history-note">Kept on this phone only.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- ================= Privacy this week (#81, mockup 13) ================= -->
+      <!-- Counted on this phone only (MainActivity's TsPrivacy). The new
+           tab page's week line and Settings -> Privacy both open it. -->
+      <section id="view-privacy" hidden>
+        <header class="bar">
+          <button type="button" id="privacy-back" class="link-btn">&#8249; Back</button>
+          <span class="bar-title">Privacy this week</span>
+          <span class="bar-spacer"></span>
+        </header>
+        <div class="narrow">
+          <h1 class="display">Kept to yourself.</h1>
+          <p class="lede">What tamescroll stopped on every site you opened in the last seven days.</p>
+          <div class="list pstat" id="pw-totals">
+            <div class="lrow"><div class="lrow-main"><span class="grow"><span class="t">Trackers stopped</span><span class="s">Requests to tracking and ad networks, blocked before they loaded</span></span></div><span class="v" id="pw-stopped">0</span></div>
+            <div class="lrow"><div class="lrow-main"><span class="grow"><span class="t">Links cleaned</span><span class="s">Tracking tags removed from links you opened or shared</span></span></div><span class="v" id="pw-cleaned">0</span></div>
+            <div class="lrow"><div class="lrow-main"><span class="grow"><span class="t">Cookies refused</span><span class="s">Other sites on a page that could have set cookies, counted once each per page</span></span></div><span class="v" id="pw-cookies">0</span></div>
+          </div>
+          <p class="eyebrow">Most active trackers</p>
+          <div class="list pstat" id="pw-hosts"></div>
+          <p class="setting-caption" id="pw-note">Counted on this phone only. Nothing is sent anywhere.</p>
         </div>
       </section>
 
@@ -167,6 +190,7 @@
         </header>
         <div class="settings-body">
           <nav class="settings-nav" aria-label="Settings sections">
+            <button type="button" class="nav-item" data-pane="privacy" hidden>Privacy</button>
             <button type="button" class="nav-item" data-pane="bringback">Sites</button>
             <button type="button" class="nav-item" data-pane="blur">Blur</button>
             <button type="button" class="nav-item" data-pane="filters">Filters</button>
@@ -175,6 +199,28 @@
           </nav>
 
           <div class="panes">
+            <!-- Privacy (#81, mockup 14): Android only, where MainActivity
+                 holds the switches; main.ts shows it when TsPrivacy exists. -->
+            <section class="pane" id="pane-privacy" hidden>
+              <h2>Privacy</h2>
+              <p class="pane-sub">On every site you open, not only the ones we tame. Nothing here leaves your phone.</p>
+              <section class="card" aria-label="Privacy switches">
+                <div id="privacy-switches"></div>
+              </section>
+              <section class="card" aria-label="This week and clearing">
+                <button type="button" class="lrow-plain" id="privacy-week-open">
+                  <span class="grow"><span class="card-title">Privacy this week</span><span class="card-body" id="privacy-week-sub">What was stopped, cleaned and refused.</span></span>
+                  <span class="week-go" aria-hidden="true">&#8250;</span>
+                </button>
+              </section>
+              <section class="card" aria-label="Clear browsing data">
+                <div class="card-title">Clear browsing data</div>
+                <p class="card-body">Cookies, what sites stored, the cache and your history. Bookmarks and settings stay, and you will be signed out of sites.</p>
+                <div class="actions"><button type="button" class="btn-ghost" id="privacy-clear">Clear browsing data</button></div>
+                <p class="setting-caption" id="privacy-clear-note"></p>
+              </section>
+            </section>
+
             <section class="pane" id="pane-bringback" hidden>
               <h2>Sites</h2>
               <p class="pane-sub">What each site shows. Endless feeds start hidden on the sites we tame; bring back only what you choose. Each site has its own Ads switch.</p>

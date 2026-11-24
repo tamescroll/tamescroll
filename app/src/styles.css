@@ -534,7 +534,9 @@ b { font-weight: 600; }
   display: flex; align-items: center; gap: 6px; margin-top: var(--s5);
   color: var(--muted); font-size: var(--t-sm);
 }
+.week-stat { width: 100%; text-align: left; min-height: 36px; }
 .week-stat svg { width: 15px; height: 15px; color: var(--green); flex: none; }
+.week-go { margin-left: auto; color: var(--faint); font-size: var(--t-lg); line-height: 1; padding-left: var(--s2); }
 .week-stat b { color: var(--ink); font-size: var(--t-base); font-variant-numeric: tabular-nums; }
 
 /* Lists: one card, hairline rows (mockup .list / .row). */
@@ -553,6 +555,17 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 .lrow .s { font-size: var(--t-xs); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lrow .v { flex: none; font-size: var(--t-xs); color: var(--faint); padding-right: var(--s2); white-space: nowrap; }
 .lrow-ic { width: 19px; height: 19px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: var(--ink); }
+/* Privacy (#81): the week's totals and the switches' rows. */
+.pstat .lrow { padding: var(--s2) var(--s2) var(--s2) 0; }
+.pstat .lrow .s { white-space: normal; }
+.pstat .lrow .v { font-size: var(--t-base); color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.lrow-plain { display: flex; align-items: center; gap: var(--s3); width: 100%; text-align: left; min-height: 44px; }
+.lrow-plain .grow { display: grid; gap: 2px; }
+.switch-row { border-top: 1px solid var(--hairline); }
+.switch-row:first-child { border-top: 0; }
+.switch-row .grow { display: grid; gap: 2px; }
+.switch-row .setting-caption { margin-top: 0; }
+#view-privacy .narrow { display: grid; gap: var(--s3); align-content: start; }
 .pin-btn { flex: none; min-height: 30px; padding: 0 var(--s3); }
 .pin-btn.on { color: var(--green); border-color: var(--green); }
 .rm-btn { flex: none; width: 36px; height: 36px; color: var(--faint); font-size: 20px; line-height: 1; border-radius: var(--r-sm); }

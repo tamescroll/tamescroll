@@ -107,6 +107,21 @@ class MainActivity : TauriActivity() {
     private const val STATS_PREFS = "tamescroll.stats"
     private const val LOOK_PREFS = "tamescroll.look"
     private const val SETTINGS_PREFS = "tamescroll.settings"
+    // Privacy on every site (#81): the five switches and the weekly
+    // counts, kept on this phone only.
+    private const val PRIVACY_PREFS = "tamescroll.privacy"
+    private const val PRIVACY_STATS = "pstats"
+    private const val P_BLOCK = "block_trackers"
+    private const val P_CLEAN = "clean_links"
+    private const val P_COOKIES = "refuse_third_party_cookies"
+    private const val P_GPC = "gpc"
+    private const val P_CLEAR = "clear_on_close"
+    // Hosts kept per day in the tracker tally, so the file stays small.
+    private const val PRIVACY_HOSTS_PER_DAY = 300
+    // True once this process has had its cold-start clear (Clear data when
+    // I close the app): an activity recreated in the same process is not a
+    // closed app.
+    @Volatile private var privacyColdHandled = false
     private const val NIGHT_BG = 0xFF141414.toInt()
     private const val PAPER_BG = 0xFFF7F5F0.toInt()
   }
@@ -167,14 +182,22 @@ class MainActivity : TauriActivity() {
     // address box, filled and selected; the user taps Go. A share is the
     // user's own act, and nothing loads until they confirm it. VIEW stays
     // limited to the hosts the manifest claims.
+    // A link that arrives with tracking parameters (a share from another
+    // app) is opened without them (Clean tracking links, #81).
+    fun asOpened(): String {
+      val full = u.toString()
+      val clean = cleanedOrNull(full)
+      if (clean != null) notePrivacy("l")
+      return clean ?: full
+    }
     val id = linkHosts[host]
-      ?: return if (intent?.action == Intent.ACTION_SEND) "search" to u.toString() else null
+      ?: return if (intent?.action == Intent.ACTION_SEND) "search" to asOpened() else null
     // The self-test link came back to us: the system hands us youtu.be.
     // Only a VIEW counts -- a SEND of the same url proves nothing.
     if (intent?.action == Intent.ACTION_VIEW && u.getQueryParameter("ts_probe") == "1") {
       getSharedPreferences(LINKS_PREFS, MODE_PRIVATE).edit().putBoolean(LINKS_PROBED, true).apply()
     }
-    return id to u.toString()
+    return id to asOpened()
   }
 
   // The shortcut lands on the LAUNCHER with ?open=<id>, not directly on
@@ -1351,7 +1374,8 @@ class MainActivity : TauriActivity() {
         marginStart = dp(2)
         marginEnd = dp(2)
       }
-      setOnClickListener { webView.loadUrl("http://tauri.localhost/?search=" + Uri.encode(barUrl)) }
+      // The box holds the address a person can copy, so it holds the clean one.
+      setOnClickListener { webView.loadUrl("http://tauri.localhost/?search=" + Uri.encode(cleanedOrNull(barUrl) ?: barUrl)) }
       addView(address)
       addView(shield)
     }
@@ -1585,6 +1609,239 @@ class MainActivity : TauriActivity() {
       statsWeekDays().forEach { d -> if (d != today) sum += week.optInt(d, 0) }
       return sum
     }
+  }
+
+  // ===== PRIVACY ON EVERY SITE (#81) =====
+  // Four switches, all on by default, and one that is off. The list of
+  // tracking parameters lives in Rust (privacy.rs) and is asked over JNI;
+  // nothing here keeps a copy of it.
+  private external fun nativeCleanUrl(url: String): String?
+  private external fun nativeSetPrivacy(blockTrackers: Boolean, cleanLinks: Boolean, gpc: Boolean)
+  private external fun nativeIsThirdParty(url: String, sourceUrl: String): Boolean
+  private external fun nativeTakeCleaned(): Int
+
+  private fun privacyOn(key: String, default: Boolean = true): Boolean =
+    getSharedPreferences(PRIVACY_PREFS, MODE_PRIVATE).getBoolean(key, default)
+
+  // Read on every request, so cached; applyPrivacy() keeps them current.
+  @Volatile private var refuseCookiesNow = true
+  @Volatile private var gpcNow = true
+  @Volatile private var cleanNow = true
+
+  private fun applyPrivacy() {
+    refuseCookiesNow = privacyOn(P_COOKIES)
+    gpcNow = privacyOn(P_GPC)
+    cleanNow = privacyOn(P_CLEAN)
+    try {
+      nativeSetPrivacy(privacyOn(P_BLOCK), cleanNow, gpcNow)
+    } catch (e: Throwable) {
+      Log.w("tamescroll", "privacy switches did not reach the engine: " + e.message)
+    }
+    if (this::webView.isInitialized) {
+      android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, !refuseCookiesNow)
+    }
+  }
+
+  /** The link without its tracking parameters, or null when there is
+   * nothing to remove (or Clean tracking links is off). */
+  private fun cleanedOrNull(url: String): String? {
+    if (!privacyOn(P_CLEAN)) return null
+    return try { nativeCleanUrl(url) } catch (e: Throwable) { null }
+  }
+
+  // The weekly counts: {day: {"l": links cleaned, "c": cross-site hosts
+  // that got no cookies (once per host per page), "t": {host: requests
+  // stopped}}}. Memory first, written out when a page loads and when the
+  // app stops.
+  private val pstatsLock = Any()
+  private var pstats: JSONObject? = null
+  private var pstatsDirty = false
+
+  private fun pstatsRoot(): JSONObject {
+    pstats?.let { return it }
+    val loaded = try {
+      JSONObject(getSharedPreferences(STATS_PREFS, MODE_PRIVATE).getString(PRIVACY_STATS, "{}") ?: "{}")
+    } catch (_: Throwable) { JSONObject() }
+    pstats = loaded
+    return loaded
+  }
+
+  private fun pstatsToday(): JSONObject {
+    val root = pstatsRoot()
+    val day = statsToday()
+    return root.optJSONObject(day) ?: JSONObject().also { root.put(day, it) }
+  }
+
+  private fun notePrivacy(field: String, by: Int = 1) {
+    if (by <= 0) return
+    synchronized(pstatsLock) {
+      val d = pstatsToday()
+      d.put(field, d.optInt(field, 0) + by)
+      pstatsDirty = true
+    }
+  }
+
+  private fun noteTrackerHost(host: String?) {
+    val h = (host ?: return).lowercase().removePrefix("www.")
+    if (h.isEmpty()) return
+    synchronized(pstatsLock) {
+      val d = pstatsToday()
+      val t = d.optJSONObject("t") ?: JSONObject().also { d.put("t", it) }
+      t.put(h, t.optInt(h, 0) + 1)
+      if (t.length() > PRIVACY_HOSTS_PER_DAY) {
+        var least: String? = null
+        var leastN = Int.MAX_VALUE
+        t.keys().forEach { k -> val n = t.optInt(k); if (k != h && n < leastN) { least = k; leastN = n } }
+        least?.let { t.remove(it) }
+      }
+      pstatsDirty = true
+    }
+  }
+
+  /** Links Rust cleaned itself (the address box, a shared link) join the count. */
+  private fun drainRustCleaned() {
+    val n = try { nativeTakeCleaned() } catch (_: Throwable) { 0 }
+    notePrivacy("l", n)
+  }
+
+  private fun flushPrivacyStats() {
+    drainRustCleaned()
+    synchronized(pstatsLock) {
+      if (!pstatsDirty) return
+      val root = pstatsRoot()
+      val keep = statsWeekDays()
+      root.keys().asSequence().toList().forEach { k -> if (k !in keep) root.remove(k) }
+      getSharedPreferences(STATS_PREFS, MODE_PRIVATE).edit().putString(PRIVACY_STATS, root.toString()).apply()
+      pstatsDirty = false
+    }
+  }
+
+  /** What stopped, cleaned and refused over the last seven days, and the
+   * hosts behind the first number. Counts and host names, for the
+   * launcher's Privacy screen only (PrivacyBridge is launcher-gated). */
+  private fun privacyWeekJson(): String {
+    drainRustCleaned()
+    var cleaned = 0
+    var cookies = 0
+    val hosts = HashMap<String, Int>()
+    synchronized(pstatsLock) {
+      val root = pstatsRoot()
+      for (day in statsWeekDays()) {
+        val d = root.optJSONObject(day) ?: continue
+        cleaned += d.optInt("l", 0)
+        cookies += d.optInt("c", 0)
+        val t = d.optJSONObject("t") ?: continue
+        t.keys().forEach { h -> hosts[h] = (hosts[h] ?: 0) + t.optInt(h, 0) }
+      }
+    }
+    val top = org.json.JSONArray()
+    hosts.entries.sortedWith(compareBy({ -it.value }, { it.key })).take(10).forEach {
+      top.put(JSONObject().put("h", it.key).put("n", it.value))
+    }
+    return JSONObject()
+      .put("stopped", StatsBridge().stoppedThisWeek())
+      .put("cleaned", cleaned)
+      .put("cookies", cookies)
+      .put("hosts", top)
+      .toString()
+  }
+
+  /** Cookies, what sites stored, the cache, location answers and the
+   * history list. Bookmarks, the launcher's own settings and the
+   * launcher's own storage stay. Main thread. */
+  private fun clearBrowsingData() {
+    val cm = android.webkit.CookieManager.getInstance()
+    cm.removeAllCookies(null)
+    cm.flush()
+    // Per site, never deleteAllData(): the launcher is a site too
+    // (tauri.localhost) and holds the person's tiles, blur and look.
+    @Suppress("DEPRECATION")
+    android.webkit.WebStorage.getInstance().getOrigins { origins ->
+      origins?.keys?.forEach { k ->
+        val origin = k as? String ?: return@forEach
+        if (!origin.contains("tauri.localhost")) {
+          android.webkit.WebStorage.getInstance().deleteOrigin(origin)
+        }
+      }
+    }
+    if (this::webView.isInitialized) webView.clearCache(true)
+    GeolocationPermissions.getInstance().clearAll()
+    synchronized(libraryLock) { libraryPrefs().edit().putString("history", "[]").commit() }
+  }
+
+  /** The launcher's Privacy settings, and nothing else may touch them. */
+  inner class PrivacyBridge {
+    private fun onLauncher(): Boolean {
+      val task = java.util.concurrent.FutureTask<Boolean> {
+        val here = if (this@MainActivity::webView.isInitialized) webView.url ?: "" else ""
+        here.startsWith("http://tauri.localhost/")
+      }
+      runOnUiThread(task)
+      return try { task.get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) { false }
+    }
+
+    @JavascriptInterface
+    fun get(): String {
+      if (!onLauncher()) return "{}"
+      return JSONObject()
+        .put(P_BLOCK, privacyOn(P_BLOCK))
+        .put(P_CLEAN, privacyOn(P_CLEAN))
+        .put(P_COOKIES, privacyOn(P_COOKIES))
+        .put(P_GPC, privacyOn(P_GPC))
+        .put(P_CLEAR, privacyOn(P_CLEAR, false))
+        .toString()
+    }
+
+    @JavascriptInterface
+    fun set(key: String?, on: Boolean): Boolean {
+      if (key !in setOf(P_BLOCK, P_CLEAN, P_COOKIES, P_GPC, P_CLEAR) || !onLauncher()) return false
+      val ok = getSharedPreferences(PRIVACY_PREFS, MODE_PRIVATE).edit().putBoolean(key, on).commit()
+      runOnUiThread { applyPrivacy() }
+      return ok
+    }
+
+    @JavascriptInterface
+    fun week(): String {
+      if (!onLauncher()) return "{}"
+      return privacyWeekJson()
+    }
+
+    @JavascriptInterface
+    fun clearData(): Boolean {
+      if (!onLauncher()) return false
+      runOnUiThread { clearBrowsingData() }
+      return true
+    }
+  }
+
+  /** One boolean, readable by any page: whether to say Sec-GPC and
+   * navigator.globalPrivacyControl. The page bundle (gpc-page.js) asks. */
+  inner class GpcBridge {
+    @JavascriptInterface
+    fun on(): Boolean = gpcNow
+  }
+
+  private var lastPrivacyLoad = ""
+
+  /** A top-level load the app did not start itself (a tapped link, a
+   * redirect): clean its address and add Sec-GPC, by loading the result
+   * instead. GET only; a form post must stay a post. Returns whether it
+   * took over the navigation. */
+  private fun privacyReload(view: WebView, request: WebResourceRequest): Boolean {
+    if (!request.isForMainFrame || request.method != "GET") return false
+    val url = request.url.toString()
+    if (!(url.startsWith("https://") || url.startsWith("http://")) || url.contains("tauri.localhost")) return false
+    // Our own reload coming back round (a redirect to the same address).
+    if (url == lastPrivacyLoad) return false
+    val cleaned = if (cleanNow) cleanedOrNull(url) else null
+    val wantGpc = gpcNow && request.requestHeaders?.get("Sec-GPC") != "1"
+    if (cleaned == null && !wantGpc) return false
+    val target = cleaned ?: url
+    if (cleaned != null) notePrivacy("l")
+    lastPrivacyLoad = target
+    val headers = if (gpcNow) mapOf("Sec-GPC" to "1") else emptyMap()
+    view.post { view.loadUrl(target, headers) }
+    return true
   }
 
   /** The rounded top of a bottom sheet, with its grab handle, in the look. */
@@ -1821,7 +2078,10 @@ class MainActivity : TauriActivity() {
     if (!recordable(barUrl)) return
     val send = Intent(Intent.ACTION_SEND).apply {
       type = "text/plain"
-      putExtra(Intent.EXTRA_TEXT, barUrl)
+      // The link without its tracking parameters (Clean tracking links, #81).
+      val clean = cleanedOrNull(barUrl)
+      if (clean != null) notePrivacy("l")
+      putExtra(Intent.EXTRA_TEXT, clean ?: barUrl)
     }
     val chooser = Intent.createChooser(send, null).apply {
       // Sharing a page to ourselves only puts it back in our address box.
@@ -2225,6 +2485,8 @@ class MainActivity : TauriActivity() {
   /// the interceptor's worker thread. See the note in
   /// installBlockingClient for why this exists rather than `view.url`.
   @Volatile private var pageUrlForBlocking: String = ""
+  // Third-party hosts already counted on this page (privacy, #81).
+  private val cookieHostsOnPage: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
 
   private fun installBlockingClient() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -2246,6 +2508,8 @@ class MainActivity : TauriActivity() {
         if (request.isForMainFrame) {
           perfTokenServed = false
           blockedOnPage.set(0)
+          cookieHostsOnPage.clear()
+          flushPrivacyStats()
           hiddenHere = emptyList()
           showingHere = emptyList()
           queueShieldRefresh()
@@ -2277,8 +2541,16 @@ class MainActivity : TauriActivity() {
           if (nativeShouldBlock(url, pageUrlForBlocking, resourceTypeOf(request))) {
             blockedOnPage.incrementAndGet()
             if (stoppedToday.get() >= 0) stoppedToday.incrementAndGet()
+            noteTrackerHost(request.url.host)
             queueShieldRefresh()
             return blockedResponse()
+          }
+          // A cross-site request that went out while third-party cookies
+          // are refused: counted once per host per page (what the Privacy
+          // screen calls cookie contexts), never per request.
+          if (refuseCookiesNow && !request.isForMainFrame && nativeIsThirdParty(url, pageUrlForBlocking)) {
+            val host = request.url.host
+            if (host != null && cookieHostsOnPage.add(host.lowercase())) notePrivacy("c")
           }
         } catch (e: Throwable) {
           // Fail OPEN. An engine that cannot answer must not take the
@@ -2289,8 +2561,8 @@ class MainActivity : TauriActivity() {
         return wry.shouldInterceptRequest(view, request)
       }
 
-      override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) =
-        wry.shouldOverrideUrlLoading(view, request)
+      override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+        wry.shouldOverrideUrlLoading(view, request) || privacyReload(view, request)
 
       override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
         pageUrlForBlocking = url
@@ -2494,6 +2766,11 @@ class MainActivity : TauriActivity() {
         bindNativeInfer(view, view.url ?: "")
       }
     }
+  }
+
+  override fun onStop() {
+    super.onStop()
+    flushPrivacyStats()
   }
 
   override fun onDestroy() {
@@ -2837,6 +3114,16 @@ class MainActivity : TauriActivity() {
     // hostile page cannot turn it into anything but a wasted disk write.
     webView.addJavascriptInterface(DiagBridge(), "TsDiag")
     webView.addJavascriptInterface(StatsBridge(), "TsStats")
+    webView.addJavascriptInterface(PrivacyBridge(), "TsPrivacy")
+    webView.addJavascriptInterface(GpcBridge(), "TsGpc")
+    applyPrivacy()
+    // Clear data when I close the app: a swipe from Recents ends the
+    // process, so the clearing happens here, on the next start, before
+    // any page loads.
+    if (!privacyColdHandled) {
+      privacyColdHandled = true
+      if (privacyOn(P_CLEAR, false)) clearBrowsingData()
+    }
     // Short labels only, and only taken while a tamed site shows (#76).
     webView.addJavascriptInterface(HiddenBridge(), "TsHidden")
     webView.addJavascriptInterface(LibraryBridge(), "TsLibrary")

@@ -14,6 +14,7 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 mod appupdate;
 mod ota;
+mod privacy;
 mod rules;
 
 /// Stage A gaze blur (docs/plan.md Phase 4): plain CSS, opt-in, appended to
@@ -1120,8 +1121,14 @@ pub(crate) fn blocks_request(url: &str, source_url: &str, resource_type: &str) -
     let Ok(req) = adblock::request::Request::new(url, source_url, resource_type, "GET") else {
         return false;
     };
+    // The Block trackers switch (Settings -> Privacy, #81). Off, the
+    // tracker lists stand down; the ad lists keep their own rules, and
+    // the per-site Ads switch above still decides those.
+    let trackers_on = privacy::block_trackers();
     let blocked = if ads_allowed {
-        blocks_with_ads_allowed(&tracker_engine(), &req)
+        trackers_on && blocks_with_ads_allowed(&tracker_engine(), &req)
+    } else if !trackers_on {
+        blocks_without_trackers(&engine(), &tracker_engine(), &req)
     } else {
         // should_block() rather than `filter.is_some()`: a blocking rule
         // can be cancelled by an exception rule, and the unbreak lists
@@ -1151,6 +1158,13 @@ pub(crate) fn blocks_request(url: &str, source_url: &str, resource_type: &str) -
 /// the user's act (ADS_SURFACE). Pure, so it can be tested.
 fn blocks_with_ads_allowed(trackers: &Engine, req: &adblock::request::Request) -> bool {
     req.is_third_party && trackers.check_network_request(req).should_block()
+}
+
+/// The decision with the Block trackers switch off (#81): what only the
+/// ad lists stop is still stopped, anything the tracker lists also name
+/// goes through. Pure, so it can be tested.
+fn blocks_without_trackers(full: &Engine, trackers: &Engine, req: &adblock::request::Request) -> bool {
+    full.check_network_request(req).should_block() && !trackers.check_network_request(req).should_block()
 }
 
 /// Bridge for the Android WebViewClient (`shouldInterceptRequest`) and
@@ -2322,12 +2336,24 @@ fn perf_token_stash_script() -> &'static str {
 "#
 }
 
-/// Everything Android runs at document start, in order: the worker
-/// prestart, the AV1 capability wrappers, the perf-token stash, the
-/// native-port stash, the universal rules script.
+/// GLOBAL PRIVACY CONTROL (#81): navigator.globalPrivacyControl on every
+/// site, from the shipped page bundle (app/gaze/src/page/gpc.mjs, built to
+/// gpc-page.js by gaze/build/build.js). It reads the Ask sites not to sell
+/// my data switch from MainActivity's TsGpc bridge when the document
+/// starts. Code, so it is embedded here and never travels over the air.
+fn gpc_script() -> &'static str {
+    include_str!("../gpc-page.js")
+}
+
+/// Everything Android runs at document start, in order: the privacy
+/// signal, the worker prestart, the AV1 capability wrappers, the
+/// perf-token stash, the native-port stash, the universal rules script.
 #[cfg_attr(not(mobile), allow(dead_code))]
 fn android_init_script(mode: &str) -> String {
-    worker_prestart_script(mode)
+    gpc_script().to_string()
+        + "
+"
+        + &worker_prestart_script(mode)
         + no_av1_script()
         + perf_token_stash_script()
         + native_port_stash_script()
@@ -2557,6 +2583,25 @@ pub(crate) fn resolve_address(input: &str) -> Option<tauri::Url> {
     Some(search)
 }
 
+/// A link the person asked to open, minus its tracking parameters when
+/// Clean links is on (#81, privacy.rs holds the one list). The address box
+/// and a shared link both pass through here.
+fn cleaned_url(url: tauri::Url) -> tauri::Url {
+    let out = privacy::clean_for_navigation(url.as_str());
+    if out == url.as_str() { url } else { tauri::Url::parse(&out).unwrap_or(url) }
+}
+
+/// The main webview's own navigation on a phone. On Android with Ask sites
+/// not to sell my data on, the load carries `Sec-GPC: 1` (privacy.rs).
+#[cfg(mobile)]
+fn navigate_main(main: &tauri::WebviewWindow, url: tauri::Url) -> tauri::Result<()> {
+    #[cfg(target_os = "android")]
+    if privacy::load_with_gpc(main, &url) {
+        return Ok(());
+    }
+    main.navigate(url)
+}
+
 /// Opens what the search-or-type box resolved to, in the same webview a
 /// tile uses. The gaze prefs ride along exactly as they do for a tile, so
 /// a platform reached by address gets the same treatment it would from
@@ -2571,7 +2616,7 @@ async fn open_address(
     gender: String,
     shown_map: Option<HashMap<String, Vec<String>>>,
 ) -> Result<(), String> {
-    let url = resolve_address(&input).ok_or_else(|| "nothing to open".to_string())?;
+    let url = cleaned_url(resolve_address(&input).ok_or_else(|| "nothing to open".to_string())?);
     set_gaze_state(&mode);
     set_blur_px(strength);
     set_user_gender_state(&gender);
@@ -2585,7 +2630,7 @@ async fn open_address(
         let url = mobile_youtube_url(url);
         #[cfg(target_os = "ios")]
         set_ios_page_script(&app, url.as_str());
-        return main.navigate(url).map_err(|e| e.to_string());
+        return navigate_main(&main, url).map_err(|e| e.to_string());
     }
 
     // Desktop: one browsing window, reused, with the same per-navigation
@@ -2650,7 +2695,7 @@ async fn open_platform(
         .and_then(|u| u.parse::<tauri::Url>().ok())
         .filter(|u| matches!(u.scheme(), "https" | "http"))
         .filter(|u| link_host_belongs(platform.id, u.host_str().unwrap_or("")))
-        .map(|u| canonical_link_url(platform.id, u));
+        .map(|u| cleaned_url(canonical_link_url(platform.id, u)));
 
     #[cfg(debug_assertions)]
     eprintln!("open_platform id={id}");
@@ -2689,7 +2734,7 @@ async fn open_platform(
         let url = mobile_youtube_url(url);
         #[cfg(target_os = "ios")]
         set_ios_page_script(&app, url.as_str());
-        let nav = main.navigate(url);
+        let nav = navigate_main(&main, url);
         #[cfg(debug_assertions)]
         eprintln!("open_platform navigate main -> {nav:?}");
         return nav.map_err(|e| e.to_string());
@@ -3107,6 +3152,21 @@ mod tests {
         assert!(a < b && b < c, "order: prestart, av1, stash");
     }
 
+    // #81: the privacy signal rides the document-start script on every
+    // site, asks the phone's switch rather than carrying its own answer,
+    // and is the shipped bundle, not text built here.
+    #[test]
+    fn android_init_script_carries_global_privacy_control() {
+        let g = gpc_script();
+        assert!(g.contains("globalPrivacyControl"), "the emitted bundle must define the property");
+        assert!(g.contains("TsGpc"), "the emitted bundle must read the switch from the bridge");
+        assert!(!g.contains("${"), "no template hazard in an injected script");
+        let s = android_init_script("smart");
+        let a = s.find("globalPrivacyControl").expect("gpc in the android init script");
+        let b = s.find("__TS_PRESTART_RAN").expect("prestart");
+        assert!(a < b, "the signal is installed before anything else runs");
+    }
+
     // Phase-n N8: the perf bridge answers only to a token the page
     // cannot get. The stash claims it at document start and parks it
     // behind a one-shot non-configurable getter, never on an assignable
@@ -3248,6 +3308,41 @@ mod tests {
         // With ads hidden the full engine still blocks the ad requests.
         let ad = req("https://googleads.g.doubleclick.net/pagead/id", "xhr");
         assert!(engine().check_network_request(&ad).should_block());
+    }
+
+    /// Block trackers off (#81): the tracker lists stand down, the ad
+    /// lists do not (blocks_without_trackers).
+    #[test]
+    fn block_trackers_off_lets_trackers_through_and_keeps_ads_blocked() {
+        let full = engine();
+        let trackers = rules::build_tracker_engine();
+        let page = "https://news.example.com/story";
+        let req = |url: &str, ty: &str| adblock::request::Request::new(url, page, ty, "GET").unwrap();
+        for (url, ty) in [
+            ("https://www.google-analytics.com/analytics.js", "script"),
+            ("https://connect.facebook.net/en_US/fbevents.js", "script"),
+        ] {
+            assert!(full.check_network_request(&req(url, ty)).should_block(), "{url} blocked with the switch on");
+            assert!(!blocks_without_trackers(&full, &trackers, &req(url, ty)), "{url} must pass with it off");
+        }
+        let ad = req("https://googleads.g.doubleclick.net/pagead/id", "xhr");
+        assert!(blocks_without_trackers(&full, &trackers, &ad), "an ad stays blocked");
+    }
+
+    /// Clean links reaches the address box and shared links (#81).
+    #[test]
+    fn cleaned_url_strips_tracking_and_keeps_the_page() {
+        let _g = privacy::TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        privacy::set_switches(true, true, true);
+        let u = |s: &str| s.parse::<tauri::Url>().unwrap();
+        assert_eq!(
+            cleaned_url(u("https://m.youtube.com/watch?v=abc&si=xyz&t=9s&fbclid=1")).as_str(),
+            "https://m.youtube.com/watch?v=abc&t=9s"
+        );
+        assert_eq!(cleaned_url(u("https://example.com/?a=1")).as_str(), "https://example.com/?a=1");
+        let typed = resolve_address("example.com/x?utm_source=mail&q=1").expect("an address");
+        assert_eq!(cleaned_url(typed).as_str(), "https://example.com/x?q=1");
+        privacy::take_cleaned();
     }
 
     /// Shown drops the vendor cosmetics and our own ad and promo
