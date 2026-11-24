@@ -185,6 +185,13 @@ async function buildTarget(target, out, { store }) {
   const fonts = join(here, 'node_modules/@fontsource-variable/inter');
   cpSync(join(fonts, 'files/inter-latin-wght-normal.woff2'), join(out, 'fonts/inter.woff2'));
   cpSync(join(fonts, 'LICENSE'), join(out, 'fonts/LICENSE-inter.txt'));
+  // The welcome page's display and label faces, as on the website (OFL-1.1).
+  const fs = join(here, 'node_modules/@fontsource');
+  cpSync(join(fs, 'spectral/files/spectral-latin-500-normal.woff2'), join(out, 'fonts/spectral-500.woff2'));
+  cpSync(join(fs, 'spectral/files/spectral-latin-400-italic.woff2'), join(out, 'fonts/spectral-400-italic.woff2'));
+  cpSync(join(fs, 'spectral/LICENSE'), join(out, 'fonts/LICENSE-spectral.txt'));
+  cpSync(join(fs, 'ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2'), join(out, 'fonts/plex-mono-500.woff2'));
+  cpSync(join(fs, 'ibm-plex-mono/LICENSE'), join(out, 'fonts/LICENSE-plex-mono.txt'));
   // Credits and licences for the lists, engine and font built in.
   cpSync(join(here, 'THIRD-PARTY-NOTICES.txt'), join(out, 'THIRD-PARTY-NOTICES.txt'));
   writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest(target, { store }), null, 2) + '\n');

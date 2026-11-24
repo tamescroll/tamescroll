@@ -8,61 +8,72 @@
 <link rel="stylesheet" href="welcome.css">
 </head>
 <body>
-<div class="glow" aria-hidden="true"></div>
 <main class="page">
-  <header class="top">
-    <span class="brand"><svg class="mark" viewBox="0 0 34 24" aria-hidden="true"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>tamescroll</span>
+  <header class="top rise">
+    <span class="brand"><svg viewBox="0 0 34 24" aria-hidden="true"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>tamescroll</span>
     <span class="status"><i></i>Installed and on</span>
   </header>
 
-  <section class="hero">
-    <div class="hero-copy rise">
-      <h1>Social media,<br><em>without the scroll.</em></h1>
-      <p class="lede">Tame Scroll is already working on <span id="sites">your sites</span>. Feeds, Shorts, Reels and ads are hidden wherever a site has them. There's nothing to set up.</p>
-      <div class="chips" id="site-chips"></div>
-    </div>
-    <div class="hero-art rise d1" aria-hidden="true">
-      <div class="win">
-        <div class="win-bar"><span></span><span></span><span></span><div class="win-url"></div><div class="win-ext"><svg viewBox="0 0 34 24"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><b></b></div></div>
-        <div class="win-body">
-          <div class="pop">
-            <div class="pop-row"><span class="pop-chip">Y</span><span class="pop-title">YouTube</span><span class="pop-sw"></span></div>
-            <div class="pop-count"><b>4</b> things hidden</div>
-            <div class="pop-tags"><span>Shorts</span><span>Home feed</span><span>Autoplay</span><span>Ads</span></div>
-          </div>
-          <div class="ghost-feed"><i></i><i></i><i></i></div>
+  <section class="hero rise d1">
+    <div class="kicker">Browser extension · Free · Open source</div>
+    <h1>Your feeds, <em>tamed.</em></h1>
+    <p class="lead">Tame Scroll is already working on <span id="sites">your sites</span>. There's nothing to set up.</p>
+  </section>
+
+  <!-- The b-roll: a busy page calms down, on a loop, the way the
+       website's phone does. Drawn in CSS; motion stops for anyone who
+       asks for less of it. -->
+  <section class="stage rise d2" aria-hidden="true">
+    <div class="win demo" id="demo">
+      <div class="win-bar">
+        <span class="lights"><i></i><i></i><i></i></span>
+        <span class="addr">videos.example</span>
+        <span class="ext"><svg viewBox="0 0 34 24"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><b></b></span>
+      </div>
+      <div class="win-body">
+        <div class="col main">
+          <div class="post"><div class="thumb t1"><span class="play"></span></div><div class="lines"><i></i><i class="s"></i></div></div>
+          <div class="fold f1"><div class="label"><span class="dot"></span>TRENDING NOW</div>
+            <div class="post"><div class="thumb t2"><span class="play"></span></div><div class="lines"><i></i><i class="s"></i></div></div></div>
+          <div class="fold f2"><div class="label">SHORT VIDEOS</div>
+            <div class="shelf"><div class="thumb t3"></div><div class="thumb t5"></div><div class="thumb t4"></div><div class="thumb t1"></div></div></div>
+          <div class="post"><div class="thumb t4"><span class="play"></span></div><div class="lines"><i></i><i class="s"></i></div></div>
+          <div class="fold f3"><div class="label">UP NEXT IN 5</div><div class="upnext"></div></div>
         </div>
+        <div class="col side fold f4">
+          <div class="label">RECOMMENDED FOR YOU</div>
+          <div class="mini"><div class="thumb t5"></div><div class="lines"><i></i><i class="s"></i></div></div>
+          <div class="mini"><div class="thumb t2"></div><div class="lines"><i></i><i class="s"></i></div></div>
+          <div class="mini"><div class="thumb t3"></div><div class="lines"><i></i><i class="s"></i></div></div>
+        </div>
+        <div class="toast"><b>Tame Scroll</b> · 5 things hidden on this page</div>
       </div>
     </div>
+    <div class="removed" id="removed"><span class="label">Left out</span><s>Endless feeds</s><s>Trending</s><s>Shorts and Reels</s><s>Autoplay</s><s>Recommended for you</s></div>
   </section>
 
-  <section class="steps rise d2">
-    <div class="step"><span class="num">1</span><div><b>Pin it</b><p>Click the puzzle piece in the toolbar, then the pin next to Tame Scroll.</p></div></div>
-    <div class="step"><span class="num">2</span><div><b>Look for the green dot</b><p>It means the page you're on is tamed. Gold means something is showing because you chose it.</p></div></div>
-    <div class="step"><span class="num">3</span><div><b>Blur pictures if you like</b><p>Open Tame Scroll on any site and switch on Blur pictures.</p></div></div>
+  <section class="steps rise d3">
+    <div><span class="num">01</span><h3>Pin it</h3><p>Puzzle piece in the toolbar, then the pin next to Tame Scroll.</p></div>
+    <div><span class="num">02</span><h3>Watch the dot</h3><p>Green means the page is tamed. Gold means something is showing by your choice.</p></div>
+    <div><span class="num">03</span><h3>Blur, if you like</h3><p>Open Tame Scroll on a site and switch on Blur pictures.</p></div>
   </section>
 
-  <section class="pair rise d3" id="pair" hidden>
-    <div class="pair-head">
-      <span class="pair-k">Pairs well with</span>
-      <h2>Add HaramBlur for blur inside videos</h2>
-      <p>Tame Scroll takes away what you didn't ask to see. HaramBlur, a free extension by its own developers, blurs people inside the images and videos you do open, on your own computer. Together they cover both.</p>
-    </div>
-    <div class="duo" aria-hidden="true">
-      <div class="duo-card"><svg class="duo-mark" viewBox="0 0 34 24"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><b>Tame Scroll</b><span>Removes feeds, Shorts, Reels and ads</span></div>
-      <span class="plus">+</span>
-      <div class="duo-card hb"><span class="duo-h">H</span><b>HaramBlur</b><span>Blurs people in images and videos</span></div>
+  <section class="pair rise d4" id="pair" hidden>
+    <span class="hb" aria-hidden="true">H</span>
+    <div class="pair-text">
+      <div class="pair-k">Pairs well with</div>
+      <h2>HaramBlur, for blur inside videos</h2>
+      <p>A free extension by its own developers. It blurs people in the images and videos you do open, on your own computer. Tame Scroll is not affiliated with it.</p>
     </div>
     <div class="btns">
-      <a class="btn" id="get" target="_blank" rel="noopener">Add HaramBlur <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a class="btn primary" id="get" target="_blank" rel="noopener">Add HaramBlur</a>
       <button class="ghost" id="not-now" type="button">Not now</button>
     </div>
-    <p class="small">Opens HaramBlur's store page. Tame Scroll is not affiliated with HaramBlur.</p>
   </section>
 
   <footer class="foot rise d4">
     <span>No account, no tracking. Your settings stay in your browser.</span>
-    <button class="done" id="done" type="button">I'm all set</button>
+    <button class="btn" id="done" type="button">I'm all set</button>
   </footer>
 </main>
 <script src="welcome.js"></script>

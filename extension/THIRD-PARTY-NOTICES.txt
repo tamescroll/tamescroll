@@ -54,3 +54,11 @@ Font
 Inter, by Rasmus Andersson
   https://rsms.me/inter/
   SIL Open Font License 1.1. Full text: fonts/LICENSE-inter.txt
+
+Spectral, by Production Type
+  https://github.com/productiontype/Spectral
+  SIL Open Font License 1.1. Full text: fonts/LICENSE-spectral.txt
+
+IBM Plex Mono, by IBM
+  https://github.com/IBM/plex
+  SIL Open Font License 1.1. Full text: fonts/LICENSE-plex-mono.txt
