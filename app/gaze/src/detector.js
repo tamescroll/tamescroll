@@ -125,6 +125,24 @@ function assetOrigin() {
   return '';
 }
 
+// THE BROWSER EXTENSION SERVES THE MODELS FROM ITS OWN PACKAGE.
+//
+// The app answers /__tamescroll/models/ on the page's own origin; the
+// extension has no request interceptor, and Chrome reserves every
+// package path that starts with an underscore, so its content script
+// names a base of its own (extension/src/gaze-prelude.js) and the files
+// are fetched from chrome-extension://.../gaze-models/. Unset on every
+// app build, where this is the old url exactly.
+function modelBase() {
+  try {
+    var b = globalThis.__TS_GAZE_MODEL_BASE;
+    if (typeof b === 'string' && b) return b;
+  } catch (e) {
+    /* no globalThis is not a case any supported engine has */
+  }
+  return assetOrigin() + '/__tamescroll/models/';
+}
+
 /**
  * How long each model's BYTES took, apart from building its graph.
  *
@@ -137,7 +155,7 @@ function assetOrigin() {
 export var fetchMsByKind = {};
 
 async function fetchedArtifacts(kind) {
-  var base = assetOrigin() + '/__tamescroll/models/' + MODEL_ASSETS[kind];
+  var base = modelBase() + MODEL_ASSETS[kind];
   var at = typeof performance !== 'undefined' ? performance.now() : 0;
   var jsonRes = await fetch(synthetic(base + '.json'));
   if (!jsonRes.ok) throw new Error('model json ' + jsonRes.status);

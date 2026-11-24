@@ -157,6 +157,11 @@ if (
   try {
     var tsPagePlatform = platformOf(location.hostname);
     var tsPageLast = null;
+    // THE BROWSER EXTENSION OWNS SHORTS ITSELF. There a short opening as a
+    // video is the person's own switch (extension/src/sites.js
+    // youtube-shorts), so the blur must not redirect behind it; the app
+    // has no such switch and keeps all four doors.
+    var tsShortsDoors = window.__TS_GAZE_HOST !== 'extension';
     // A SHORT IS A VIDEO: /shorts/<id> becomes /watch?v=<id> before the
     // swipe feed can draw, and the bare /shorts feed goes home (see
     // shorts-redirect.mjs). Three doors, because a single one was
@@ -170,7 +175,7 @@ if (
     //   3. the tick catches everything else (a server redirect, a
     //      navigation the first two never saw).
     var shortsToWatch = function () {
-      if (tsPagePlatform !== 'youtube') return false;
+      if (tsPagePlatform !== 'youtube' || !tsShortsDoors) return false;
       var w = shortsExitFor(location.pathname + location.search, location.href);
       if (!w) return false;
       location.replace(w);
@@ -179,7 +184,7 @@ if (
     // 4. the player itself: a visible swipe player at an address none of
     //    the doors recognised still leaves (watch pages never hold one).
     var reelToWatch = function () {
-      if (tsPagePlatform !== 'youtube' || /^\/watch/.test(location.pathname)) return false;
+      if (tsPagePlatform !== 'youtube' || !tsShortsDoors || /^\/watch/.test(location.pathname)) return false;
       var els = document.querySelectorAll(REEL_PLAYER_SELECTOR);
       for (var i = 0; i < els.length; i++) {
         var r = els[i].getBoundingClientRect();
@@ -198,7 +203,7 @@ if (
       }
       return false;
     };
-    if (tsPagePlatform === 'youtube') {
+    if (tsPagePlatform === 'youtube' && tsShortsDoors) {
       document.addEventListener('click', function (ev) {
         var a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
         if (!a) return;
@@ -5537,7 +5542,9 @@ lf.delayHeldLate = lf.delayHeldLate || 0;
       try {
         // His ruling 2026-10-27 (PLAYER_VIDEO_BLUR): with no switch on the
         // player, the gear beside it goes too.
-        if (playerSwitchShown()) tuneUi = installTuneUi({
+        // The browser extension draws the switch but never the gear: the
+        // panel is a developer tool for his phone, not a setting.
+        if (playerSwitchShown() && window.__TS_GAZE_HOST !== 'extension') tuneUi = installTuneUi({
           doc: document,
           host: pillHost,
           win: window,

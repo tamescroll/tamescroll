@@ -9,6 +9,14 @@ import { pageCss, parseSurfaces } from './rules.js';
 import { rulesText } from './ota.js';
 import { parseKill, effectivePrefs } from './kill.js';
 import { BUNDLED, ENGINE } from './bundled.js';
+import { smartChoice } from './gaze-settings.js';
+
+// With Smart blur on, the gaze runtime covers every picture itself until
+// it has placed the faces in it (blur-first); the plain blur stylesheet
+// on top would keep the cleared ones blurred too.
+function withoutPlainBlur(prefs) {
+  return prefs && smartChoice(prefs) !== 'off' ? { ...prefs, blur: false } : prefs;
+}
 import { pageKind } from '../../app/gaze/src/diag-report.mjs';
 
 const site = siteForHost(location.hostname);
@@ -39,7 +47,7 @@ function render(state) {
     engine: ENGINE,
     rulesText: rulesText(site.rulesFile, BUNDLED, overrides),
     blurText: rulesText(site.blurFile, BUNDLED, overrides),
-    prefs: effectivePrefs(site, (settings.sites || {})[site.id], parseKill(rulesText('kill.json', BUNDLED, overrides))),
+    prefs: withoutPlainBlur(effectivePrefs(site, (settings.sites || {})[site.id], parseKill(rulesText('kill.json', BUNDLED, overrides)))),
     blurStrength: settings.blurPx || 16,
   });
   lastCss = css;

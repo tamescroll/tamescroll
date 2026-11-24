@@ -48,6 +48,47 @@ adblock-rust (used at build time to compile the lists above)
   https://github.com/brave/adblock-rust
   Mozilla Public License 2.0.
 
+Smart blur (YouTube, off unless you pick Women or Men)
+------------------------------------------------------
+
+Tame Scroll's own blur runtime (app/gaze in the repository above),
+Mozilla Public License 2.0, built into gaze.js with:
+
+TensorFlow.js (tfjs-core, tfjs-converter, CPU and WebGL backends)
+  https://github.com/tensorflow/tfjs
+  Apache License 2.0.
+
+obscenity, text matching
+  https://github.com/jo3-l/obscenity
+  MIT License.
+
+dsojevic/profanity-list, a keyword snapshot
+  https://github.com/dsojevic/profanity-list
+  MIT License.
+
+vladmandic/human: the face box decode is adapted from it
+  https://github.com/vladmandic/human
+  MIT License.
+
+The models, in gaze-models/, run on your device only:
+
+BlazeFace (face detection), Google / MediaPipe
+  https://github.com/tensorflow/tfjs-models
+  Apache License 2.0.
+
+HSE-FaceRes (faceres, gender), converted model from vladmandic/human-models
+  https://github.com/vladmandic/human-models
+  MIT License.
+
+MoveNet MultiPose Lightning (people), Copyright Google LLC
+  https://tfhub.dev/google/tfjs-model/movenet/multipose/lightning/1
+  Apache License 2.0. Our own uint8/float16 re-quantization of the
+  official weights; no architecture changes.
+
+nsfwjs MobileNetV2 model
+  https://github.com/infinitered/nsfwjs
+  MIT License.
+
 Font
 ----
 

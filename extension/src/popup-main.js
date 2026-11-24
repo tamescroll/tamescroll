@@ -10,6 +10,7 @@ import { BUNDLED } from './bundled.js';
 import { seed } from './settings.js';
 import { wantedScripts } from './scripts.js';
 import { parseKill } from './kill.js';
+import { SMART_CHOICES, SMART_CAPTIONS, smartChoice } from './gaze-settings.js';
 import { checkFromPopup } from './dev-reload.js';
 
 const VERSION = chrome.runtime.getManifest().version;
@@ -147,6 +148,20 @@ function settingsView() {
     b.addEventListener('click', () => save(() => { settings.blurPx = p.px; }));
     return b;
   }));
+  const yt = settings.sites.youtube;
+  $('smart-group').hidden = !yt;
+  if (yt) {
+    const cur = smartChoice(yt);
+    $('smart').replaceChildren(...SMART_CHOICES.map((c) => {
+      const b = el('button', c.id === cur ? 'active' : '', c.label);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(c.id === cur));
+      b.addEventListener('click', () => save(() => { yt.smart = c.id; }));
+      return b;
+    }));
+    $('smart-caption').textContent = SMART_CAPTIONS[cur];
+    $('smart-caption').hidden = !SMART_CAPTIONS[cur];
+  }
   $('version').textContent = `Version ${VERSION}`;
   $('rules-status').textContent = otaState && otaState.outcome === 'ok'
     ? `Filters checked ${new Date(otaState.checkedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.`

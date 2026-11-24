@@ -33,3 +33,21 @@ test('kill.json switches YouTube ad blocking and named scripts off, and nothing 
   assert.deepEqual(parseKill('not json'), { adsBlockingOff: [], disabledScripts: [] });
   assert.deepEqual(parseKill('{"adsBlockingOff":["youtube","<script>"]}').adsBlockingOff, ['youtube']);
 });
+
+test('Smart blur runs only for Women or Men, with the runtime before its starter', async () => {
+  const { gazeGender } = await import('../src/gaze-settings.js');
+  const gaze = (smart) => wantedScripts({ sites: { youtube: { on: true, shown: [], smart } } }).find((s) => s.id === 'youtube-gaze');
+  assert.equal(gaze(undefined), undefined, 'a setting from before Smart blur is off');
+  assert.equal(gaze('off'), undefined);
+  assert.equal(gaze('nonsense'), undefined);
+  for (const c of ['women', 'men']) {
+    const g = gaze(c);
+    assert.deepEqual(g.js, ['gaze.js', 'gaze-prelude.js']);
+    assert.equal(g.world, 'ISOLATED', 'the page must never see the runtime');
+  }
+  assert.equal(wantedScripts({ sites: { youtube: { on: false, shown: [], smart: 'women' } } }).some((s) => s.id === 'youtube-gaze'), false, 'YouTube paused runs nothing');
+  // "women" is Smart for a man, as in the app.
+  assert.equal(gazeGender({ smart: 'women' }), 'man');
+  assert.equal(gazeGender({ smart: 'men' }), 'woman');
+  assert.equal(gazeGender({}), null);
+});

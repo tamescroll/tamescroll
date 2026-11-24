@@ -15,6 +15,8 @@
 // script's body is ever fetched: MV3 forbids remote code, and the repo's
 // own rule is that code never travels over the air.
 
+import { smartChoice } from './gaze-settings.js';
+
 const ALL_SITES = [
   {
     id: 'youtube',
@@ -52,6 +54,16 @@ const ALL_SITES = [
         file: 'youtube-autoplay.js',
         world: 'ISOLATED',
         when: (shown) => !shown.includes('autoplay_next'),
+      },
+      {
+        // Smart blur: the app's gender-aware blur (app/gaze), only while
+        // the person picked Women or Men (gaze-settings.js). gaze.js
+        // defines the runtime; gaze-prelude.js reads the settings and
+        // starts it. Isolated world: the page never sees our globals.
+        id: 'youtube-gaze',
+        files: ['gaze.js', 'gaze-prelude.js'],
+        world: 'ISOLATED',
+        when: (shown, prefs) => smartChoice(prefs) !== 'off',
       },
     ],
   },

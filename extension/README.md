@@ -66,11 +66,37 @@ Manifest V3 forbids remote code, and so does this repo.
 An OTA copy fetched under an older extension version is ignored, so a new
 package's built-in rules are never shadowed by stale ones.
 
+## Smart blur on YouTube (beta)
+
+Settings, Smart blur on YouTube: Off (the default), Women or Men. It is
+the app's own gender-aware blur (`app/gaze`), the same source the app
+injects, run as a content script in the extension's isolated world:
+
+- `src/gaze-prelude.js` hands the runtime what the app's boot script
+  does: mode, declared gender ("Women" is Smart for a man), blur
+  strength and the phone's tuning numbers (`rules/tuning.json`), then
+  starts it. One difference from the phone, ZV's call on 2026-11-24:
+  the video you are watching is blurred too, with the Blur on/off switch
+  on the player (`PLAYER_VIDEO_BLUR` 1; the phone ships 0).
+- `build.mjs` bundles the runtime with TensorFlow.js into `gaze.js` and
+  copies the four models into `gaze-models/`, fetched from the package.
+  The two app modules that load a script or a worker from the page's
+  origin are swapped for stand-ins (`src/gaze-stubs/`), so the runtime
+  takes its in-page path.
+- While it is on, the plain "Blur pictures" stylesheet steps aside on
+  YouTube: the runtime covers every picture itself until it has placed
+  the faces in it.
+
+`node smoke/gaze-smoke.mjs` checks the wiring offline on five faces.
+`node smoke/gaze-live.mjs` measures it on live YouTube, from the
+runtime's own state, on a machine with a GPU; it needs no screenshots.
+
 ## Build and test
 
 ```
 cd extension
 npm ci
+(cd ../app/gaze && npm ci)   # Smart blur bundles the app's gaze runtime
 npm test                 # unit tests
 node build.mjs           # dist/chrome and dist/firefox
 node build.mjs --compile # also regenerate gen/engine.json (needs cargo)

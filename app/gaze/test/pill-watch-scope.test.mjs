@@ -61,5 +61,7 @@ test('with no switch on the player, the pill is never shown and the gear is neve
   // setChrome must hide it whatever the page is.
   const set = block.slice(block.indexOf('var setChrome'), block.indexOf('setChrome(feedPreview())'));
   assert.ok(set.includes('hide = hide || !playerSwitchShown()'), 'the pill would show with no blur behind it');
-  assert.ok(src.includes('if (playerSwitchShown()) tuneUi = installTuneUi('), 'the gear would ride a player with no switch');
+  assert.ok(/if \(playerSwitchShown\(\)( && [^)]*)?\) tuneUi = installTuneUi\(/.test(src), 'the gear would ride a player with no switch');
+  // The browser extension shows the switch but never the developer gear.
+  assert.ok(src.includes("if (playerSwitchShown() && window.__TS_GAZE_HOST !== 'extension') tuneUi = installTuneUi("), 'the extension would draw the gear');
 });

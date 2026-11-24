@@ -21,6 +21,10 @@ const LISTED_HOSTS = [
   'https://www.instagram.com/*', 'https://www.facebook.com/*', 'https://www.tiktok.com/*',
   'https://www.twitch.tv/*', 'https://www.linkedin.com/*',
 ];
+// Hosts the gaze bundle may NAME (in comments, error text and page
+// checks): the sites it runs on, and the W3C, GitHub and MDN links in
+// tfjs's own error messages. None of them is fetched from.
+const GAZE_OK_HOSTS = /^(www\.youtube\.com|m\.youtube\.com|youtube\.com|i\.ytimg\.com|www\.w3\.org|github\.com|developer\.mozilla\.org)$/;
 const fails = [];
 
 function files(dir) {
@@ -45,6 +49,15 @@ export function checkPackage(dir) {
     if (/\beval\s*\(|new Function\s*\(|\bFunction\s*\(\s*['"`]|set(Timeout|Interval)\s*\(\s*['"`]/.test(js)) out.push(`${n}: code built from text`);
     if (/importScripts\s*\(|document\.createElement\(\s*['"]script['"]\s*\)/.test(js)) out.push(`${n}: loads a script at run time`);
     if (n !== 'youtube-ads.js' && /function jsonPrune|scriptlet/i.test(js) && /\bscript:\s*["'`]function/.test(js)) out.push(`${n}: carries scriptlet code as text`);
+    // gaze.js is Smart blur's runtime with TensorFlow.js inside, whose
+    // model loaders call fetch() on whatever URL they are handed. The
+    // runtime hands them package files only (gaze-models/, through
+    // detector.js modelBase), and gaze.js may not name any other host.
+    if (n === 'gaze.js') {
+      const hosts = [...js.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((x) => x[1]).filter((h) => !GAZE_OK_HOSTS.test(h));
+      if (hosts.length) out.push(`gaze.js names hosts it could fetch from: ${[...new Set(hosts)].join(', ')}`);
+      continue;
+    }
     for (const [, arg] of js.matchAll(/\bfetch\(\s*([^,)]+)/g)) {
       if (!/^(url|(api\d*|chrome)\.runtime\.getURL)\b/.test(arg.trim())) out.push(`${n}: fetch(${arg.trim()}) is not a rules or package URL`);
     }

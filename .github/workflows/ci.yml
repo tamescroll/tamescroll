@@ -72,6 +72,9 @@ jobs:
         with:
           workspaces: extension/compile
       - run: npm ci
+      # Smart blur bundles the app's gaze runtime (app/gaze) and its tfjs.
+      - run: npm ci
+        working-directory: app/gaze
       - run: npm test
       # gen/engine.json is what the app's engine produces for these hosts.
       # A vendor-list or scriptlet change without a recompile ships the

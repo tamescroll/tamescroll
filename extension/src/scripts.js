@@ -10,11 +10,11 @@ export function wantedScripts(settings, kill) {
     if (!prefs || prefs.on === false) continue;
     const shown = prefs.shown || [];
     for (const s of site.scripts) {
-      if (!s.when(shown)) continue;
+      if (!s.when(shown, prefs)) continue;
       if (kill && kill.disabledScripts.includes(s.id)) continue;
       out.push({
         id: s.id,
-        js: [s.file],
+        js: s.files || [s.file],
         matches: site.matches,
         world: s.world,
         runAt: 'document_start',
