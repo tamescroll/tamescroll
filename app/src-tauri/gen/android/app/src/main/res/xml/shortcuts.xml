@@ -6,7 +6,11 @@
      drawable-nodpi) — NEVER platform logos; impersonating platform
      apps is the hard line that gets store listings removed. The intent
      carries the platform id as a query param the launcher frontend
-     reads (see main.ts start()). -->
+     reads (see main.ts start()).
+     All nine platforms are declared: most launchers show only the first
+     four on a long-press, so the rest are added from Settings -> Sites
+     ("Add to home screen", MainActivity pin()), which needs the entry
+     here for its icon and label. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
   <shortcut
     android:shortcutId="youtube"
@@ -58,6 +62,71 @@
       android:targetPackage="app.tamescroll.client"
       android:targetClass="app.tamescroll.client.MainActivity">
       <extra android:name="ts_platform" android:value="tiktok" />
+    </intent>
+  </shortcut>
+  <shortcut
+    android:shortcutId="instagram"
+    android:enabled="true"
+    android:icon="@drawable/shortcut_instagram"
+    android:shortcutShortLabel="@string/shortcut_instagram_short"
+    android:shortcutLongLabel="@string/shortcut_instagram_long">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="app.tamescroll.client"
+      android:targetClass="app.tamescroll.client.MainActivity">
+      <extra android:name="ts_platform" android:value="instagram" />
+    </intent>
+  </shortcut>
+  <shortcut
+    android:shortcutId="facebook"
+    android:enabled="true"
+    android:icon="@drawable/shortcut_facebook"
+    android:shortcutShortLabel="@string/shortcut_facebook_short"
+    android:shortcutLongLabel="@string/shortcut_facebook_long">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="app.tamescroll.client"
+      android:targetClass="app.tamescroll.client.MainActivity">
+      <extra android:name="ts_platform" android:value="facebook" />
+    </intent>
+  </shortcut>
+  <shortcut
+    android:shortcutId="twitch"
+    android:enabled="true"
+    android:icon="@drawable/shortcut_twitch"
+    android:shortcutShortLabel="@string/shortcut_twitch_short"
+    android:shortcutLongLabel="@string/shortcut_twitch_long">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="app.tamescroll.client"
+      android:targetClass="app.tamescroll.client.MainActivity">
+      <extra android:name="ts_platform" android:value="twitch" />
+    </intent>
+  </shortcut>
+  <shortcut
+    android:shortcutId="linkedin"
+    android:enabled="true"
+    android:icon="@drawable/shortcut_linkedin"
+    android:shortcutShortLabel="@string/shortcut_linkedin_short"
+    android:shortcutLongLabel="@string/shortcut_linkedin_long">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="app.tamescroll.client"
+      android:targetClass="app.tamescroll.client.MainActivity">
+      <extra android:name="ts_platform" android:value="linkedin" />
+    </intent>
+  </shortcut>
+  <shortcut
+    android:shortcutId="pinterest"
+    android:enabled="true"
+    android:icon="@drawable/shortcut_pinterest"
+    android:shortcutShortLabel="@string/shortcut_pinterest_short"
+    android:shortcutLongLabel="@string/shortcut_pinterest_long">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="app.tamescroll.client"
+      android:targetClass="app.tamescroll.client.MainActivity">
+      <extra android:name="ts_platform" android:value="pinterest" />
     </intent>
   </shortcut>
 </shortcuts>

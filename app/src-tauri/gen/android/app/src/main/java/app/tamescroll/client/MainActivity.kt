@@ -539,7 +539,9 @@ class MainActivity : TauriActivity() {
 
     /** Is the platform's shortcut on the home screen, and can this
      * launcher take one at all. Null where the OS will not say.
-     * "listed": the YouTube entry is on in the app list (1140). */
+     * "listed": the YouTube entry is on in the app list (1140).
+     * "label": the home-screen name shortcuts.xml gives it ("R-Tamed"),
+     * so Settings shows the same words the icon will carry. */
     @JavascriptInterface
     fun pinState(id: String?): String {
       val o = JSONObject()
@@ -550,6 +552,7 @@ class MainActivity : TauriActivity() {
           if (sm != null) {
             o.put("supported", sm.isRequestPinShortcutSupported)
             o.put("pinned", sm.pinnedShortcuts.any { it.id == id || it.id == "${id}_named" })
+            sm.manifestShortcuts.firstOrNull { it.id == id }?.shortLabel?.let { o.put("label", it.toString()) }
           }
         }
       } catch (_: Throwable) {}

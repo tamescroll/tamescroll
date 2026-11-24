@@ -27,6 +27,9 @@ It is not legal advice.
   (the Android app-list entry, long-press long labels, the iPhone App
   Shortcut's title) keep "Tame for YouTube" in plain text, which is the
   nominative "works with" use the line below allows.
+- 2026-11-24: the same rule for every site: I-Tamed, F-Tamed, L-Tamed,
+  P-Tamed, and Tw-Tamed for Twitch because TikTok took T. Their tiles are
+  the same cream letter on our ink, generated like the first four.
 
 ## Decided 2026-10-28
 

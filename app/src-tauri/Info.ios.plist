@@ -32,7 +32,9 @@
 		</dict>
 	</array>
 	<!-- Long-press on the app icon. Plain titles, no platform logos (#24).
-	     The type after "open." is the platform id. -->
+	     The type after "open." is the platform id. iPhone shows at most
+	     four, so the other five sites are App Shortcuts only
+	     (ios-shortcuts/TameShortcuts.swift). -->
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>
@@ -52,6 +54,12 @@
 			<string>open.x</string>
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>X</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>open.tiktok</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>TikTok</string>
 		</dict>
 	</array>
 </dict>

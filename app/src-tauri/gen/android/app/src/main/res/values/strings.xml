@@ -14,4 +14,15 @@
     <string name="shortcut_x_long">Tame for X</string>
     <string name="shortcut_tiktok_short">T-Tamed</string>
     <string name="shortcut_tiktok_long">Tame for TikTok</string>
+    <!-- TikTok took T first, so Twitch is "Tw" on its tile and label. -->
+    <string name="shortcut_instagram_short">I-Tamed</string>
+    <string name="shortcut_instagram_long">Tame for Instagram</string>
+    <string name="shortcut_facebook_short">F-Tamed</string>
+    <string name="shortcut_facebook_long">Tame for Facebook</string>
+    <string name="shortcut_twitch_short">Tw-Tamed</string>
+    <string name="shortcut_twitch_long">Tame for Twitch</string>
+    <string name="shortcut_linkedin_short">L-Tamed</string>
+    <string name="shortcut_linkedin_long">Tame for LinkedIn</string>
+    <string name="shortcut_pinterest_short">P-Tamed</string>
+    <string name="shortcut_pinterest_long">Tame for Pinterest</string>
 </resources>

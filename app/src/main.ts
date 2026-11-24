@@ -805,6 +805,54 @@ function surfaceRow(platformId: string, surface: SurfaceInfo): HTMLElement {
   return row;
 }
 
+// A HOME SCREEN ICON FOR EVERY SITE (Android). The long-press menu on the
+// app icon shows only the first four shortcuts on most launchers, so each
+// site's settings offer its own icon: our letter tile, named "R-Tamed" and
+// so on (shortcuts.xml), never the site's logo or bare name. The launcher
+// shows its own confirm dialog; the person can rename it there.
+const SITE_PIN_WORDS: Record<string, string> = {
+  pinned: "On your home screen.",
+  requested: "Confirm on the dialog that just opened.",
+  listed: "Added to your app list as \"Tame for YouTube\".",
+  unsupported: "Your launcher doesn't take icons from apps. Long-press the Tame Scroll icon and drag this site out, or try another launcher.",
+  unavailable: "This phone can't add home screen icons.",
+  refused: "That didn't work. Try again from this screen.",
+};
+
+function homeIconRow(platform: Platform): HTMLElement | null {
+  const bridge = (window as unknown as { TsLinks?: LinksBridge }).TsLinks;
+  if (!bridge?.pinNamed || !bridge.pinState) return null;
+  const row = document.createElement("div");
+  row.className = "setting-row";
+  const text = document.createElement("div");
+  text.className = "grow";
+  const label = document.createElement("div");
+  label.className = "setting-label";
+  label.textContent = "Home screen icon";
+  const note = document.createElement("div");
+  note.className = "setting-caption";
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "btn-ghost small";
+  add.textContent = "Add";
+  const paint = (said?: string) => {
+    let st: { pinned?: boolean; supported?: boolean; label?: string } = {};
+    try { st = JSON.parse(bridge.pinState!(platform.id)); } catch { /* the OS would not say */ }
+    const name = st.label || platform.name;
+    add.hidden = st.pinned === true;
+    note.textContent = said ?? (st.pinned ? `"${name}" is on your home screen.` : `Adds "${name}", which opens ${platform.name} here.`);
+  };
+  add.addEventListener("click", () => {
+    let r = "refused";
+    try { r = String(bridge.pinNamed!(platform.id, "")); } catch { /* bridge threw */ }
+    paint(SITE_PIN_WORDS[r]);
+  });
+  paint();
+  text.append(label, note);
+  row.append(text, add);
+  return row;
+}
+
 async function renderBringBack(readyPlatforms: Platform[]) {
   bringBack.textContent = "";
   if (!readyPlatforms.length) {
@@ -826,6 +874,8 @@ async function renderBringBack(readyPlatforms: Platform[]) {
       summary.textContent = platform.name;
       details.append(summary);
       surfaces.forEach((surface) => details.append(surfaceRow(platform.id, surface)));
+      const home = homeIconRow(platform);
+      if (home) details.append(home);
       bringBack.append(details);
     } catch {
       // One platform's toggles failing to load must not block the rest.
