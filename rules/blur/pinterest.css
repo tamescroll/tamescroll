@@ -1,0 +1,14 @@
+/* tamescroll — Pinterest blur (opt-in). Pin and board images. Board cover
+ * and gated pin images verified live 2026-11-23, signed out. The search
+ * bar's suggestion pills carry small pin images too (phone pages,
+ * 2026-11-24), and so does the signed-out "Get Pinterest app" mask a
+ * scroll brings up, which is blurred, never removed. */
+[data-test-id="pin"] img,
+[data-test-id="pinWrapper"] img,
+[data-test-id="gated-pin-image"] img,
+[data-test-id="cover-image"] img,
+[data-test-id="one-bar-pill"] img,
+[data-test-id="mobile-signup-mask"] img,
+[data-test-id="pin"] video {
+  filter: blur(var(--ts-blur, 16px));
+}

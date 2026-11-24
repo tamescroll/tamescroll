@@ -21,16 +21,25 @@ const views = {
   settings: document.querySelector<HTMLElement>("#view-settings")!,
   onboard: document.querySelector<HTMLElement>("#view-onboard")!,
   links: document.querySelector<HTMLElement>("#view-links")!,
+  library: document.querySelector<HTMLElement>("#view-library")!,
 };
 
 // Set by the update section: raises the update prompt once the
 // launcher is on screen (#55).
 let onLauncherShown: () => void = () => {};
 
+// The new tab page's bar sits outside the views (it is fixed to the
+// bottom), so it follows the launcher here.
+const ntpBar = document.querySelector<HTMLElement>("#ntp-bar")!;
+const menuSheet = document.querySelector<HTMLElement>("#menu-sheet")!;
+
 function showView(name: keyof typeof views) {
   (Object.keys(views) as (keyof typeof views)[]).forEach((k) => {
     views[k].hidden = k !== name;
   });
+  ntpBar.hidden = name !== "launcher";
+  menuSheet.hidden = true;
+  window.scrollTo(0, 0);
   if (name === "launcher") onLauncherShown();
 }
 
@@ -50,15 +59,6 @@ const DESIGN_TINTS: Record<string, string> = {
   x: "var(--tint-x)",
   instagram: "var(--tint-ig)",
   tiktok: "var(--tint-tt)",
-};
-
-// Per-platform launcher captions (board 1A). Fallback: "Cleaned".
-const TILE_NOTES: Record<string, string> = {
-  youtube: "No Shorts, no autoplay, no sidebar",
-  reddit: "Your subreddits only, no Popular",
-  x: "Following only, no For You",
-  instagram: "No Reels, no Explore",
-  tiktok: "Following and search only",
 };
 
 // ---------- gaze mode / strength / gender (Rust-mirrored) ----------
@@ -912,64 +912,12 @@ function addSite(site: Site) {
   if (!sites.some((s) => s.host === site.host)) writeSites([...sites, site]);
 }
 
-function siteTile(site: Site): HTMLButtonElement {
-  const el = document.createElement("button");
-  el.className = "tile";
-  const dot = document.createElement("span");
-  dot.className = "dot";
-  dot.textContent = site.name.charAt(0);
-  const name = document.createElement("span");
-  name.className = "name";
-  name.textContent = site.name;
-  const note = document.createElement("span");
-  note.className = "note";
-  note.textContent = site.host;
-  el.append(dot, name, note);
-  el.setAttribute("aria-label", `${site.name}, ${site.host}`);
-  el.addEventListener("click", () => {
-    el.classList.add("opening");
-    void openAddress(site.url);
-  });
-  return el;
-}
-
 function glyphFor(platform: Platform): HTMLElement {
   const dot = document.createElement("span");
   dot.className = "dot";
   dot.style.color = DESIGN_TINTS[platform.id] ?? platform.tint;
   dot.textContent = platform.name.charAt(0);
   return dot;
-}
-
-function tile(platform: Platform): HTMLButtonElement {
-  const el = document.createElement("button");
-  el.className = "tile";
-  el.disabled = !platform.ready;
-
-  const name = document.createElement("span");
-  name.className = "name";
-  name.textContent = platform.name;
-
-  const note = document.createElement("span");
-  note.className = "note";
-  // "Tamed" marks the sites we clean specially, so the care shows
-  // without making them the point of the app.
-  note.textContent = platform.ready
-    ? `Tamed · ${TILE_NOTES[platform.id] ?? "feeds hidden"}`
-    : "Not ready yet";
-
-  el.append(glyphFor(platform), name, note);
-  // The note is hidden in the compact grid; the label still reads it out.
-  el.classList.toggle("is-tamed", platform.ready);
-  el.setAttribute("aria-label", `${platform.name}, ${note.textContent}`);
-
-  if (platform.ready) {
-    el.addEventListener("click", () => {
-      void open(platform, undefined, el);
-    });
-  }
-
-  return el;
 }
 
 // Type-to-match: reveal a platform only after the user types its name.
@@ -1117,32 +1065,409 @@ async function openAddress(raw: string) {
   }
 }
 
-function renderTiles(platforms: Platform[], chosen: string[]) {
-  tiles.textContent = "";
-  platforms
-    .filter((p) => chosen.includes(p.id))
-    .forEach((platform) => tiles.append(tile(platform)));
-  readSites().forEach((site) => tiles.append(siteTile(site)));
+// ---------- bookmarks and history (#73) ----------
+// Kept on this phone only. On Android MainActivity holds them (TsLibrary,
+// launcher-only), because "Bookmark this page" and history are recorded
+// while a site is showing and this document is gone; desktop has no
+// bridge and keeps bookmarks in localStorage, with no history.
 
-  // "Add a site" tile: expands into a box that takes a tamed site's
-  // name or any address.
+type Bookmark = { u: string; t: string; at: number; pin: boolean };
+type Visit = { u: string; t: string; at: number };
+type LibraryBridge = { read(): string; saveBookmarks(json: string): boolean; clearHistory(): boolean };
+
+const libraryBridge = (window as unknown as { TsLibrary?: LibraryBridge }).TsLibrary;
+const LIBRARY_KEY = "tamescroll.library";
+const FAVS_SEEDED_KEY = "tamescroll.favs.seeded";
+
+function cleanList<T extends { u: string }>(raw: unknown, make: (o: Record<string, unknown>) => T): T[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((o) => o && typeof o === "object" && typeof (o as { u?: unknown }).u === "string")
+    .map((o) => make(o as Record<string, unknown>))
+    .filter((o) => /^https?:\/\//i.test(o.u));
+}
+
+function readLibrary(): { bookmarks: Bookmark[]; history: Visit[] } {
+  let raw: { bookmarks?: unknown; history?: unknown } = {};
+  try {
+    raw = JSON.parse(libraryBridge ? libraryBridge.read() : localStorage.getItem(LIBRARY_KEY) ?? "{}") ?? {};
+  } catch {
+    raw = {};
+  }
+  return {
+    bookmarks: cleanList(raw.bookmarks, (o) => ({
+      u: String(o.u), t: typeof o.t === "string" ? o.t : "", at: Number(o.at) || 0, pin: o.pin === true,
+    })),
+    history: cleanList(raw.history, (o) => ({
+      u: String(o.u), t: typeof o.t === "string" ? o.t : "", at: Number(o.at) || 0,
+    })),
+  };
+}
+
+function writeBookmarks(list: Bookmark[]) {
+  const json = JSON.stringify(list);
+  try {
+    if (libraryBridge) libraryBridge.saveBookmarks(json);
+    else localStorage.setItem(LIBRARY_KEY, JSON.stringify({ bookmarks: list, history: [] }));
+  } catch {
+    status.textContent = "Couldn't save that bookmark.";
+  }
+}
+
+function hostOf(url: string): string {
+  try {
+    return bareHost(new URL(url).hostname);
+  } catch {
+    return url;
+  }
+}
+
+/** A bookmark's name: its title, else the site's own label. */
+function labelFor(b: { u: string; t: string }): string {
+  if (b.t.trim()) return b.t.trim();
+  return siteFromInput(b.u)?.name ?? hostOf(b.u);
+}
+
+function letterFor(b: { u: string; t: string }): string {
+  return (labelFor(b).match(/[\p{L}\p{N}]/u)?.[0] ?? "•").toUpperCase();
+}
+
+/** Pins a favourite, adding the bookmark if it is new. */
+function addFavourite(url: string, title: string) {
+  const list = readLibrary().bookmarks;
+  const host = hostOf(url);
+  const hit = list.find((b) => b.u === url || (hostOf(b.u) === host && new URL(b.u).pathname === "/"));
+  if (hit) hit.pin = true;
+  else list.push({ u: url, t: title, at: Date.now(), pin: true });
+  writeBookmarks(list);
+}
+
+/** Settings' "Remove a site" takes its favourite off the new tab too. */
+function unpinHost(host: string) {
+  const list = readLibrary().bookmarks;
+  let changed = false;
+  list.forEach((b) => {
+    if (b.pin && hostOf(b.u) === host) {
+      b.pin = false;
+      changed = true;
+    }
+  });
+  if (changed) writeBookmarks(list);
+}
+
+// NOTHING DISAPPEARS (#73): the first new tab page seeds Favourites once
+// from the tiles the old home showed (chosen tamed sites, then the sites
+// the user added), in that order.
+function seedFavourites(platforms: Platform[], chosen: string[]) {
+  try {
+    if (localStorage.getItem(FAVS_SEEDED_KEY)) return;
+    const list = readLibrary().bookmarks;
+    const have = new Set(list.map((b) => hostOf(b.u)));
+    const now = Date.now();
+    const seed: Bookmark[] = [];
+    platforms
+      .filter((p) => chosen.includes(p.id))
+      .forEach((p) => {
+        if (!have.has(hostOf(p.url))) seed.push({ u: p.url, t: p.name, at: now, pin: true });
+      });
+    readSites().forEach((s) => {
+      if (!have.has(hostOf(s.url))) seed.push({ u: s.url, t: s.name, at: now, pin: true });
+    });
+    if (seed.length) writeBookmarks([...list, ...seed]);
+    localStorage.setItem(FAVS_SEEDED_KEY, "1");
+  } catch {
+    // Unseeded, the page shows only "+ Add"; the next load tries again.
+  }
+}
+
+// Opens a saved address the way the address box would: a YouTube link
+// through its tile (so it wears the tile's prefs), a tamed site's front
+// page through its tile, anything else as an address.
+function openSaved(url: string, el?: HTMLElement) {
+  const link = platformForLink(url);
+  if (link) {
+    void open(link.platform, link.url, el);
+    return;
+  }
+  const platform = platformForPage(url);
+  if (platform?.ready && hostOf(platform.url) === hostOf(url) && new URL(url).pathname === "/") {
+    void open(platform, undefined, el);
+    return;
+  }
+  el?.classList.add("opening");
+  void openAddress(url);
+}
+
+function favTile(b: Bookmark): HTMLButtonElement {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "tile";
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  dot.textContent = letterFor(b);
+  const name = document.createElement("span");
+  name.className = "name";
+  name.textContent = labelFor(b);
+  el.append(dot, name);
+  // The green dot marks the sites we tame, as on the old grid.
+  const tamed = platformForPage(b.u)?.ready === true;
+  el.classList.toggle("is-tamed", tamed);
+  el.setAttribute("aria-label", `${labelFor(b)}, ${hostOf(b.u)}${tamed ? ", tamed" : ""}`);
+  el.addEventListener("click", () => openSaved(b.u, el));
+  return el;
+}
+
+function renderTiles(platforms: Platform[], chosen: string[]) {
+  seedFavourites(platforms, chosen);
+  tiles.textContent = "";
+  readLibrary()
+    .bookmarks.filter((b) => b.pin)
+    .forEach((b) => tiles.append(favTile(b)));
+
+  // "+ Add": expands into a box that takes a tamed site's name or any
+  // address, and pins what it adds.
   const add = document.createElement("button");
+  add.type = "button";
   add.className = "tile add";
   const dot = document.createElement("span");
   dot.className = "dot";
   dot.textContent = "+";
   const name = document.createElement("span");
   name.className = "name";
-  name.textContent = "Add a site";
-  const note = document.createElement("span");
-  note.className = "note";
-  note.textContent = "Its name or address";
-  add.append(dot, name, note);
+  name.textContent = "Add";
+  add.append(dot, name);
+  add.setAttribute("aria-label", "Add a favourite");
   add.addEventListener("click", () => {
     add.replaceWith(addMatchBox(platforms));
   });
   tiles.append(add);
 }
+
+/** One row of a list: letter, title, address, and whatever trails it. */
+function libRow(item: { u: string; t: string }, trailing: HTMLElement[], onOpen: () => void): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "lrow";
+  const main = document.createElement("button");
+  main.type = "button";
+  main.className = "lrow-main";
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  dot.textContent = letterFor(item);
+  const grow = document.createElement("span");
+  grow.className = "grow";
+  const title = document.createElement("span");
+  title.className = "t";
+  title.textContent = labelFor(item);
+  const sub = document.createElement("span");
+  sub.className = "s";
+  sub.textContent = hostOf(item.u);
+  grow.append(title, sub);
+  main.append(dot, grow);
+  main.addEventListener("click", onOpen);
+  row.append(main, ...trailing);
+  return row;
+}
+
+/** The newest visits, one per address. */
+function recentVisits(history: Visit[], n: number): Visit[] {
+  const seen = new Set<string>();
+  const out: Visit[] = [];
+  for (let i = history.length - 1; i >= 0 && out.length < n; i--) {
+    if (seen.has(history[i].u)) continue;
+    seen.add(history[i].u);
+    out.push(history[i]);
+  }
+  return out;
+}
+
+const jump = document.querySelector<HTMLElement>("#jump")!;
+const jumpList = document.querySelector<HTMLElement>("#jump-list")!;
+
+function renderJumpBack() {
+  const visits = recentVisits(readLibrary().history, 3);
+  jumpList.textContent = "";
+  visits.forEach((v) => jumpList.append(libRow(v, [], () => openSaved(v.u))));
+  jump.hidden = visits.length === 0;
+}
+
+// ---------- the bookmarks and history screen (#73, mockup 8) ----------
+
+type LibTab = "bookmarks" | "history";
+let libraryReturn: () => void = () => showView("launcher");
+let clearArmed = false;
+
+const bookmarkList = document.querySelector<HTMLElement>("#bookmark-list")!;
+const bookmarkNote = document.querySelector<HTMLElement>("#bookmark-note")!;
+const historyGroups = document.querySelector<HTMLElement>("#history-groups")!;
+const historySearch = document.querySelector<HTMLInputElement>("#history-search")!;
+const historyClear = document.querySelector<HTMLButtonElement>("#history-clear")!;
+const historyNote = document.querySelector<HTMLElement>("#history-note")!;
+
+function showLibraryTab(tab: LibTab) {
+  document.querySelectorAll<HTMLButtonElement>("#library-seg .toggle-opt").forEach((btn) => {
+    const on = btn.dataset.tab === tab;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", String(on));
+  });
+  document.querySelector<HTMLElement>("#lib-bookmarks")!.hidden = tab !== "bookmarks";
+  document.querySelector<HTMLElement>("#lib-history")!.hidden = tab !== "history";
+  if (tab === "bookmarks") renderBookmarks();
+  else renderHistory();
+}
+
+function renderBookmarks() {
+  const list = readLibrary().bookmarks;
+  bookmarkList.textContent = "";
+  bookmarkList.hidden = list.length === 0;
+  bookmarkNote.textContent = list.length
+    ? "Pinned bookmarks are your Favourites on a new tab."
+    : "No bookmarks yet. On any page, open the menu and choose Bookmark this page.";
+  [...list].reverse().forEach((b) => {
+    const pin = document.createElement("button");
+    pin.type = "button";
+    pin.className = `btn-ghost small pin-btn${b.pin ? " on" : ""}`;
+    pin.textContent = b.pin ? "Pinned" : "Pin";
+    pin.setAttribute("aria-pressed", String(b.pin));
+    pin.setAttribute("aria-label", `${b.pin ? "Unpin" : "Pin"} ${labelFor(b)} ${b.pin ? "from" : "to"} Favourites`);
+    pin.addEventListener("click", () => {
+      writeBookmarks(readLibrary().bookmarks.map((x) => (x.u === b.u ? { ...x, pin: !x.pin } : x)));
+      renderBookmarks();
+    });
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "rm-btn";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `Remove ${labelFor(b)}`);
+    remove.addEventListener("click", () => {
+      writeBookmarks(readLibrary().bookmarks.filter((x) => x.u !== b.u));
+      renderBookmarks();
+    });
+    bookmarkList.append(libRow(b, [pin, remove], () => openSaved(b.u)));
+  });
+}
+
+function dayStart(ms: number): number {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function renderHistory() {
+  const q = historySearch.value.trim().toLowerCase();
+  const all = readLibrary().history;
+  const visits = [...all]
+    .reverse()
+    .filter((v) => !q || v.u.toLowerCase().includes(q) || v.t.toLowerCase().includes(q));
+  historyGroups.textContent = "";
+  const today = dayStart(Date.now());
+  const yesterday = today - 86_400_000;
+  const groups: [string, Visit[]][] = [
+    ["Today", visits.filter((v) => v.at >= today)],
+    ["Yesterday", visits.filter((v) => v.at >= yesterday && v.at < today)],
+    ["Earlier", visits.filter((v) => v.at < yesterday)],
+  ];
+  groups.forEach(([label, items]) => {
+    if (!items.length) return;
+    const head = document.createElement("p");
+    head.className = "eyebrow";
+    head.textContent = label;
+    const list = document.createElement("div");
+    list.className = "list";
+    items.forEach((v) => {
+      const when = document.createElement("span");
+      when.className = "v";
+      when.textContent =
+        v.at >= yesterday
+          ? new Date(v.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+          : new Date(v.at).toLocaleDateString([], { day: "numeric", month: "short" });
+      list.append(libRow(v, [when], () => openSaved(v.u)));
+    });
+    historyGroups.append(head, list);
+  });
+  if (!visits.length) {
+    const none = document.createElement("p");
+    none.className = "section-hint";
+    none.textContent = q ? "Nothing in your history matches that." : "No history yet. The pages you open show up here.";
+    historyGroups.append(none);
+  }
+  historyClear.hidden = all.length === 0;
+  clearArmed = false;
+  historyClear.textContent = "Clear browsing data";
+  historyNote.textContent = "Kept on this phone only.";
+}
+
+function openLibrary(tab: LibTab, returnTo: () => void) {
+  libraryReturn = returnTo;
+  historySearch.value = "";
+  showView("library");
+  showLibraryTab(tab);
+}
+
+document.querySelectorAll<HTMLButtonElement>("#library-seg .toggle-opt").forEach((btn) => {
+  btn.addEventListener("click", () => showLibraryTab(btn.dataset.tab as LibTab));
+});
+historySearch.addEventListener("input", renderHistory);
+// Two taps, the first one saying what goes: history only. Bookmarks and
+// the sign-ins sites keep stay.
+historyClear.addEventListener("click", () => {
+  if (!clearArmed) {
+    clearArmed = true;
+    historyClear.textContent = "Tap again to clear history";
+    historyNote.textContent = "Clears the pages you've visited. Bookmarks and sign-ins stay.";
+    return;
+  }
+  try {
+    libraryBridge?.clearHistory();
+  } catch {
+    historyNote.textContent = "Couldn't clear history.";
+    return;
+  }
+  renderHistory();
+  historyNote.textContent = "History cleared.";
+});
+document.querySelector<HTMLButtonElement>("#library-back")!.addEventListener("click", () => libraryReturn());
+
+// System Back on Android (MainActivity asks before backgrounding the app):
+// the menu sheet closes first, then Bookmarks and history goes where its
+// own Back button would. Everything else is left to MainActivity.
+(window as unknown as { __tsBack?: () => boolean }).__tsBack = () => {
+  if (!menuSheet.hidden) {
+    menuSheet.hidden = true;
+    return true;
+  }
+  if (!views.library.hidden) {
+    libraryReturn();
+    return true;
+  }
+  return false;
+};
+
+// ---------- the new tab page's bar and menu (#73) ----------
+
+function closeMenu() {
+  menuSheet.hidden = true;
+}
+
+document.querySelector<HTMLButtonElement>("#ntp-menu")!.addEventListener("click", () => {
+  menuSheet.hidden = false;
+});
+// One page at a time until tabs land (step 3): the square is this new
+// tab, so it goes straight to the address field.
+document.querySelector<HTMLButtonElement>("#ntp-tabs")!.addEventListener("click", () => {
+  openLinkInput.focus();
+});
+document.querySelector<HTMLElement>("#menu-scrim")!.addEventListener("click", closeMenu);
+document.querySelectorAll<HTMLButtonElement>("#menu-sheet [data-menu]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    closeMenu();
+    switch (btn.dataset.menu) {
+      case "newtab": showView("launcher"); refreshAll(); break;
+      case "bookmarks": openLibrary("bookmarks", () => { showView("launcher"); refreshAll(); }); break;
+      case "history": openLibrary("history", () => { showView("launcher"); refreshAll(); }); break;
+      case "settings": openSettings(); break;
+    }
+  });
+});
 
 function addMatchBox(platforms: Platform[]): HTMLElement {
   const box = document.createElement("div");
@@ -1170,12 +1495,14 @@ function addMatchBox(platforms: Platform[]): HTMLElement {
       result.append(
         matchRow(matches[0], tamed ? matches[0].name : q, () => {
           writeChosen([...chosen, matches[0].id]);
+          addFavourite(matches[0].url, matches[0].name);
           refreshAll();
         })
       );
     } else if (site && !tamed) {
       result.append(siteRow(site, () => {
         addSite(site);
+        addFavourite(site.url, site.name);
         refreshAll();
       }));
     } else if (q.trim().length >= 3 && !site) {
@@ -1249,10 +1576,16 @@ function renderManage(platforms: Platform[]) {
   platforms
     .filter((p) => chosen.includes(p.id))
     .forEach((platform) =>
-      row(platform.name, () => writeChosen((readChosen() ?? []).filter((id) => id !== platform.id)))
+      row(platform.name, () => {
+        writeChosen((readChosen() ?? []).filter((id) => id !== platform.id));
+        unpinHost(hostOf(platform.url));
+      })
     );
   sites.forEach((site) =>
-    row(site.host, () => writeSites(readSites().filter((s) => s.host !== site.host)))
+    row(site.host, () => {
+      writeSites(readSites().filter((s) => s.host !== site.host));
+      unpinHost(site.host);
+    })
   );
   host.append(details);
 }
@@ -1447,6 +1780,10 @@ document.querySelectorAll<HTMLButtonElement>("#view-links [data-act]").forEach((
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   if (!views.links.hidden) renderLinksView();
+  if (!views.launcher.hidden) {
+    renderJumpBack();
+    renderWeekStat();
+  }
   if (!views.settings.hidden) renderLinksCard();
 });
 document.querySelector<HTMLButtonElement>("#links-done")!.addEventListener("click", () => linksReturn());
@@ -1510,14 +1847,6 @@ document.querySelectorAll<HTMLButtonElement>("#text-toggle .toggle-opt").forEach
 applyLook(readLook());
 applyText(localStorage.getItem(TEXT_KEY) === "large" ? "large" : "normal");
 
-// A small hello above the question, by the phone's clock.
-function renderGreeting() {
-  const h = new Date().getHours();
-  const line =
-    h < 5 ? "Up late?" : h < 12 ? "Good morning." : h < 17 ? "Good afternoon." : h < 22 ? "Good evening." : "Up late?";
-  document.querySelector<HTMLElement>("#greet")!.textContent = line;
-}
-
 // ---------- settings view ----------
 
 const PANES = ["bringback", "blur", "filters", "look", "about"] as const;
@@ -1535,11 +1864,13 @@ document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => showPane(btn.dataset.pane as (typeof PANES)[number]));
 });
 
-document.querySelector<HTMLButtonElement>("#open-settings")!.addEventListener("click", () => {
+// Settings opens from the menu (#73); the new tab page has no gear of
+// its own, as in the mockup.
+function openSettings() {
   siteHere.textContent = "";
   showView("settings");
   showPane("bringback");
-});
+}
 
 document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("click", () => {
   showView("launcher");
@@ -1640,42 +1971,32 @@ let allPlatforms: Platform[] = [];
 // a second one that would interleave its rows with this one's.
 let bringBackReady: Promise<void> = Promise.resolve();
 
-// THE TODAY LINE (2026-10-27 redesign): the calm made visible. The count
-// is the requests the block rules stopped today, kept by MainActivity on
-// this phone; where there is no such bridge (desktop) the card stays out.
-const today = document.querySelector<HTMLElement>("#today")!;
+// THE WEEK LINE (#73, mockup 2; it replaced the 2026-10-27 today card):
+// the calm made visible, quietly. The count is the requests the block
+// rules stopped over the last seven days, kept by MainActivity on this
+// phone; with no such bridge (desktop) or nothing stopped yet, no line.
+const weekStat = document.querySelector<HTMLElement>("#week-stat")!;
 
-function renderToday(chosen: string[]) {
-  const stats = (window as unknown as { TsStats?: { stoppedToday(): number } }).TsStats;
-  if (!stats) {
-    today.hidden = true;
-    return;
-  }
+function renderWeekStat() {
+  const stats = (window as unknown as { TsStats?: { stoppedThisWeek?(): number } }).TsStats;
   let n = 0;
   try {
-    n = Number(stats.stoppedToday()) || 0;
+    n = Number(stats?.stoppedThisWeek?.()) || 0;
   } catch {
-    today.hidden = true;
-    return;
+    n = 0;
   }
-  const tamed = allPlatforms.filter((p) => p.ready && chosen.includes(p.id)).length;
-  today.querySelector(".today-num")!.textContent = n.toLocaleString();
-  today.querySelector(".today-text")!.textContent =
-    n === 1 ? "ad or tracker stopped today" : "ads and trackers stopped today";
-  today.querySelector(".today-sub")!.textContent =
-    n === 0
-      ? "Open a site and watch this climb."
-      : tamed > 0
-        ? `Feeds hidden on ${tamed} of your sites.`
-        : "Add a site to tame its feeds too.";
-  today.hidden = false;
+  weekStat.hidden = n <= 0;
+  if (n <= 0) return;
+  document.querySelector<HTMLElement>("#week-num")!.textContent = n.toLocaleString();
+  document.querySelector<HTMLElement>("#week-text")!.textContent =
+    n === 1 ? "attempt to track you stopped this week" : "attempts to track you stopped this week";
 }
 
 function refreshAll() {
   const chosen = readChosen() ?? [];
-  renderGreeting();
   renderTiles(allPlatforms, chosen);
-  renderToday(chosen);
+  renderJumpBack();
+  renderWeekStat();
   renderManage(allPlatforms);
   renderLinksCard();
   bringBackReady = renderBringBack(allPlatforms.filter((p) => p.ready && chosen.includes(p.id)));
@@ -1686,9 +2007,11 @@ function refreshAll() {
 // home with the box holding that page's address, selected, the way a
 // browser's address bar works; ?settings=<page> opens Settings -> Sites
 // at that page's site.
-function barRequest(): { kind: "search" | "settings"; page: string } | null {
+// The browser bar's menu (#73) adds ?library=bookmarks|history and
+// ?view=settings.
+function barRequest(): { kind: "search" | "settings" | "library" | "view"; page: string } | null {
   const params = new URLSearchParams(location.search);
-  for (const kind of ["search", "settings"] as const) {
+  for (const kind of ["search", "settings", "library", "view"] as const) {
     const page = params.get(kind);
     if (page !== null) return { kind, page };
   }
@@ -1870,6 +2193,11 @@ async function start() {
           openLinkInput.value = bar.page;
           openLinkInput.focus();
           openLinkInput.select();
+        } else if (bar.kind === "library") {
+          // Opened from a site's menu: Back returns to that page.
+          openLibrary(bar.page === "history" ? "history" : "bookmarks", () => history.back());
+        } else if (bar.kind === "view") {
+          openSettings();
         } else {
           void openSiteSettings(bar.page);
         }

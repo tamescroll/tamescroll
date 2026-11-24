@@ -20,13 +20,19 @@ bar mid-screen (1120). OTA rules: the watch-next related-items SECTION
 is hidden (per-item hiding kept fetching 600+ videos into a hidden
 column).
 
-**HIS RULINGS, standing:** mobile first; browser extension stays dead;
+**HIS RULINGS, standing:** mobile first; browser extension REVIVED
+2026-11-21 on his word (phase 1 YouTube + Reddit, `extension/README.md`);
 student gender model PARKED (it was tried 5 Sept and lost: best 0.977 vs
 shipped 0.986 -- do not call it "unmeasured" again); NULL_MINT_NM_FLOOR
 stays 5 (6 measured +30% exposure); GENDER_IMAGE_NM_FLOOR 6 (thumbnail
 junk); grey is ON over OTA (`GENDER_GREY` 1); NULL_HOLD_PASSES ships 1
 (weak read refused once, then covered); home icon must be OUR glyph,
-never YouTube's logo.
+never YouTube's logo. **Test browsers run with BLUR ON** (his word, 2026-11-23): any
+automated browser opening a served site loads the built extension with
+every site's Blur pictures on at Strong before the first page, PLUS an
+init-script stylesheet blurring every img/picture/video/canvas/
+background-image at 28px (the extension's blur covers only some
+surfaces), and every screenshot is taken that way.
 
 **OPEN WORK LIVES IN GITHUB ISSUES** (since 2026-10-22), not in this
 file, WORKLIST.md or docs/owner-issues.md:
@@ -111,6 +117,17 @@ constant once shipped dead as `var IY;` for six rounds.
 
 **RESTART THE EMULATOR BEFORE BELIEVING A FAILURE OR A TIMING NUMBER.**
 The stale-emulator trap has invented a regression five times.
+
+## THE APPLE KEY -- HIJRI FIRST SHARES THE TEAM (his rule, 2026-11-22)
+
+The App Store Connect key in the repo secrets (`APPLE_API_KEY_*`) has the
+ADMIN role on the Apple team that also holds **Hijri First**. Use it only
+to build and upload Tame Scroll builds (the iPhone app, the Safari
+extension) to TestFlight. Never view, change, submit, delete or re-sign
+anything for Hijri First or any other app. Never revoke or replace an
+existing certificate, key or profile. Never print, log, commit or copy
+the key. Get his OK before any App Store review submission and before
+any change to listings, prices, users or roles.
 
 ## PROTECTION DECISIONS ARE HIS, ALWAYS
 

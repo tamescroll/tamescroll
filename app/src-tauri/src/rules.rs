@@ -24,9 +24,13 @@
 
 use std::sync::RwLock;
 
-use adblock::lists::{FilterSet, ParseOptions};
-use adblock::resources::{MimeType, PermissionMask, Resource, ResourceType};
 use adblock::Engine;
+
+#[path = "engine_inputs.rs"]
+mod engine_inputs;
+pub(crate) use engine_inputs::{build_engine_from_lists, resources, ENGINE_LISTS};
+#[allow(unused_imports)]
+pub(crate) use engine_inputs::{base64_encode, BRAVE_RESOURCES_JSON, SCRIPTLETS};
 
 /// Our own cosmetic rules — algorithmic-surface removal, not ad blocking.
 /// Each file's header carries the design rules that govern it. No longer
@@ -37,6 +41,9 @@ const X_RULES: &str = include_str!("../../../rules/x.txt");
 const TIKTOK_RULES: &str = include_str!("../../../rules/tiktok.txt");
 const INSTAGRAM_RULES: &str = include_str!("../../../rules/instagram.txt");
 const FACEBOOK_RULES: &str = include_str!("../../../rules/facebook.txt");
+const TWITCH_RULES: &str = include_str!("../../../rules/twitch.txt");
+const LINKEDIN_RULES: &str = include_str!("../../../rules/linkedin.txt");
+const PINTEREST_RULES: &str = include_str!("../../../rules/pinterest.txt");
 
 /// Upstream filter lists. These block ads and trackers by network pattern
 /// and cosmetic selector; the scriptlet resources below are what actually
@@ -47,11 +54,6 @@ const UBO_FILTERS: &str = include_str!("../../../rules/vendor/ubo-filters.txt");
 const UBO_QUICK_FIXES: &str = include_str!("../../../rules/vendor/ubo-quick-fixes.txt");
 const UBO_UNBREAK: &str = include_str!("../../../rules/vendor/ubo-unbreak.txt");
 
-/// Brave's own scriptlet/redirect resources (MPL-2.0), already in the
-/// exact JSON shape `adblock::resources::Resource` deserializes from.
-/// Carries Brave's additions (de-amp, playback fixes, etc.) — not the
-/// generic uBO scriptlet names; ours below cover those.
-const BRAVE_RESOURCES_JSON: &str = include_str!("../../../rules/vendor/resources.json");
 
 /// Stage A blur CSS (owned by lib.rs conceptually, embedded here so all
 /// OTA-able rule files live in one lookup). resources.json and the
@@ -63,6 +65,12 @@ const BLUR_X: &str = include_str!("../../../rules/blur/x.css");
 const BLUR_TIKTOK: &str = include_str!("../../../rules/blur/tiktok.css");
 const BLUR_INSTAGRAM: &str = include_str!("../../../rules/blur/instagram.css");
 const BLUR_FACEBOOK: &str = include_str!("../../../rules/blur/facebook.css");
+const BLUR_TWITCH: &str = include_str!("../../../rules/blur/twitch.css");
+const BLUR_LINKEDIN: &str = include_str!("../../../rules/blur/linkedin.css");
+const BLUR_PINTEREST: &str = include_str!("../../../rules/blur/pinterest.css");
+/// Remote off switches (#76), shared with the extension: two lists of
+/// names, never code. Read by lib.rs `kill_switch`.
+const KILL_JSON: &str = include_str!("../../../rules/kill.json");
 const SCRIPTLET_RULES: &str = include_str!("../../../rules/scriptlets.txt");
 pub const TUNING_JSON: &str = include_str!("../../../rules/tuning.json");
 
@@ -81,13 +89,20 @@ pub const FILES: &[&str] = &[
     "tiktok.txt",
     "instagram.txt",
     "facebook.txt",
+    "twitch.txt",
+    "linkedin.txt",
+    "pinterest.txt",
     "scriptlets.txt",
+    "kill.json",
     "blur/youtube.css",
     "blur/reddit.css",
     "blur/x.css",
     "blur/tiktok.css",
     "blur/instagram.css",
     "blur/facebook.css",
+    "blur/twitch.css",
+    "blur/linkedin.css",
+    "blur/pinterest.css",
     "vendor/easylist.txt",
     "vendor/easyprivacy.txt",
     "vendor/ubo-filters.txt",
@@ -103,6 +118,10 @@ pub fn embedded(name: &str) -> Option<&'static str> {
         "tiktok.txt" => Some(TIKTOK_RULES),
         "instagram.txt" => Some(INSTAGRAM_RULES),
         "facebook.txt" => Some(FACEBOOK_RULES),
+        "twitch.txt" => Some(TWITCH_RULES),
+        "linkedin.txt" => Some(LINKEDIN_RULES),
+        "pinterest.txt" => Some(PINTEREST_RULES),
+        "kill.json" => Some(KILL_JSON),
         "scriptlets.txt" => Some(SCRIPTLET_RULES),
         // NUMBERS, NOT CODE. Whitelisted and clamped page-side by
         // app/gaze/src/tuning.mjs; see the header there for why each
@@ -114,6 +133,9 @@ pub fn embedded(name: &str) -> Option<&'static str> {
         "blur/tiktok.css" => Some(BLUR_TIKTOK),
         "blur/instagram.css" => Some(BLUR_INSTAGRAM),
         "blur/facebook.css" => Some(BLUR_FACEBOOK),
+        "blur/twitch.css" => Some(BLUR_TWITCH),
+        "blur/linkedin.css" => Some(BLUR_LINKEDIN),
+        "blur/pinterest.css" => Some(BLUR_PINTEREST),
         "vendor/easylist.txt" => Some(EASYLIST),
         "vendor/easyprivacy.txt" => Some(EASYPRIVACY),
         "vendor/ubo-filters.txt" => Some(UBO_FILTERS),
@@ -123,67 +145,6 @@ pub fn embedded(name: &str) -> Option<&'static str> {
     }
 }
 
-/// Our clean-room scriptlets. Function-style: the body starts with
-/// `function name(` so adblock-rust injects the body once as a dependency
-/// and emits `name(arg1, arg2, ...)` calls per matching filter rule, with
-/// arguments properly quoted by the engine.
-///
-/// (name, aliases, body). Names and aliases carry the `.js` suffix
-/// because the engine's lookup appends it to the name a filter uses —
-/// `##+js(set, ...)` looks up `set.js`.
-///
-/// Coverage is deliberately the set the YouTube ad rules in
-/// ubo-filters.txt actually call. Known-unimplemented names those lists
-/// also reference (`trusted-json-edit-xhr-request`,
-/// `trusted-prevent-dom-bypass`, `rpnt`, `rmnt`, `nano-stb`): their rules
-/// are skipped silently by the engine — they are anti-detection
-/// countermeasures, not the core ad strip. Add implementations here if
-/// they ever become load-bearing.
-const SCRIPTLETS: &[(&str, &[&str], &str)] = &[
-    (
-        "set-constant.js",
-        &["set.js"],
-        include_str!("../scriptlets/set-constant.js"),
-    ),
-    (
-        "json-prune.js",
-        &[],
-        include_str!("../scriptlets/json-prune.js"),
-    ),
-    (
-        "json-prune-fetch-response.js",
-        &[],
-        include_str!("../scriptlets/json-prune-fetch-response.js"),
-    ),
-    (
-        "trusted-replace-fetch-response.js",
-        &[],
-        include_str!("../scriptlets/trusted-replace-fetch-response.js"),
-    ),
-    (
-        "trusted-replace-xhr-response.js",
-        &[],
-        include_str!("../scriptlets/trusted-replace-xhr-response.js"),
-    ),
-    (
-        // Our own request-editor (not a uBO name): sets one dotted field on
-        // outbound JSON request bodies. Used on YouTube's /player request
-        // (rules/scriptlets.txt). Clean-room from a public write-up.
-        "trusted-set-request-field.js",
-        &[],
-        include_str!("../scriptlets/trusted-set-request-field.js"),
-    ),
-    (
-        // Our own inline-JSON pruner (not a uBO name). Strips ad slots
-        // out of the player response that YouTube EMBEDS in the watch
-        // page HTML, before the page's own inline script assigns it.
-        // Blocking requests cannot reach a pre-roll: its stream is
-        // googlevideo.com, the same origin as the real video.
-        "trusted-prune-window-json.js",
-        &[],
-        include_str!("../scriptlets/trusted-prune-window-json.js"),
-    ),
-];
 
 /// Builds the engine the whole app shares: every vendored filter list
 /// compiled in, plus the scriptlet resources those lists' `+js(...)`
@@ -192,26 +153,22 @@ pub fn build_engine() -> Engine {
     load_or_build_engine(crate::ota::cache_dir().as_deref())
 }
 
-/// The lists the engine is compiled from, in order. Through the OTA
-/// layer: an updated list snapshot wins over the embedded one on the
-/// next rebuild.
-const ENGINE_LISTS: [&str; 6] = [
-    "scriptlets.txt",
-    "vendor/easylist.txt",
-    "vendor/easyprivacy.txt",
-    "vendor/ubo-filters.txt",
-    "vendor/ubo-quick-fixes.txt",
-    "vendor/ubo-unbreak.txt",
-];
+/// The tracker lists: what stays blocked on a page whose ads the user
+/// let through. EasyPrivacy names trackers rather than ads, and the
+/// unbreak list keeps its exceptions so a tracker rule never breaks a page
+/// the full engine would have left working.
+const TRACKER_LISTS: [&str; 2] = ["vendor/easyprivacy.txt", "vendor/ubo-unbreak.txt"];
 
-fn build_engine_from_lists(lists: &[String]) -> Engine {
-    let mut set = FilterSet::new(false);
-    for text in lists {
-        set.add_filter_list(text.clone(), ParseOptions::default());
+/// Builds the tracker-only engine (TRACKER_LISTS), through the OTA layer
+/// like the full one. Network rules only, so no scriptlet resources and
+/// no serialised cache: it is a fifth of the full set (about 0.2s on a
+/// desktop) and is warmed off the critical path.
+pub fn build_tracker_engine() -> Engine {
+    let mut set = adblock::lists::FilterSet::new(false);
+    for list in TRACKER_LISTS {
+        set.add_filter_list(crate::ota::rules_text(list), adblock::lists::ParseOptions::default());
     }
-    let mut engine = Engine::new_with_filter_set(set);
-    engine.use_resources(resources());
-    engine
+    Engine::new_with_filter_set(set)
 }
 
 /// iOS NETWORK BLOCKING (#16). WKWebView cannot intercept requests, so
@@ -229,9 +186,9 @@ fn build_engine_from_lists(lists: &[String]) -> Engine {
 #[cfg_attr(not(any(target_os = "ios", test)), allow(dead_code))]
 pub(crate) fn content_blocker_json() -> (String, usize) {
     use adblock::content_blocking::CbType;
-    let mut set = FilterSet::new(true);
+    let mut set = adblock::lists::FilterSet::new(true);
     for list in ENGINE_LISTS.iter().filter(|l| **l != "scriptlets.txt") {
-        set.add_filter_list(crate::ota::rules_text(list), ParseOptions::default());
+        set.add_filter_list(crate::ota::rules_text(list), adblock::lists::ParseOptions::default());
     }
     let rules: Vec<_> = match set.into_content_blocking() {
         Ok((rules, _unconverted)) => rules
@@ -310,57 +267,6 @@ fn engine_key(lists: &[String]) -> String {
     digest.iter().take(8).map(|b| format!("{b:02x}")).collect()
 }
 
-/// All scriptlet/redirect resources available to `+js(...)` filters:
-/// Brave's own set, plus our clean-room implementations of the generic
-/// names the lists call.
-fn resources() -> Vec<Resource> {
-    let mut resources: Vec<Resource> = serde_json::from_str(BRAVE_RESOURCES_JSON)
-        .expect("rules/vendor/resources.json must deserialize into Vec<adblock::resources::Resource>");
-
-    for (name, aliases, body) in SCRIPTLETS {
-        resources.push(Resource {
-            name: (*name).to_string(),
-            aliases: aliases.iter().map(|a| (*a).to_string()).collect(),
-            kind: ResourceType::Mime(MimeType::ApplicationJavascript),
-            content: base64_encode(body.as_bytes()),
-            dependencies: Vec::new(),
-            // Default mask = usable from any list we compile in. The
-            // `trusted-` names are safe here because every list is a
-            // curated snapshot in this repo, not user-supplied input.
-            permission: PermissionMask::default(),
-        });
-    }
-
-    resources
-}
-
-/// Standard base64 (RFC 4648, with padding) — `Resource::content` must be
-/// base64-encoded (adblock-rust decodes it with `BASE64_STANDARD`), and
-/// pulling in a whole crate for this one call site isn't worth it.
-fn base64_encode(data: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity(data.len().div_ceil(3) * 4);
-    for chunk in data.chunks(3) {
-        let b0 = chunk[0];
-        let b1 = chunk.get(1).copied().unwrap_or(0);
-        let b2 = chunk.get(2).copied().unwrap_or(0);
-        let n = ((b0 as u32) << 16) | ((b1 as u32) << 8) | (b2 as u32);
-        out.push(ALPHABET[((n >> 18) & 0x3F) as usize] as char);
-        out.push(ALPHABET[((n >> 12) & 0x3F) as usize] as char);
-        out.push(if chunk.len() > 1 {
-            ALPHABET[((n >> 6) & 0x3F) as usize] as char
-        } else {
-            '='
-        });
-        out.push(if chunk.len() > 2 {
-            ALPHABET[(n & 0x3F) as usize] as char
-        } else {
-            '='
-        });
-    }
-    out
-}
 
 /// One toggleable "bring back" surface (docs/plan.md Phase 3 settings
 /// pane): a named group of cosmetic rules from one of our own rule files,
@@ -454,6 +360,9 @@ fn build_surfaces() -> &'static Vec<(&'static str, Vec<Surface>)> {
         ("tiktok", parse_surfaces(leaked("tiktok.txt"))),
         ("instagram", parse_surfaces(leaked("instagram.txt"))),
         ("facebook", parse_surfaces(leaked("facebook.txt"))),
+        ("twitch", parse_surfaces(leaked("twitch.txt"))),
+        ("linkedin", parse_surfaces(leaked("linkedin.txt"))),
+        ("pinterest", parse_surfaces(leaked("pinterest.txt"))),
     ]))
 }
 
@@ -744,8 +653,8 @@ mod engine_timing_probe {
         let r = resources();
         eprintln!("resources  {:?} ({} entries)", t.elapsed(), r.len());
         let t = std::time::Instant::now();
-        let mut set = FilterSet::new(false);
-        for text in &lists { set.add_filter_list(text.clone(), ParseOptions::default()); }
+        let mut set = adblock::lists::FilterSet::new(false);
+        for text in &lists { set.add_filter_list(text.clone(), adblock::lists::ParseOptions::default()); }
         eprintln!("parse      {:?}", t.elapsed());
         let t = std::time::Instant::now();
         let mut e = Engine::new_with_filter_set(set);

@@ -1,0 +1,40 @@
+! Title: tamescroll — Twitch
+! Description: Removes Twitch's discovery surfaces — the auto-playing
+!              front-page carousel, the home page's recommended shelves,
+!              recommended channels in the side bar and the Browse menu —
+!              while leaving channels you open, Following and search.
+! Version: 1
+! Expires: 1 day
+! License: CC0-1.0 (see rules/LICENSE)
+!
+! VERIFIED LIVE 2026-11-23, www.twitch.tv desktop, signed out, images
+! blurred. data-a-target / data-test-selector are Twitch's own test hooks.
+
+!surface: home Home recommendations
+! The home page: auto-playing featured stream carousel, "Live on Twitch",
+! "Categories we think you'll like" and the rest of the shelves. The page
+! is the one that holds the carousel, so the whole scroller goes with it.
+twitch.tv##[data-a-target="front-page-carousel"]
+twitch.tv##[data-a-target="root-scroller"]:has([data-a-target="front-page-carousel"])
+twitch.tv##[data-a-target="root-scroller"]:has([aria-label="Live Channels"])
+! m.twitch.tv (the app's phone pages), checked 2026-11-24 signed out: the
+! home page's "Live on Twitch" and "Categories we think you'll like"
+! shelves are the one list holding shelfItems; Browse, search and channel
+! pages have none.
+m.twitch.tv##main div[role="list"]:has([class*="shelfItems--"])
+
+!surface: side_recs Recommended channels
+! Side bar cards Twitch picks for you; followed channels stay.
+twitch.tv##[data-test-selector="recommended-channel"]
+
+!surface: browse Browse menu
+twitch.tv##[data-a-target="browse-link"]
+
+!surface: promoted Promoted and upsells
+twitch.tv##[data-a-target="prime-offers-icon"]
+twitch.tv##[class*="upsell-bottom-banner"]
+
+!surface: mobile_nags App install nags
+! m.twitch.tv (the app's phone pages), signed out 2026-11-24: the "Open
+! App" button in the top bar, tagged mweb_upsell in its own link.
+m.twitch.tv##a[href*="utm_campaign=mweb_upsell"]

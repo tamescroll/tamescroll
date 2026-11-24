@@ -22,7 +22,9 @@ mod rules;
 /// files are `filter: blur(...)` rules on chosen media selectors, kept
 /// separate from rules/*.txt because blurring is a personal choice and the
 /// mechanism (plain CSS) differs from cosmetic hiding.
-const BLUR_PLATFORMS: &[&str] = &["youtube", "reddit", "x", "tiktok", "instagram", "facebook"];
+const BLUR_PLATFORMS: &[&str] = &[
+    "youtube", "reddit", "x", "tiktok", "instagram", "facebook", "twitch", "linkedin", "pinterest",
+];
 
 fn blur_css(platform_id: &str) -> String {
     if !BLUR_PLATFORMS.contains(&platform_id) {
@@ -204,6 +206,14 @@ fn ads_let_through(page_url: &str, shown_platform: &str, shown: &[String]) -> bo
             .is_some_and(|p| p.id == shown_platform)
 }
 
+/// rules/kill.json switched this page's platform's ad blocking off (#76).
+fn ads_killed_for(page_url: &str, kill: &KillSwitch) -> bool {
+    !kill.ads_off.is_empty()
+        && url_host(page_url)
+            .and_then(|h| platform_for_host(&h))
+            .is_some_and(|p| kill.ads_off.iter().any(|id| id == p.id))
+}
+
 /// The shown prefs that apply to `platform_id`: the held list, minus the
 /// shared `ads` id when the list was set for a different platform.
 #[cfg_attr(not(mobile), allow(dead_code))] // android page loads
@@ -302,7 +312,8 @@ fn platform_for_host(host: &str) -> Option<&'static Platform> {
 #[cfg_attr(not(mobile), allow(dead_code))] // android page loads
 fn page_load_rules_script(url: &str) -> Option<String> {
     let platform = platform_for_host(platform_root(url))?;
-    let shown = shown_for(platform.id);
+    let kill = kill_switch();
+    let shown = with_kill(platform.id, shown_for(platform.id), &kill);
     // Ads shown: the ad scriptlets go too, or the player still strips
     // them out of the response the user asked to see them in.
     let scriptlets = if ads_shown(&shown) {
@@ -318,6 +329,8 @@ fn page_load_rules_script(url: &str) -> Option<String> {
         true,
     );
     let kid = kid_controls_script(platform.id, &shown);
+    let host = url_host(url).unwrap_or_default();
+    let page = page_scripts_script(platform.id, &host, &shown, &kill);
     Some(format!(
         r#"
 (function () {{
@@ -335,6 +348,7 @@ fn page_load_rules_script(url: &str) -> Option<String> {
 {script}
 }})();
 {kid}
+{page}
 "#
     ))
 }
@@ -400,6 +414,167 @@ fn kid_controls_script(platform_id: &str, shown: &[String]) -> String {
         !has(AUTOPLAY_SURFACE)
     );
     include_str!("../kid-controls.js").replacen("/*TS_KID*/ null", &config, 1)
+}
+
+/// THE REMOTE OFF SWITCHES (#76), rules/kill.json, shared with the
+/// extension and updated over the air like the rules: DATA ONLY, two lists
+/// of names. `ads_off`: platform ids whose ad blocking is off on every
+/// install (their Ads switch reads as Shown). `disabled`: page-script ids
+/// (the extension's, e.g. `reddit-login-nags`) that must not run. Anything
+/// malformed reads as nothing switched off.
+#[derive(Clone, Default, Debug, PartialEq)]
+pub(crate) struct KillSwitch {
+    pub ads_off: Vec<String>,
+    pub disabled: Vec<String>,
+}
+
+pub(crate) fn parse_kill(text: &str) -> KillSwitch {
+    let names = |v: Option<&serde_json::Value>| -> Vec<String> {
+        v.and_then(|v| v.as_array())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|x| x.as_str())
+                    .filter(|x| {
+                        !x.is_empty()
+                            && x.len() <= 40
+                            && x.bytes().all(|b| {
+                                b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-'
+                            })
+                    })
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    match serde_json::from_str::<serde_json::Value>(text) {
+        Ok(v) if v.is_object() => KillSwitch {
+            ads_off: names(v.get("adsBlockingOff")),
+            disabled: names(v.get("disabledScripts")),
+        },
+        _ => KillSwitch::default(),
+    }
+}
+
+static KILL: std::sync::RwLock<Option<KillSwitch>> = std::sync::RwLock::new(None);
+
+/// The current off switches, parsed once per rules generation (reset by
+/// `rebuild_rules`), because blocks_request asks on every request.
+pub(crate) fn kill_switch() -> KillSwitch {
+    if let Some(k) = KILL.read().unwrap().as_ref() {
+        return k.clone();
+    }
+    let k = parse_kill(&ota::rules_text("kill.json"));
+    *KILL.write().unwrap() = Some(k.clone());
+    k
+}
+
+/// A platform's shown list with the off switch applied: `ads` joins it
+/// when that platform's ad blocking is switched off remotely.
+fn with_kill(platform_id: &str, mut shown: Vec<String>, kill: &KillSwitch) -> Vec<String> {
+    if kill.ads_off.iter().any(|p| p == platform_id) && !ads_shown(&shown) {
+        shown.push(ADS_SURFACE.to_string());
+    }
+    shown
+}
+
+/// PAGE SURFACES (#76): settings that are shared page code rather than
+/// rules, like the kid controls. Offered only where the code has been seen
+/// working on the phone's mobile web, and so far that is nowhere:
+/// - Instagram's suggested posts and LinkedIn's feed are written against
+///   the DESKTOP sites, and their signed-in feeds could not be checked.
+/// - Sign-in pop-ups (login-nags.mjs), checked 2026-11-24 on the emulator
+///   signed out: Reddit showed none to hide; X's phone pop-up is an
+///   app-store one (rules/x.txt mobile_nags now hides it); Instagram's
+///   phone profile has no `main` landmark, so the script's own wall guard
+///   rightly refuses to act; Facebook did not load. Until one is seen
+///   working, the app offers no switch that would do nothing.
+/// The routing below stays, so turning one on is a one-line change here.
+pub(crate) const LOGIN_NAGS_SURFACE: &str = "login_nags";
+
+/// Platforms where the sign-in pop-up script is confirmed on mobile web.
+const LOGIN_NAGS_PLATFORMS: &[&str] = &[];
+
+fn page_surfaces(platform_id: &str) -> Vec<SurfaceInfo> {
+    if LOGIN_NAGS_PLATFORMS.contains(&platform_id) {
+        return vec![SurfaceInfo {
+            id: LOGIN_NAGS_SURFACE.to_string(),
+            label: "Sign-in pop-ups".to_string(),
+            default_shown: false,
+        }];
+    }
+    Vec::new()
+}
+
+/// Which shared page scripts run on this page (app/gaze/src/page/), by the
+/// extension's own script ids so one kill.json entry stops both.
+fn page_script_ids(platform_id: &str, host: &str, shown: &[String], kill: &KillSwitch) -> Vec<&'static str> {
+    let has = |id: &str| shown.iter().any(|s| s == id);
+    let mut out: Vec<(&'static str, &'static str)> = Vec::new();
+    if platform_id == "reddit" && host.eq_ignore_ascii_case("old.reddit.com") {
+        out.push(("old-reddit", "old-reddit"));
+    }
+    if platform_id == "reddit" && !has("discovery") {
+        out.push(("reddit-discovery", "reddit-discovery"));
+    }
+    if page_surfaces(platform_id).iter().any(|s| s.id == LOGIN_NAGS_SURFACE) && !has(LOGIN_NAGS_SURFACE) {
+        let kill_id: &'static str = match platform_id {
+            "reddit" => "reddit-login-nags",
+            "x" => "x-login-nags",
+            "instagram" => "instagram-login-nags",
+            _ => "facebook-login-nags",
+        };
+        out.push(("login-nags", kill_id));
+    }
+    out.into_iter()
+        .filter(|(_, kill_id)| !kill.disabled.iter().any(|d| d == kill_id))
+        .map(|(id, _)| id)
+        .collect()
+}
+
+/// What the what's-hidden count looks for on this page: every surface the
+/// user could see or bring back, with its selectors, plus the mark the
+/// sign-in pop-up script leaves on what it hid.
+fn status_surfaces(platform_id: &str, shown: &[String]) -> Vec<serde_json::Value> {
+    let mut out = Vec::new();
+    if let Some(surfaces) = rules::platform_surfaces(platform_id) {
+        for s in surfaces.iter().filter(|s| !s.always_on) {
+            let q: Vec<&str> = s.rules.iter().map(|(_, sel)| *sel).collect();
+            if q.is_empty() {
+                continue;
+            }
+            out.push(serde_json::json!({
+                "l": s.label,
+                "s": shown.iter().any(|id| id == s.id),
+                "q": q,
+            }));
+        }
+    }
+    if page_surfaces(platform_id).iter().any(|s| s.id == LOGIN_NAGS_SURFACE) {
+        out.push(serde_json::json!({
+            "l": "Sign-in pop-ups",
+            "s": shown.iter().any(|id| id == LOGIN_NAGS_SURFACE),
+            "q": ["[data-ts-nag=\"1\"]"],
+        }));
+    }
+    out
+}
+
+/// The shared page code for one page load (page-scripts.js, embedded,
+/// never OTA) with its config in front: the config is JSON built here,
+/// handed over as a JSON-ESCAPED STRING and parsed page-side, because
+/// selectors in it come from the rules files (CLAUDE.md: never an object
+/// literal spliced into a script).
+fn page_scripts_script(platform_id: &str, host: &str, shown: &[String], kill: &KillSwitch) -> String {
+    let cfg = serde_json::json!({
+        "run": page_script_ids(platform_id, host, shown, kill),
+        "surfaces": status_surfaces(platform_id, shown),
+    })
+    .to_string();
+    let quoted = serde_json::to_string(&cfg).unwrap_or_else(|_| "\"{}\"".to_string());
+    format!(
+        "try {{ globalThis.__TS_PAGE_CFG__ = JSON.parse({quoted}); }} catch (e) {{}}\n{}",
+        include_str!("../page-scripts.js")
+    )
 }
 
 fn page_load_gaze_script(url: &str, mode: &str) -> Option<String> {
@@ -791,6 +966,20 @@ fn page_css(url: &str, platform_id: &str, blur: bool, shown: &[String]) -> Strin
 /// that cost on the first tile click.
 static ENGINE: RwLock<Option<Arc<Engine>>> = RwLock::new(None);
 
+/// Trackers only (rules::build_tracker_engine). Asked instead of the full
+/// engine when the user let a site's ads through, so allowing ads never
+/// turns tracker blocking off with them.
+static TRACKER_ENGINE: RwLock<Option<Arc<Engine>>> = RwLock::new(None);
+
+fn tracker_engine() -> Arc<Engine> {
+    if let Some(e) = TRACKER_ENGINE.read().unwrap().as_ref() {
+        return e.clone();
+    }
+    let built = Arc::new(rules::build_tracker_engine());
+    let mut w = TRACKER_ENGINE.write().unwrap();
+    w.get_or_insert(built).clone()
+}
+
 fn engine() -> Arc<Engine> {
     if let Some(e) = ENGINE.read().unwrap().as_ref() {
         return e.clone();
@@ -923,23 +1112,45 @@ pub(crate) fn blocks_request(url: &str, source_url: &str, resource_type: &str) -
     // a platform whose ads the user turned back on. A top-level load has
     // no source yet, so the request's own host stands in for it.
     let page = if source_url.is_empty() { url } else { source_url };
-    if ads_let_through(page, *SHOWN_PLATFORM.lock().unwrap(), &SHOWN_STATE.lock().unwrap()) {
-        return false;
-    }
+    let ads_allowed =
+        ads_let_through(page, *SHOWN_PLATFORM.lock().unwrap(), &SHOWN_STATE.lock().unwrap())
+            || ads_killed_for(page, &kill_switch());
     // An unparseable URL is not something we can reason about, and this
     // runs inside every page load: degrade to "allow" rather than panic.
     let Ok(req) = adblock::request::Request::new(url, source_url, resource_type, "GET") else {
         return false;
     };
-    // should_block() rather than `filter.is_some()`: a blocking rule can
-    // be cancelled by an exception rule, and the unbreak lists exist
-    // precisely to cancel over-broad blocks. Reading the raw match would
-    // ignore every one of them and break the sites we are cleaning.
-    let blocked = engine().check_network_request(&req).should_block();
+    let blocked = if ads_allowed {
+        blocks_with_ads_allowed(&tracker_engine(), &req)
+    } else {
+        // should_block() rather than `filter.is_some()`: a blocking rule
+        // can be cancelled by an exception rule, and the unbreak lists
+        // exist precisely to cancel over-broad blocks. Reading the raw
+        // match would ignore every one of them and break the sites we
+        // are cleaning.
+        engine().check_network_request(&req).should_block()
+    };
     if blocked {
         REQ_BLOCKED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
     blocked
+}
+
+/// The decision on a page whose ads the user let through (ADS_SURFACE).
+///
+/// TRACKERS STAY BLOCKED. Until 2026-11-23 the ads switch returned early
+/// and let EVERY request through, trackers included -- and YouTube starts
+/// with ads shown, so YouTube got no tracker blocking at all. Now only the
+/// ad lists step aside: third-party trackers (analytics, social pixels,
+/// tag managers) are still checked against the tracker engine.
+///
+/// The site's OWN requests pass. Allowing ads means the site's ads work as
+/// the site built them, and its ads report their own impressions to its own
+/// host (youtube.com/api/stats/ads is an EasyPrivacy rule). Blocking that
+/// would be ad blocking by another name on the platform where blocking is
+/// the user's act (ADS_SURFACE). Pure, so it can be tested.
+fn blocks_with_ads_allowed(trackers: &Engine, req: &adblock::request::Request) -> bool {
+    req.is_third_party && trackers.check_network_request(req).should_block()
 }
 
 /// Bridge for the Android WebViewClient (`shouldInterceptRequest`) and
@@ -1148,7 +1359,9 @@ pub extern "system" fn Java_app_tamescroll_client_MainActivity_nativeSyntheticRe
 pub(crate) fn rebuild_rules() {
     let built = Arc::new(rules::build_engine());
     *ENGINE.write().unwrap() = Some(built);
+    *TRACKER_ENGINE.write().unwrap() = Some(Arc::new(rules::build_tracker_engine()));
     rules::rebuild_surfaces();
+    *KILL.write().unwrap() = None;
 }
 
 /// Which hosts a link may open inside which platform tile (1107).
@@ -1345,6 +1558,30 @@ const PLATFORMS: &[Platform] = &[
         // every SELECTOR is unverified and says so in rules/facebook.txt.
         ready: true,
     },
+    // TWITCH, LINKEDIN AND PINTEREST (#76): the extension's three newer
+    // sites, sharing its rules/<site>.txt and blur sheets. Their page
+    // checks on the phone's mobile web are in the PR for #76.
+    Platform {
+        id: "twitch",
+        name: "Twitch",
+        url: "https://www.twitch.tv/",
+        tint: "#9146FF",
+        ready: true,
+    },
+    Platform {
+        id: "linkedin",
+        name: "LinkedIn",
+        url: "https://www.linkedin.com/feed/",
+        tint: "#0A66C2",
+        ready: true,
+    },
+    Platform {
+        id: "pinterest",
+        name: "Pinterest",
+        url: "https://www.pinterest.com/",
+        tint: "#E60023",
+        ready: true,
+    },
 ];
 
 #[tauri::command]
@@ -1476,6 +1713,8 @@ fn surfaces(id: String) -> Vec<SurfaceInfo> {
                 // would otherwise hand older builds two switches that do
                 // nothing.
                 .chain(kid_surfaces(&id))
+                // Shared page code (#76): same reason as the kid controls.
+                .chain(page_surfaces(&id))
                 // The ads switch (ADS_SURFACE), on every platform, last:
                 // it governs network blocking too, so it exists even where
                 // the rules file has no `ads` surface of its own.
@@ -2583,8 +2822,9 @@ pub fn run() {
         #[cfg(debug_assertions)]
         let started = std::time::Instant::now();
         engine();
+        tracker_engine();
         #[cfg(debug_assertions)]
-        eprintln!("adblock engine warmed in {:?}", started.elapsed());
+        eprintln!("adblock engines warmed in {:?}", started.elapsed());
     });
 
     let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
@@ -2981,6 +3221,35 @@ mod tests {
         assert!(!ads_let_through("https://example.com/", "youtube", &ads));
     }
 
+    /// Allowing a site's ads keeps third-party trackers blocked and lets
+    /// the site's own ad requests through (blocks_with_ads_allowed).
+    #[test]
+    fn trackers_stay_blocked_when_ads_are_allowed() {
+        let trackers = rules::build_tracker_engine();
+        let page = "https://m.youtube.com/watch?v=E4lnTIJaz-g";
+        let req = |url: &str, ty: &str| adblock::request::Request::new(url, page, ty, "GET").unwrap();
+        for (url, ty) in [
+            ("https://www.google-analytics.com/analytics.js", "script"),
+            ("https://www.googletagmanager.com/gtag/js?id=G-1", "script"),
+            ("https://connect.facebook.net/en_US/fbevents.js", "script"),
+        ] {
+            assert!(blocks_with_ads_allowed(&trackers, &req(url, ty)), "{url} is a tracker");
+        }
+        for (url, ty) in [
+            // The site's own ad reporting: an EasyPrivacy rule, first-party.
+            ("https://m.youtube.com/api/stats/ads?ver=2", "xhr"),
+            // Ads themselves: EasyList, not the tracker lists.
+            ("https://googleads.g.doubleclick.net/pagead/id", "xhr"),
+            ("https://static.doubleclick.net/instream/ad_status.js", "script"),
+            ("https://rr3---sn-x.googlevideo.com/videoplayback?id=1", "media"),
+        ] {
+            assert!(!blocks_with_ads_allowed(&trackers, &req(url, ty)), "{url} must pass with ads allowed");
+        }
+        // With ads hidden the full engine still blocks the ad requests.
+        let ad = req("https://googleads.g.doubleclick.net/pagead/id", "xhr");
+        assert!(engine().check_network_request(&ad).should_block());
+    }
+
     /// Shown drops the vendor cosmetics and our own ad and promo
     /// surfaces, and keeps every other surface and the nags hidden.
     #[test]
@@ -3013,6 +3282,72 @@ mod tests {
 
     /// Every platform offers the switch, even one whose rules file has no
     /// ads surface of its own. YouTube's starts Shown, every other Hidden.
+    /// rules/kill.json (#76): names only, malformed reads as nothing.
+    #[test]
+    fn kill_switch_is_names_only_and_malformed_means_nothing() {
+        let k = parse_kill(r#"{"adsBlockingOff":["reddit","Bad Name",7],"disabledScripts":["x-login-nags","<script>"]}"#);
+        assert_eq!(k.ads_off, vec!["reddit".to_string()]);
+        assert_eq!(k.disabled, vec!["x-login-nags".to_string()]);
+        assert_eq!(parse_kill("not json"), KillSwitch::default());
+        assert_eq!(parse_kill("[1,2]"), KillSwitch::default());
+        // The shipped file switches nothing off.
+        assert_eq!(parse_kill(rules::embedded("kill.json").unwrap()), KillSwitch::default());
+        // adsBlockingOff makes that platform's Ads read as Shown, only there.
+        assert!(ads_shown(&with_kill("reddit", vec![], &k)));
+        assert!(!ads_shown(&with_kill("x", vec![], &k)));
+        assert!(ads_killed_for("https://www.reddit.com/r/rust/", &k));
+        assert!(!ads_killed_for("https://x.com/home", &k));
+    }
+
+    /// The shared page scripts run where their switch is off, never where it
+    /// was brought back, and never once kill.json names them (#76).
+    #[test]
+    fn page_scripts_follow_their_switch_and_the_kill_list() {
+        let none = KillSwitch::default();
+        assert_eq!(page_script_ids("reddit", "www.reddit.com", &[], &none), vec!["reddit-discovery"]);
+        assert!(page_script_ids("reddit", "www.reddit.com", &["discovery".into()], &none).is_empty());
+        assert_eq!(page_script_ids("reddit", "old.reddit.com", &["discovery".into()], &none), vec!["old-reddit"]);
+        let killed = parse_kill(r#"{"disabledScripts":["reddit-discovery"]}"#);
+        assert!(page_script_ids("reddit", "www.reddit.com", &[], &killed).is_empty());
+        // Nothing unconfirmed on mobile web runs or is offered: sign-in
+        // pop-ups, Instagram suggested posts, LinkedIn's feed.
+        for (id, host) in [("x", "x.com"), ("instagram", "www.instagram.com"), ("facebook", "m.facebook.com"), ("linkedin", "www.linkedin.com"), ("youtube", "m.youtube.com")] {
+            assert!(page_script_ids(id, host, &[], &none).is_empty(), "{id}");
+            assert!(!surfaces(id.into()).iter().any(|s| s.id == LOGIN_NAGS_SURFACE), "{id}");
+        }
+    }
+
+    /// The page config is JSON handed over as a STRING and parsed page-side:
+    /// a selector from an OTA'd rules file can never close the script.
+    #[test]
+    fn page_scripts_config_is_an_escaped_string_with_the_bundle_after_it() {
+        let js = page_scripts_script("reddit", "www.reddit.com", &[], &KillSwitch::default());
+        assert!(js.starts_with("try { globalThis.__TS_PAGE_CFG__ = JSON.parse(\""), "{}", &js[..80]);
+        let line = js.lines().next().unwrap();
+        let start = line.find("JSON.parse(").unwrap() + "JSON.parse(".len();
+        let end = line.rfind("); }").unwrap();
+        let inner: String = serde_json::from_str(&line[start..end]).expect("a JSON string literal");
+        let cfg: serde_json::Value = serde_json::from_str(&inner).expect("JSON inside it");
+        assert_eq!(cfg["run"], serde_json::json!(["reddit-discovery"]));
+        let surfaces = cfg["surfaces"].as_array().unwrap();
+        assert!(!surfaces.is_empty() && surfaces.iter().all(|s| s["q"].as_array().is_some_and(|q| !q.is_empty())));
+        assert!(js.contains("__TS_PAGE_CFG__") && js.contains("tamescroll-nag-scroll"), "the bundle follows the config");
+    }
+
+    /// Twitch, LinkedIn and Pinterest are whole platforms (#76): a tile, a
+    /// host match, rules with surfaces, and a blur sheet.
+    #[test]
+    fn the_extensions_newer_sites_are_app_platforms() {
+        for (id, host) in [("twitch", "m.twitch.tv"), ("linkedin", "www.linkedin.com"), ("pinterest", "www.pinterest.com")] {
+            assert_eq!(platform_for_host(host).map(|p| p.id), Some(id), "{host}");
+            assert!(BLUR_PLATFORMS.contains(&id), "{id} blur");
+            assert!(!blur_css(id).is_empty(), "{id} blur sheet");
+            assert!(rules::platform_surfaces(id).is_some_and(|s| !s.is_empty()), "{id} surfaces");
+            assert!(rules::FILES.contains(&format!("{id}.txt").as_str()));
+            assert!(rules::FILES.contains(&format!("blur/{id}.css").as_str()));
+        }
+    }
+
     #[test]
     fn every_platform_offers_the_ads_switch_youtube_shown_others_hidden() {
         for p in PLATFORMS.iter().filter(|p| rules::platform_surfaces(p.id).is_some()) {
@@ -3111,6 +3446,9 @@ mod tests {
         set_shown_platform("youtube");
         set_shown_state(vec!["shorts".into()]);
         let js_shown = page_load_rules_script("https://www.youtube.com/").expect("rules");
+        // The what's-hidden count (#76) after it names every surface's
+        // selectors as data, shown ones included; the CSS is what counts.
+        let js_shown = js_shown.split("globalThis.__TS_PAGE_CFG__").next().unwrap();
         assert!(
             !js_shown.contains("ytd-reel-shelf-renderer"),
             "shown surface must not be hidden by the page-load payload"

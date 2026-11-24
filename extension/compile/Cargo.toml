@@ -1,0 +1,15 @@
+[package]
+name = "tamescroll-extension-compile"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false
+description = "Compiles the app's filter lists into the browser extension's per-site cosmetic CSS and scriptlet code, with the same adblock-rust engine and the same inputs the app uses."
+
+# Its own workspace: this crate must never be pulled into the app's build.
+[workspace]
+
+[dependencies]
+# Same version and features as app/src-tauri/Cargo.toml -- keep them in step.
+adblock = { version = "=0.13.2", default-features = false, features = ["content-blocking", "embedded-domain-resolver", "full-regex-handling"] }
+serde_json = "1"

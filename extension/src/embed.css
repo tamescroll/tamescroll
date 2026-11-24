@@ -1,0 +1,4 @@
+/* YouTube players embedded on other sites: no wall of recommendations
+   when the video ends or pauses, and no end-screen cards. */
+.ytp-endscreen-content, .videowall-endscreen, .ytp-ce-element,
+.ytp-pause-overlay, .ytp-pause-overlay-container { display: none !important; }

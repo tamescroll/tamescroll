@@ -1,0 +1,17 @@
+{
+  "name": "tamescroll-extension",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tame Scroll for desktop browsers: the app's rules, blur and ad switches as a Manifest V3 extension.",
+  "type": "module",
+  "license": "MPL-2.0",
+  "scripts": {
+    "build": "node build.mjs",
+    "compile": "node build.mjs --compile",
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "esbuild": "^0.28.2"
+  }
+}

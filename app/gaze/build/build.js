@@ -107,6 +107,22 @@ async function main() {
     console.log(`built ${f}: ${(stat.size / 1024 / 1024).toFixed(3)} MB (${stat.size} bytes)`);
   }
   void result;
+
+  // THE APP'S SITE PAGE CODE (#76): login pop-ups, Instagram and LinkedIn
+  // feeds, Reddit discovery, old.reddit, and the what's-hidden count. The
+  // same modules the extension bundles (app/gaze/src/page/). Embedded in
+  // the binary by lib.rs page_scripts_script, never sent over OTA.
+  const pagescripts = path.join(__dirname, '../../src-tauri/page-scripts.js');
+  await esbuild.build({
+    entryPoints: [path.join(__dirname, '../src/page/app-entry.mjs')],
+    bundle: true,
+    minify: true,
+    format: 'iife',
+    target: ['es2019'],
+    outfile: pagescripts,
+    legalComments: 'none',
+  });
+  console.log(`built ${pagescripts}: ${fs.statSync(pagescripts).size} bytes`);
 }
 
 main().catch((e) => {
