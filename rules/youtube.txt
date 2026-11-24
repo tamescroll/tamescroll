@@ -568,6 +568,18 @@ m.youtube.com##img.mobile-topbar-logo
 !   and the header pill labeled "Open App" is gone
 m.youtube.com##a[href^="intent://"]
 
+! iPhone gets the same pill as a vnd.youtube:// link (no intent:// on
+! iOS), with the same generic button classes. Inside our app any such
+! link is an open-in-app nag.
+! [live] 1 counted in the watch-page header, text "Open App", href
+! vnd.youtube://m.youtube.com/watch?...&feature=mweb_c3_open_app_... --
+! WebKit with an iPhone user agent on the macOS CI runner, 2026-10-27
+! (spikes/ios/probe_open_app.cjs); home counted 0
+! test: on m.youtube.com /watch with an iPhone user agent ->
+!   document.querySelectorAll('a[href^="vnd.youtube:"]').length >= 1
+!   and the header pill labeled "Open App" is gone
+m.youtube.com##a[href^="vnd.youtube:"]
+
 ! Belt-and-braces for DOM states we have not seen yet (logged-in,
 ! other locales, promo campaigns). All counted 0 on the current
 ! emulator DOM (2026-08-19, probe16) — harmless when absent, kept in
