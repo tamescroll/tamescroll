@@ -10,6 +10,7 @@ import { BUNDLED } from './bundled.js';
 import { seed } from './settings.js';
 import { wantedScripts } from './scripts.js';
 import { parseKill } from './kill.js';
+import { companionUrl } from './companion.js';
 import { checkFromPopup } from './dev-reload.js';
 
 const VERSION = chrome.runtime.getManifest().version;
@@ -147,6 +148,9 @@ function settingsView() {
     b.addEventListener('click', () => save(() => { settings.blurPx = p.px; }));
     return b;
   }));
+  const companion = companionUrl(navigator.userAgent);
+  $('companion').hidden = !companion;
+  if (companion) $('companion').href = companion;
   $('version').textContent = `Version ${VERSION}`;
   $('rules-status').textContent = otaState && otaState.outcome === 'ok'
     ? `Filters checked ${new Date(otaState.checkedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.`

@@ -111,6 +111,20 @@ try {
   });
   const regs = await sw.evaluate(() => chrome.scripting.getRegisteredContentScripts());
   console.log('registered:', regs.map((r) => `${r.id}(${r.world})`).join(', '));
+
+  // A fresh install opens the welcome page once, with the HaramBlur card.
+  const welcome = ctx.pages().find((p) => p.url().endsWith('/welcome.html'))
+    || await ctx.waitForEvent('page', { predicate: (p) => p.url().endsWith('/welcome.html'), timeout: 5000 });
+  await welcome.waitForFunction(() => !document.getElementById('pair').hidden);
+  assert.equal(await welcome.$eval('#get', (a) => a.href), 'https://chromewebstore.google.com/detail/pbcoegikffnadpahojjhgdladmmddeji', 'welcome links HaramBlur on the Chrome Web Store');
+  assert.match(await welcome.$eval('#sites', (el) => el.textContent), /YouTube.*and /, 'welcome names the sites');
+  await welcome.click('#not-now');
+  assert.equal(await welcome.$eval('#pair', (el) => el.hidden), true, 'Not now hides the card');
+  await welcome.reload();
+  await welcome.waitForTimeout(300);
+  assert.equal(await welcome.$eval('#pair', (el) => el.hidden), true, 'Not now is remembered');
+  await welcome.close();
+  console.log('welcome page: opened on install, HaramBlur card, Not now remembered');
   assert.deepEqual(regs.map((r) => r.id).sort(), ['facebook-login-nags', 'instagram-login-nags', 'instagram-suggested', 'linkedin-feed', 'reddit-discovery', 'reddit-login-nags', 'x-login-nags', 'youtube-autoplay', 'youtube-shorts']);
 
   const page = await ctx.newPage();
@@ -189,6 +203,7 @@ try {
   await page.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
   const sp = await ctx.newPage();
   await sp.goto(`chrome-extension://${extId}/popup.html?tab=${ytTab}`);
+  assert.equal(await sp.$eval('#companion', (a) => !a.hidden && a.href), 'https://chromewebstore.google.com/detail/pbcoegikffnadpahojjhgdladmmddeji', 'Settings suggests HaramBlur');
   await sp.waitForFunction(() => !document.getElementById('showing-wrap').hidden);
   assert.match(await sp.$eval('#showing', (el) => el.textContent), /Recommendations/, 'recommendations listed as showing');
   assert.equal(await iconState(sp, ytTab, 'gold'), 'gold', 'icon dot is gold while something is showing by choice');

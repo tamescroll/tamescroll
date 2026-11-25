@@ -146,6 +146,7 @@ async function bundle(outdir, { store }) {
       'instagram-suggested': join(here, 'src/instagram-suggested.js'),
       'old-reddit': join(here, 'src/old-reddit.js'),
       'linkedin-feed': join(here, 'src/linkedin-feed.js'),
+      welcome: join(here, 'src/welcome-main.js'),
     },
     outdir,
     define: { __BUILD_ID__: JSON.stringify(store ? 'store' : BUILD_ID), __STORE__: String(!!store) },
@@ -170,6 +171,8 @@ async function buildTarget(target, out, { store }) {
   writeFileSync(join(out, 'youtube-autoplay.js'), autoplayScript(kid));
   cpSync(join(here, 'src/popup.html'), join(out, 'popup.html'));
   cpSync(join(here, 'src/popup.css'), join(out, 'popup.css'));
+  cpSync(join(here, 'src/welcome.html'), join(out, 'welcome.html'));
+  cpSync(join(here, 'src/welcome.css'), join(out, 'welcome.css'));
   cpSync(join(here, 'src/embed.css'), join(out, 'embed.css'));
   cpSync(join(here, 'icons'), join(out, 'icons'), { recursive: true });
   // The store shows the 128px icon on a light page: the store copy is the
@@ -182,6 +185,13 @@ async function buildTarget(target, out, { store }) {
   const fonts = join(here, 'node_modules/@fontsource-variable/inter');
   cpSync(join(fonts, 'files/inter-latin-wght-normal.woff2'), join(out, 'fonts/inter.woff2'));
   cpSync(join(fonts, 'LICENSE'), join(out, 'fonts/LICENSE-inter.txt'));
+  // The welcome page's display and label faces, as on the website (OFL-1.1).
+  const fs = join(here, 'node_modules/@fontsource');
+  cpSync(join(fs, 'spectral/files/spectral-latin-500-normal.woff2'), join(out, 'fonts/spectral-500.woff2'));
+  cpSync(join(fs, 'spectral/files/spectral-latin-400-italic.woff2'), join(out, 'fonts/spectral-400-italic.woff2'));
+  cpSync(join(fs, 'spectral/LICENSE'), join(out, 'fonts/LICENSE-spectral.txt'));
+  cpSync(join(fs, 'ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2'), join(out, 'fonts/plex-mono-500.woff2'));
+  cpSync(join(fs, 'ibm-plex-mono/LICENSE'), join(out, 'fonts/LICENSE-plex-mono.txt'));
   // Credits and licences for the lists, engine and font built in.
   cpSync(join(here, 'THIRD-PARTY-NOTICES.txt'), join(out, 'THIRD-PARTY-NOTICES.txt'));
   writeFileSync(join(out, 'manifest.json'), JSON.stringify(manifest(target, { store }), null, 2) + '\n');

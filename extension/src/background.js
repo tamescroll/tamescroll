@@ -76,7 +76,11 @@ async function refreshRules() {
   }
 }
 
-api.runtime.onInstalled.addListener(async () => {
+api.runtime.onInstalled.addListener(async (details) => {
+  // A fresh install opens the welcome page once; an update never does.
+  if (details && details.reason === 'install') {
+    try { api.tabs.create({ url: api.runtime.getURL('welcome.html') }); } catch (e) {}
+  }
   const settings = await ensureSettings();
   await syncScripts(settings);
   api.alarms.create('rules-refresh', { periodInMinutes: 24 * 60, delayInMinutes: 1 });

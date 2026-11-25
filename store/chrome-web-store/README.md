@@ -81,6 +81,9 @@ WHAT IT DOES
 BRING BACK ONLY WHAT YOU WANT
 Every hidden part has its own switch, per site, and the page changes as you flip it. Each site can be paused with one switch.
 
+PAIRS WELL WITH HARAMBLUR
+Tame Scroll removes what you didn't ask to see, and can blur pictures. For blur that finds people inside videos too, we suggest HaramBlur, a separate free extension by its own developers, which blurs people in the images and videos you do open. Tame Scroll is not affiliated with HaramBlur.
+
 PRIVATE BY DESIGN
 No account, no analytics, no tracking, no server of ours. Your settings stay in your browser. Once a day the extension fetches updated filter rules, a small data file, from GitHub. Privacy policy: https://tamescroll.com/privacy.html
 
