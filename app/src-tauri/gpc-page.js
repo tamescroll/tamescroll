@@ -1,0 +1,1 @@
+"use strict";(()=>{function r(e,n){try{if(!n())return!1;let t=e&&e.navigator;return t?(Object.defineProperty(Object.getPrototypeOf(t),"globalPrivacyControl",{get(){return!0},set:void 0,configurable:!0,enumerable:!0}),!0):!1}catch{return!1}}r(globalThis,()=>{let e=globalThis.TsGpc;return!!(e&&typeof e.on=="function"&&e.on()===!0)});})();

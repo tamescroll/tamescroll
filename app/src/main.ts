@@ -22,6 +22,7 @@ const views = {
   onboard: document.querySelector<HTMLElement>("#view-onboard")!,
   links: document.querySelector<HTMLElement>("#view-links")!,
   library: document.querySelector<HTMLElement>("#view-library")!,
+  privacy: document.querySelector<HTMLElement>("#view-privacy")!,
 };
 
 // Set by the update section: raises the update prompt once the
@@ -1503,6 +1504,10 @@ document.querySelector<HTMLButtonElement>("#library-back")!.addEventListener("cl
     libraryReturn();
     return true;
   }
+  if (!views.privacy.hidden) {
+    privacyReturn();
+    return true;
+  }
   return false;
 };
 
@@ -1913,7 +1918,7 @@ applyText(localStorage.getItem(TEXT_KEY) === "large" ? "large" : "normal");
 
 // ---------- settings view ----------
 
-const PANES = ["bringback", "blur", "filters", "look", "about"] as const;
+const PANES = ["privacy", "bringback", "blur", "filters", "look", "about"] as const;
 
 function showPane(name: (typeof PANES)[number]) {
   PANES.forEach((p) => {
@@ -1925,15 +1930,202 @@ function showPane(name: (typeof PANES)[number]) {
 }
 
 document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((btn) => {
-  btn.addEventListener("click", () => showPane(btn.dataset.pane as (typeof PANES)[number]));
+  btn.addEventListener("click", () => {
+    const pane = btn.dataset.pane as (typeof PANES)[number];
+    if (pane === "privacy") renderPrivacySwitches();
+    showPane(pane);
+  });
 });
+
+// ---------- privacy (#81, mockups 13 and 14) ----------
+// The switches and the week's counts live on the phone (MainActivity's
+// TsPrivacy, launcher-only); desktop and iPhone have no such bridge, so
+// the group stays out of their Settings.
+
+type PrivacyBridge = {
+  get(): string;
+  set(key: string, on: boolean): boolean;
+  week(): string;
+  clearData(): boolean;
+};
+const privacyBridge = (window as unknown as { TsPrivacy?: PrivacyBridge }).TsPrivacy;
+
+const PRIVACY_SWITCHES: { key: string; label: string; note: string; dflt: boolean }[] = [
+  { key: "block_trackers", label: "Block trackers", dflt: true,
+    note: "Stops the hidden requests that follow you from site to site." },
+  { key: "clean_links", label: "Clean tracking links", dflt: true,
+    note: "Removes the tags links carry to say where you came from, when you open, copy or share them." },
+  { key: "refuse_third_party_cookies", label: "Refuse third-party cookies", dflt: true,
+    note: "Other sites cannot leave cookies behind while you read this one. Signing in still works." },
+  { key: "gpc", label: "Ask sites not to sell my data", dflt: true,
+    note: "Tells every site you open, with the Global Privacy Control signal. Sites that honour it must listen." },
+  { key: "clear_on_close", label: "Clear data when I close the app", dflt: false,
+    note: "Cookies, site data and history are cleared the next time the app starts." },
+];
+
+function readPrivacy(): Record<string, boolean> {
+  try {
+    return JSON.parse(privacyBridge?.get() ?? "{}") as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+}
+
+function renderPrivacySwitches() {
+  const host = document.querySelector<HTMLElement>("#privacy-switches")!;
+  const state = readPrivacy();
+  host.textContent = "";
+  for (const sw of PRIVACY_SWITCHES) {
+    const row = document.createElement("div");
+    row.className = "setting-row switch-row";
+    const text = document.createElement("div");
+    text.className = "grow";
+    const label = document.createElement("span");
+    label.className = "setting-label";
+    label.textContent = sw.label;
+    const note = document.createElement("span");
+    note.className = "setting-caption";
+    note.textContent = sw.note;
+    text.append(label, note);
+
+    const toggle = document.createElement("div");
+    toggle.className = "toggle";
+    toggle.setAttribute("role", "radiogroup");
+    toggle.setAttribute("aria-label", sw.label);
+    const paint = (on: boolean) => {
+      toggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
+        const active = (btn.dataset.value === "on") === on;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-checked", String(active));
+      });
+    };
+    (["off", "on"] as const).forEach((value) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toggle-opt";
+      btn.setAttribute("role", "radio");
+      btn.dataset.value = value;
+      btn.textContent = value === "on" ? "On" : "Off";
+      btn.addEventListener("click", () => {
+        const on = value === "on";
+        let saved = false;
+        try {
+          saved = !!privacyBridge?.set(sw.key, on);
+        } catch {
+          saved = false;
+        }
+        // Show what the phone kept, never what was merely tapped.
+        paint(saved ? on : readPrivacy()[sw.key] ?? sw.dflt);
+      });
+      toggle.append(btn);
+    });
+    paint(state[sw.key] ?? sw.dflt);
+    row.append(text, toggle);
+    host.append(row);
+  }
+}
+
+let privacyReturn: () => void = () => showView("launcher");
+
+type PrivacyWeek = { stopped: number; cleaned: number; cookies: number; hosts: { h: string; n: number }[] };
+
+function readPrivacyWeek(): PrivacyWeek {
+  const empty: PrivacyWeek = { stopped: 0, cleaned: 0, cookies: 0, hosts: [] };
+  try {
+    const w = JSON.parse(privacyBridge?.week() ?? "{}") as Partial<PrivacyWeek>;
+    return {
+      stopped: Number(w.stopped) || 0,
+      cleaned: Number(w.cleaned) || 0,
+      cookies: Number(w.cookies) || 0,
+      hosts: Array.isArray(w.hosts)
+        ? w.hosts.filter((x) => x && typeof x.h === "string").map((x) => ({ h: x.h, n: Number(x.n) || 0 }))
+        : [],
+    };
+  } catch {
+    return empty;
+  }
+}
+
+function openPrivacyWeek(returnTo: () => void) {
+  privacyReturn = returnTo;
+  const w = readPrivacyWeek();
+  document.querySelector<HTMLElement>("#pw-stopped")!.textContent = w.stopped.toLocaleString();
+  document.querySelector<HTMLElement>("#pw-cleaned")!.textContent = w.cleaned.toLocaleString();
+  document.querySelector<HTMLElement>("#pw-cookies")!.textContent = w.cookies.toLocaleString();
+  const hosts = document.querySelector<HTMLElement>("#pw-hosts")!;
+  hosts.textContent = "";
+  hosts.hidden = w.hosts.length === 0;
+  w.hosts.forEach((x) => {
+    const row = document.createElement("div");
+    row.className = "lrow";
+    const main = document.createElement("div");
+    main.className = "lrow-main";
+    const grow = document.createElement("span");
+    grow.className = "grow";
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = x.h;
+    grow.append(t);
+    main.append(grow);
+    const v = document.createElement("span");
+    v.className = "v";
+    v.textContent = x.n.toLocaleString();
+    row.append(main, v);
+    hosts.append(row);
+  });
+  document.querySelector<HTMLElement>("#pw-note")!.textContent = w.hosts.length
+    ? "Counted on this phone only. Nothing is sent anywhere."
+    : "Nothing stopped yet. Counted on this phone only, never sent anywhere.";
+  showView("privacy");
+}
+
+document.querySelector<HTMLButtonElement>("#privacy-back")!.addEventListener("click", () => privacyReturn());
+document.querySelector<HTMLButtonElement>("#privacy-week-open")!.addEventListener("click", () => {
+  openPrivacyWeek(() => {
+    showView("settings");
+    renderPrivacySwitches();
+    showPane("privacy");
+  });
+});
+
+// Two taps, the first one saying what goes.
+const privacyClear = document.querySelector<HTMLButtonElement>("#privacy-clear")!;
+const privacyClearNote = document.querySelector<HTMLElement>("#privacy-clear-note")!;
+let privacyClearArmed = false;
+privacyClear.addEventListener("click", () => {
+  if (!privacyClearArmed) {
+    privacyClearArmed = true;
+    privacyClear.textContent = "Tap again to clear";
+    privacyClearNote.textContent = "This signs you out of every site.";
+    return;
+  }
+  privacyClearArmed = false;
+  privacyClear.textContent = "Clear browsing data";
+  let ok = false;
+  try {
+    ok = !!privacyBridge?.clearData();
+  } catch {
+    ok = false;
+  }
+  privacyClearNote.textContent = ok ? "Cleared." : "Couldn't clear that.";
+});
+
+if (privacyBridge) {
+  document.querySelector<HTMLButtonElement>('.nav-item[data-pane="privacy"]')!.hidden = false;
+}
 
 // Settings opens from the menu (#73); the new tab page has no gear of
 // its own, as in the mockup.
 function openSettings() {
   siteHere.textContent = "";
   showView("settings");
-  showPane("bringback");
+  // Privacy is the first group where the phone can hold it (#81).
+  if (privacyBridge) {
+    renderPrivacySwitches();
+    showPane("privacy");
+  } else {
+    showPane("bringback");
+  }
 }
 
 document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("click", () => {
@@ -2055,6 +2247,8 @@ function renderWeekStat() {
   document.querySelector<HTMLElement>("#week-text")!.textContent =
     n === 1 ? "attempt to track you stopped this week" : "attempts to track you stopped this week";
 }
+
+weekStat.addEventListener("click", () => openPrivacyWeek(() => { showView("launcher"); refreshAll(); }));
 
 function refreshAll() {
   const chosen = readChosen() ?? [];

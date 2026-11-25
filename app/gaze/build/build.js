@@ -123,6 +123,21 @@ async function main() {
     legalComments: 'none',
   });
   console.log(`built ${pagescripts}: ${fs.statSync(pagescripts).size} bytes`);
+
+  // GLOBAL PRIVACY CONTROL (#81): a few lines that must run on EVERY site
+  // at document start, so they are their own bundle rather than part of
+  // the per-platform page code above. Embedded by lib.rs, never OTA.
+  const gpcpage = path.join(__dirname, '../../src-tauri/gpc-page.js');
+  await esbuild.build({
+    entryPoints: [path.join(__dirname, '../src/page/gpc-entry.mjs')],
+    bundle: true,
+    minify: true,
+    format: 'iife',
+    target: ['es2019'],
+    outfile: gpcpage,
+    legalComments: 'none',
+  });
+  console.log(`built ${gpcpage}: ${fs.statSync(gpcpage).size} bytes`);
 }
 
 main().catch((e) => {
