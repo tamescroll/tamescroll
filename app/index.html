@@ -11,7 +11,7 @@
       try {
         var tsLook = localStorage.getItem("tamescroll.look");
         if (tsLook === "paper") document.documentElement.dataset.look = "paper";
-        if (localStorage.getItem("tamescroll.text") === "large") document.documentElement.dataset.text = "large";
+        if (localStorage.getItem("tamescroll.textsize") !== "normal") document.documentElement.dataset.text = "large";
       } catch (e) {}
     </script>
     <script type="module" src="/src/main.ts" defer></script>

@@ -2084,7 +2084,10 @@ document.querySelector<HTMLButtonElement>("#links-card-btn")!.addEventListener("
 // bars in step after a tap.
 
 const LOOK_KEY = "tamescroll.look";
-const TEXT_KEY = "tamescroll.text";
+// Larger is the default (ZV 2026-11-25: "keep it larger by default, that's
+// how small it is on normal"). A new key, because every launch used to save
+// the size and so every install already holds "normal" under the old one.
+const TEXT_KEY = "tamescroll.textsize";
 type Look = "night" | "paper";
 
 function readLook(): Look {
@@ -2129,7 +2132,7 @@ document.querySelectorAll<HTMLButtonElement>("#text-toggle .seg-opt").forEach((b
   btn.addEventListener("click", () => applyText(btn.dataset.value === "large" ? "large" : "normal"));
 });
 applyLook(readLook());
-applyText(localStorage.getItem(TEXT_KEY) === "large" ? "large" : "normal");
+applyText(localStorage.getItem(TEXT_KEY) === "normal" ? "normal" : "large");
 
 // ---------- settings view ----------
 
