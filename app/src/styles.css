@@ -1745,3 +1745,12 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 /* bar: labels sit over their own icons */
 .sbb-tags { grid-template-columns: 22px 1fr 20px 22px; column-gap: 6px; padding-left: 8px; padding-right: 8px; }
 .sbb-tags span { justify-self: center; white-space: nowrap; }
+/* 1148: the veil hints at the person under it and has no straight sides */
+.bs-who .bs-patch {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(236, 231, 222, 0.34) 0, rgba(236, 231, 222, 0) 20%),
+    radial-gradient(ellipse 50% 34% at 50% 96%, rgba(236, 231, 222, 0.3) 0, rgba(236, 231, 222, 0) 100%),
+    rgba(236, 231, 222, 0.05);
+  -webkit-mask-image: radial-gradient(ellipse 58% 70% at 50% 62%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 58% 70% at 50% 62%, #000 55%, transparent 100%);
+}
