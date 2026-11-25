@@ -1456,8 +1456,8 @@ html:not([data-look="paper"]), html:not([data-look="paper"]) body { background: 
 /* ---------- new tab page (#73, mockup 2) ----------
    A browser's new tab: the wordmark small, the question in Spectral,
    Favourites as letter tiles, the last pages, and the address field in
-   a bar at the bottom, in thumb reach. Flat 10-12px corners. */
-#view-launcher { padding-bottom: 96px; }
+   a bar at the top. Flat 10-12px corners. */
+#view-launcher { padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
 .ntp-head { display: flex; align-items: center; min-height: 40px; padding-top: var(--s1); }
 .ntp-head .wordmark { height: 30px; width: auto; color: var(--ink); }
 .ntp-head .wordmark .mark { stroke: var(--gold); }
@@ -1494,11 +1494,12 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 .rm-btn:hover { color: var(--ink); }
 
 /* The bar at the bottom of the new tab page (mockup 2, the tall one). */
+/* On top since 2026-11-25 (his word: "i want it on top"). */
 .ntp-bar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  position: fixed; left: 0; right: 0; top: 0; z-index: 20;
   display: flex; align-items: center; gap: var(--s1);
-  padding: 10px 10px calc(14px + env(safe-area-inset-bottom, 0px));
-  background: var(--bg); border-top: 1px solid var(--hairline);
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px;
+  background: var(--bg); border-bottom: 1px solid var(--hairline);
 }
 .ntp-bar .open-link { flex: 1; min-width: 0; margin: 0; }
 .ntp-bar .addr {
@@ -1753,4 +1754,18 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
     rgba(236, 231, 222, 0.05);
   -webkit-mask-image: radial-gradient(ellipse 58% 70% at 50% 62%, #000 55%, transparent 100%);
   mask-image: radial-gradient(ellipse 58% 70% at 50% 62%, #000 55%, transparent 100%);
+}
+
+/* Android's bar is on top again (2026-11-25): the tutorial's picture follows. */
+.sbb-bar { top: 0; bottom: auto; padding: 12px 8px 8px; animation-name: sbb-fold-up; }
+.sbb-tags { top: 50px; bottom: auto; padding: 4px 4px 10px; background: linear-gradient(#fff 55%, rgba(255,255,255,0)); }
+.dev.sbb .sb-page { top: 50px; }
+@keyframes sbb-fold-up { 0%, 35% { transform: none; } 45%, 78% { transform: translateY(-100%); } 88%, 100% { transform: none; } }
+/* Larger text is the default now: the time step still fits a short phone. */
+@media (max-height: 700px) {
+  :root[data-text="large"] .tl .time-big b { font-size: 36px; margin-bottom: 2px; }
+  :root[data-text="large"] .ob-stage.tl { height: auto; overflow: visible; padding-top: 0; padding-bottom: 0; margin-bottom: 8px; }
+  :root[data-text="large"] .ob-step[data-step="time"] .display { font-size: 23px; }
+  :root[data-text="large"] .time-life { max-width: 180px; gap: 2px; }
+  :root[data-text="large"] .time-life + .time-months { max-width: 180px; }
 }

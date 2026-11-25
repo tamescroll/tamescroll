@@ -11,7 +11,7 @@
       try {
         var tsLook = localStorage.getItem("tamescroll.look");
         if (tsLook === "paper") document.documentElement.dataset.look = "paper";
-        if (localStorage.getItem("tamescroll.text") === "large") document.documentElement.dataset.text = "large";
+        if (localStorage.getItem("tamescroll.textsize") !== "normal") document.documentElement.dataset.text = "large";
       } catch (e) {}
     </script>
     <script type="module" src="/src/main.ts" defer></script>
@@ -27,7 +27,7 @@
       <!-- A browser's new tab page (the approved redesign, mockup 2): it
            replaced home's "What are you here for?" grid. Favourites are
            bookmarks the user pinned, seeded once from the old tiles. The
-           address field lives in the bar at the bottom (#ntp-bar). -->
+           address field lives in the bar at the top (#ntp-bar). -->
       <p id="handoff" class="handoff" hidden></p>
       <section id="view-launcher" hidden>
         <header class="ntp-head">
@@ -534,9 +534,9 @@
               </div>
               <div class="sb-page"><i class="h"></i><i></i><i></i><i class="s"></i><span class="pic"></span><i></i><i></i><i class="s"></i><i></i><i></i><i></i><i class="s"></i></div>
             </div></div>
-            <!-- Android (#73): the bar sits at the bottom, back, address
-                 with what was stopped, tabs, menu; folds as the page scrolls
-                 down and comes back on a small scroll up. -->
+            <!-- Android (#73): the bar sits on top (moved back 2026-11-25),
+                 back, address with what was stopped, tabs, menu; folds as the
+                 page scrolls down and comes back on a small scroll up. -->
             <div class="ob-stage stg-dev sbb-stage" aria-hidden="true" hidden><div class="dev sbb">
               <div class="sb-page"><i class="h"></i><i></i><i></i><i class="s"></i><span class="pic"></span><i></i><i></i><i class="s"></i><i></i><i></i><i></i><i class="s"></i><span class="pic"></span><i></i><i></i></div>
               <div class="sbb-tags"><span>Back</span><span>Search or go</span><span></span><span>Menu</span></div>
@@ -603,7 +603,7 @@
     </template>
 
     <!-- The new tab page's bar (#73, mockup 2): the tall address field at
-         the bottom, in thumb reach, then tabs and the menu. Sites get the
+         the top (moved there 2026-11-25), then tabs and the menu. Sites get the
          native bar from MainActivity instead. -->
     <nav class="ntp-bar" id="ntp-bar" hidden aria-label="Browser">
       <form class="open-link" id="open-link" autocomplete="off" role="search">
