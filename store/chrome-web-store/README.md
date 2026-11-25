@@ -58,7 +58,7 @@ Productivity, Tools.)
 
 **Language:** English
 
-**Description:**
+**Description** (rejected 2026-11-25 for "keyword spam" over a bare list of brand names; name each site once, only beside what Tame Scroll does there):
 
 ```
 Tame Scroll takes the endless scroll out of social media, so you can open a site, do what you came for, and leave.
@@ -66,29 +66,29 @@ Tame Scroll takes the endless scroll out of social media, so you can open a site
 It hides the parts of a page built to keep you scrolling: algorithmic feeds, Shorts and Reels, autoplay, suggested posts and trending panels. What you came for stays: search, the people and channels you follow, and the posts you open.
 
 WHAT IT DOES
-• YouTube: hides the home feed, Shorts, video previews, the Explore menu and search inserts. A short opens as a normal video. Autoplay stops at the end of the video, so the next one never starts.
+• YouTube: hides the home feed, Shorts, video previews, the Explore menu and search inserts. A short opens as a normal video, and autoplay stops at the end of the video. Ads stay shown unless you switch them off yourself.
 • Reddit: hides r/popular, r/all, News and Explore, and posts from communities you have not joined.
-• X: hides the For you tab, Explore trends and sidebar suggestions such as "Who to follow".
+• X: hides the For you tab, Explore trends and sidebar suggestions.
 • Instagram: hides Explore, Reels and suggested posts from accounts you don't follow.
-• TikTok: hides the For You feed, Explore, LIVE, short dramas and suggested accounts, and stops the endless swipe on an opened video.
+• TikTok: hides the For You feed, Explore, LIVE and suggested accounts, and stops the endless swipe on an opened video.
 • Twitch: hides home recommendations, recommended channels and the Browse menu.
-• LinkedIn: hides LinkedIn News and posts from people you don't follow.
+• LinkedIn: hides the news panel and posts from people you don't follow.
 • Facebook: hides sign-in pop-ups on public pages when you are signed out.
+• Ads are hidden by default on the other sites.
+• Sign-in pop-ups are hidden when you are signed out. Real login pages and age checks are always left alone.
 • Optional picture blur on each site, in three strengths.
-• Ads: hidden by default on every site except YouTube. On YouTube, ads stay shown unless you switch them off yourself.
-• Sign-in pop-ups: hides "log in to see more" pop-ups when you are signed out. Real login pages, and age or mature-content checks, are always left alone.
 
 BRING BACK ONLY WHAT YOU WANT
-Every hidden part has its own switch, per site, and the page changes as you flip it. Each site can be paused with one switch.
+Every hidden part has its own switch, per site, and the page changes as you flip it.
 
 PAIRS WELL WITH HARAMBLUR
-Tame Scroll removes what you didn't ask to see, and can blur pictures. For blur that finds people inside videos too, we suggest HaramBlur, a separate free extension by its own developers, which blurs people in the images and videos you do open. Tame Scroll is not affiliated with HaramBlur.
+For blur that finds people inside videos too, we suggest HaramBlur, a separate free extension by its own developers. Tame Scroll is not affiliated with it.
 
 PRIVATE BY DESIGN
-No account, no analytics, no tracking, no server of ours. Your settings stay in your browser. Once a day the extension fetches updated filter rules, a small data file, from GitHub. Privacy policy: https://tamescroll.com/privacy.html
+No account, no analytics, no tracking, no server of ours. Your settings stay in your browser. Once a day the extension fetches updated filter rules, a small data file. Privacy policy: https://tamescroll.com/privacy.html
 
 OPEN SOURCE
-The code is public at https://github.com/tamescroll/tamescroll. Ad and tracker filters come from EasyList, EasyPrivacy and the uBlock Origin filter lists; credits and licences are in the extension's Settings.
+Code: https://github.com/tamescroll/tamescroll. Ad and tracker filters come from EasyList, EasyPrivacy and the uBlock Origin filter lists.
 
 Tame Scroll is an independent project, not affiliated with or endorsed by any of the sites it works on.
 ```
