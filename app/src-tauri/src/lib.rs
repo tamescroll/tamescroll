@@ -14,6 +14,7 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 mod appupdate;
 mod ota;
+mod screens;
 mod rules;
 
 /// Stage A gaze blur (docs/plan.md Phase 4): plain CSS, opt-in, appended to
@@ -1609,6 +1610,28 @@ async fn refresh_rules() -> Result<String, String> {
         .map_err(|e| e.to_string())?
 }
 
+/// Over-the-air screens (screens.rs): the About pane's "Check for
+/// updates" asks for a newer copy of the app's own screens too.
+#[tauri::command]
+async fn refresh_screens() -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(screens::refresh)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// main.ts calls this once its first view has painted: the proof a
+/// freshly downloaded copy of the screens works (screens.rs, FALLBACK).
+#[tauri::command]
+fn screens_ready() {
+    screens::mark_ready();
+}
+
+/// "built-in" or "ota-<publish seconds>", for the About pane.
+#[tauri::command]
+fn screens_status() -> String {
+    screens::current()
+}
+
 /// In-app update check (owner ask 2026-08-23). Reads the signed app
 /// manifest and reports whether a newer build exists; never installs.
 /// The Android install path (MainActivity UpdateBridge) is what acts on
@@ -2836,6 +2859,11 @@ pub fn run() {
     // iOS: the WKWebView hooks Android gets from MainActivity.
     let builder = builder.plugin(tauri_plugin_ts_webkit::init());
 
+    // The app's own screens can arrive over the air (screens.rs). The
+    // sealed copy stays inside and is the fallback for everything.
+    let mut context = tauri::generate_context!();
+    screens::install(&mut context);
+
     builder
         .setup(|app| {
             // Rules OTA: restore the cached rule set, then keep it fresh
@@ -2866,10 +2894,13 @@ pub fn run() {
             set_user_gender,
             set_user_terms,
             refresh_rules,
+            refresh_screens,
+            screens_ready,
+            screens_status,
             app_update_check,
             should_block_request
         ])
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building tamescroll")
         .run(|_app, _event| {
             // iOS: our tamescroll:// links and the home-screen quick

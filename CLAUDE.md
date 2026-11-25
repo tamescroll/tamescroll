@@ -192,7 +192,8 @@ cutting a window in the blur.
 6. `gh release create app-vX.Y.Z <apk> --repo tamescroll/tamescroll`.
    The asset is named after the FILE -- do not upload from a temp path.
 7. `node scripts/gen-app-manifest.mjs <apk> <releaseDownloadURL> "<notes>"`,
-   commit and push `updates/app-manifest.json`.
+   commit and push `updates/app-manifest.json` with the subject
+   `<code>: release X.Y.Z` -- the screens workflow finds the build by it.
 8. **Verify: re-download the served APK and hash it against the raw
    manifest, and check `isDraft` is false.** A failed `gh release create`
    can leave a draft that `gh release view` reports happily while the
@@ -212,10 +213,23 @@ is the only thing standing between here and that; it refuses a tunable
 missing from its SHIPPED map. `tune-overlay.test.mjs` likewise refuses a
 dial with no plain-language label in his gear panel.
 
-**CODE MAY NEVER TRAVEL OVER OTA** -- it runs inside YouTube's page. JSON
-is handed over JSON-ESCAPED as a STRING and parsed page-side, never as an
-object literal (a `${` reaching an injected template was remotely lethal
-once).
+**CODE MAY NEVER TRAVEL OVER OTA INTO A SITE** -- in-page code runs inside
+YouTube's page. JSON is handed over JSON-ESCAPED as a STRING and parsed
+page-side, never as an object literal (a `${` reaching an injected
+template was remotely lethal once).
+
+**THE ONE EXCEPTION: THE APP'S OWN SCREENS** (his go, 2026-11-25). The
+launcher, settings, library, links and tour (`app/index.html`,
+`app/src/`) travel over the air, SIGNED, via `src/screens.rs` and
+`.github/workflows/screens.yml` -> the `screens` branch. A bundle names
+the one build it was made for; it must call `screens_ready` after its
+first paint or the phone drops back to the sealed copy (two misses ban
+it). The workflow HOLDS when native code changed since that build's
+`<code>: release` commit -- keep that commit subject exact (recipe step
+7). Gaze, scriptlets, page scripts and the Kotlin bar never ride it.
+Signing key: `SCREENS_SIGNING_KEY` secret + `secrets/` on his PC; never
+print or commit it. Undo for every phone: run the workflow with
+`disable`. Details: `docs/screens-ota.md`.
 
 **Rules OTA:** rerun `scripts/gen-rules-manifest.mjs` and commit after ANY
 `rules/` edit or shipped apps never see it. **The OTA cache in app-data

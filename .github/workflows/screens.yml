@@ -1,0 +1,112 @@
+name: Publish screens
+
+# OVER-THE-AIR SCREENS (app/src-tauri/src/screens.rs). A merge that
+# changes only the app's own screens reaches phones without a new build:
+# this builds app/dist, signs it, and writes it to the `screens` branch,
+# which every phone checks at launch, every 24h and on "Check for
+# updates". Nothing that runs inside YouTube or another site is in this
+# bundle -- that code is sealed into the build and stays there.
+#
+# Phones take a bundle only if it names the build they run. When native
+# code changed since that build was released the run HOLDS (the screens
+# ship with the next build); run it by hand with native_ok after checking
+# the native change does not touch anything the screens call. Run it by
+# hand with disable to send every phone back to its built-in screens.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/index.html
+      - app/src/**
+      - app/public/**
+      - app/package.json
+      - app/pnpm-lock.yaml
+      - app/vite.config.ts
+      - app/tsconfig.json
+  workflow_dispatch:
+    inputs:
+      native_ok:
+        description: "Native code changed since the release, and I checked the screens do not depend on it"
+        type: boolean
+        default: false
+      disable:
+        description: "Send every phone back to the screens built into its app"
+        type: boolean
+        default: false
+
+concurrency:
+  group: screens
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: May these screens go to the build phones run?
+        id: compat
+        run: |
+          node scripts/screens-compat.mjs \
+            ${{ inputs.native_ok && '--native-ok' || '' }} \
+            ${{ inputs.disable && '--disable' || '' }}
+
+      - name: Held
+        if: steps.compat.outputs.mode == 'hold'
+        env:
+          REASON: ${{ steps.compat.outputs.reason }}
+        run: printf '### Screens held\n\n%s\n' "$REASON" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: pnpm/action-setup@v4
+        if: steps.compat.outputs.mode == 'publish'
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        if: steps.compat.outputs.mode == 'publish'
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Build the screens
+        if: steps.compat.outputs.mode == 'publish'
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Check out the screens branch
+        if: steps.compat.outputs.mode != 'hold'
+        run: |
+          if git fetch origin screens; then
+            git worktree add _screens FETCH_HEAD
+            git -C _screens checkout -B screens
+          else
+            git worktree add --orphan -b screens _screens
+          fi
+
+      - name: Sign and publish
+        if: steps.compat.outputs.mode != 'hold'
+        env:
+          SCREENS_SIGNING_KEY: ${{ secrets.SCREENS_SIGNING_KEY }}
+          REASON: ${{ steps.compat.outputs.reason }}
+          BUILD: ${{ steps.compat.outputs.build }}
+        run: |
+          set -o pipefail
+          node scripts/publish-screens.mjs --dist app/dist --out _screens \
+            ${{ steps.compat.outputs.mode == 'sealed' && '--disable' || '' }} | tee _publish.txt
+          cd _screens
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing new to publish." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git -c user.name="tamescroll screens" -c user.email="actions@users.noreply.github.com" \
+            commit -q -m "screens for build ${BUILD} from ${GITHUB_SHA::7}"
+          git push origin screens
+          printf '### Screens published\n\n%s\n\n%s\n' "$(cat ../_publish.txt)" "$REASON" >> "$GITHUB_STEP_SUMMARY"
