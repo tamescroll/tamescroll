@@ -3104,7 +3104,8 @@ async function start() {
           // the line has done its job once open() has resolved.
           if (!isAndroid) { handoff.hidden = true; showView("launcher"); }
         });
-      } else {
+      } else if (readChosen() !== null) {
+        // A first run is showing the tutorial (started above): leave it.
         showView("launcher");
         refreshAll();
       }
