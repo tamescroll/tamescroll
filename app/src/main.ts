@@ -2434,7 +2434,7 @@ const MOODS: [number, string][] = [
   [135, "Around what most people do."],
   [240, "That adds up quietly."],
   [360, "A big slice of every day."],
-  [540, "More than a workday's worth of evenings."],
+  [540, "Close to a full workday, every day."],
   [721, "Most of the time you're awake and free."],
 ];
 let lastMood = "";
@@ -2507,7 +2507,9 @@ function renderObIcon() {
 // anywhere on the dimmed page, to move on.
 
 type Pane = "bringback" | "blur" | "look" | "about";
-type Tip = { el: string; title: string; text: string; icon: string; go?: "home" | "menu" | "settings"; pane?: Pane; demo?: boolean };
+type Tip = {
+  dock?: "bottom";
+  empty?: { when: string; text: string }; el: string; title: string; text: string; icon: string; go?: "home" | "menu" | "settings"; pane?: Pane; demo?: boolean };
 // 2026-11-25 (his "the ability to change site settings highlighted in the
 // tour, and shortcuts"): a step on a site itself, and both shortcuts to it
 // (hold a favourite; the menu's first row on a site) are named on the way.
@@ -2520,6 +2522,7 @@ const TIPS: Tip[] = [
   {
     el: "#tiles", title: "Your favourites",
     text: "One tap opens a site. Press and hold one to change what it hides.",
+    empty: { when: "#tiles .tile:not(.add)", text: "Tap Add to keep the sites you use here, one tap away. Press and hold one later to change what it hides." },
     icon: '<path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/>',
   },
   {
@@ -2528,32 +2531,33 @@ const TIPS: Tip[] = [
     icon: '<circle cx="12" cy="5.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="18.5" r="1.3"/>',
   },
   {
-    el: '#menu-sheet [data-menu="settings"]', title: "Settings", go: "menu",
-    text: "Every choice in the app lives here. Here are the parts worth knowing.",
+    el: "#menu-sheet .menu-panel", title: "Settings and more", go: "menu",
+    text: "New tab, bookmarks and history up top. Settings, at the bottom, holds every choice. Let's look inside.",
     icon: '<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/>',
   },
   {
-    el: '.nav-item[data-pane="bringback"]', title: "Sites", go: "settings", pane: "bringback",
+    el: '.nav-item[data-pane="bringback"]', title: "Sites", go: "settings", pane: "bringback", dock: "bottom",
     text: "What each site hides. Feeds and endless videos start hidden.",
+    empty: { when: "#bring-back .platform-settings", text: "Each site you visit gets its own switches here. Feeds and endless videos start hidden." },
     icon: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.3 3.6 5 3.6 8s-1.1 5.7-3.6 8c-2.5-2.3-3.6-5-3.6-8S9.5 6.3 12 4z"/>',
   },
   {
-    el: "#bring-back .platform-settings > summary", title: "Change a site", go: "settings", pane: "bringback", demo: true,
+    el: "#bring-back .platform-settings > summary", title: "Change a site", go: "settings", pane: "bringback", demo: true, dock: "bottom",
     text: "Tap a site to switch parts back on, like Shorts or the home feed. You can also put it on your home screen as its own shortcut.",
     icon: '<path d="M3.5 12h3M17.5 12h3"/><rect x="6.5" y="8" width="11" height="8" rx="4"/><circle cx="10.5" cy="12" r="2.2"/>',
   },
   {
-    el: '.nav-item[data-pane="blur"]', title: "Blur", go: "settings", pane: "blur",
+    el: '.nav-item[data-pane="blur"]', title: "Blur", go: "settings", pane: "blur", dock: "bottom",
     text: "Who gets blurred in pictures and previews, how strongly, and words that keep a post covered.",
     icon: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/>',
   },
   {
-    el: '.nav-item[data-pane="look"]', title: "Look", go: "settings", pane: "look",
+    el: '.nav-item[data-pane="look"]', title: "Look", go: "settings", pane: "look", dock: "bottom",
     text: "Night or Paper, and the text size. Make it easy on your eyes.",
     icon: '<path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.3 6.3 0 0 0 10 10z"/>',
   },
   {
-    el: '.nav-item[data-pane="about"]', title: "That's the tour", go: "settings", pane: "about",
+    el: '.nav-item[data-pane="about"]', title: "That's the tour", go: "settings", pane: "about", dock: "bottom",
     text: "Help, privacy and this tour live in About. Now go find somewhere calm.",
     icon: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   },
@@ -2633,12 +2637,21 @@ function placeTip() {
   if (!target || !target.getClientRects().length) return tipAt < TIPS.length - 1 ? nextTip() : endCoach();
   target.scrollIntoView({ block: "center", behavior: "instant" as ScrollBehavior });
   const r = target.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  // The ring stays fully on screen (1146 walk: rings ran off the edges
+  // at the search box, the menu button and About).
   const pad = 8;
+  const edge = 10;
+  const hl = Math.max(edge, r.left - pad);
+  const ht = Math.max(edge, r.top - pad);
+  const hr = Math.min(vw - edge, r.right + pad);
+  const hb = Math.min(vh - edge, r.bottom + pad);
   const hole = document.querySelector<HTMLElement>("#coach-hole")!;
-  hole.style.left = `${r.left - pad}px`;
-  hole.style.top = `${r.top - pad}px`;
-  hole.style.width = `${r.width + pad * 2}px`;
-  hole.style.height = `${r.height + pad * 2}px`;
+  hole.style.left = `${hl}px`;
+  hole.style.top = `${ht}px`;
+  hole.style.width = `${hr - hl}px`;
+  hole.style.height = `${hb - ht}px`;
   const card = document.querySelector<HTMLElement>("#coach-card")!;
   document.querySelector<HTMLElement>("#coach-ic")!.innerHTML = `<svg viewBox="0 0 24 24">${tip.icon}</svg>`;
   const dots = document.querySelector<HTMLElement>("#coach-dots")!;
@@ -2649,26 +2662,39 @@ function placeTip() {
     else if (i < tipAt) d.className = "past";
     dots.append(d);
   });
+  // A fresh install has no favourites and no sites yet: say what to do,
+  // not what isn't there.
+  const empty = tip.empty && !document.querySelector(tip.empty.when);
   document.querySelector<HTMLElement>("#coach-title")!.textContent = tip.title;
-  document.querySelector<HTMLElement>("#coach-text")!.textContent = tip.text;
+  document.querySelector<HTMLElement>("#coach-text")!.textContent = empty ? tip.empty!.text : tip.text;
   document.querySelector<HTMLElement>("#coach-next")!.textContent = tipAt === TIPS.length - 1 ? "Tap anywhere to finish" : "Tap anywhere to continue";
   document.querySelector<HTMLElement>("#coach-back")!.style.visibility = tipAt === 0 ? "hidden" : "";
-  // Below the hole when there is room, else above it; the arrow points
-  // at the middle of the hole either way.
-  const gap = 14;
-  const below = r.bottom + pad + gap;
+  // Next to the ring, on whichever side has room for the whole card;
+  // Settings steps dock at the bottom so the pane they describe (the
+  // blur preview, the Night/Paper cards) stays in view.
   card.style.top = "";
   card.style.bottom = "";
-  const under = below + 190 < window.innerHeight;
-  if (under) card.style.top = `${below}px`;
-  else card.style.bottom = `${window.innerHeight - (r.top - pad - gap)}px`;
-  card.dataset.side = under ? "below" : "above";
+  card.style.visibility = "hidden";
+  card.dataset.side = "below";
+  const h = card.offsetHeight;
+  const gap = 14;
+  const room = 16;
+  let side: "below" | "above" | "dock" = "dock";
+  if (tip.dock !== "bottom") {
+    if (hb + gap + h + room <= vh) side = "below";
+    else if (ht - gap - h - room >= 0) side = "above";
+  }
+  if (side === "below") card.style.top = `${hb + gap}px`;
+  else if (side === "above") card.style.bottom = `${vh - (ht - gap)}px`;
+  else card.style.bottom = `calc(${room}px + env(safe-area-inset-bottom, 0px))`;
+  card.dataset.side = side;
+  card.style.visibility = "";
   card.classList.remove("in");
   void card.offsetWidth;
   card.classList.add("in");
   requestAnimationFrame(() => {
     const c = card.getBoundingClientRect();
-    const x = Math.max(24, Math.min(c.width - 24, r.left + r.width / 2 - c.left));
+    const x = Math.max(24, Math.min(c.width - 24, (hl + hr) / 2 - c.left));
     document.querySelector<HTMLElement>("#coach-arrow")!.style.left = `${x}px`;
   });
 }
@@ -3011,7 +3037,10 @@ async function start() {
     }
     await seedDefaultShown(allPlatforms.map((p) => p.id));
 
-    const handoffTarget = pending
+    // A first run always meets the tutorial, even when it starts from
+    // the "Tame for YouTube" app-list entry or a shortcut (1146 walk:
+    // that entry skipped Welcome and the tour entirely).
+    const handoffTarget = pending && readChosen() !== null
       ? allPlatforms.find((p) => p.id === pending.id && p.ready)
       : undefined;
 

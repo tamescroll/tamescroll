@@ -1704,3 +1704,44 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 .history-keep .row { cursor: pointer; }
 .tile { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .tour-demo { pointer-events: none; margin-bottom: var(--s3); }
+
+/* ---- 1147: first-run polish from the 1146 walk ---- */
+/* docked tour card: no arrow */
+.coach-card[data-side="dock"] .coach-arrow { display: none; }
+.coach-card[data-side="dock"].in { animation-name: coach-in-up; }
+/* one ring, not two */
+.coach-hole::after { display: none; }
+.coach-hole { animation: coach-glow 1.8s ease-in-out 0.3s 2; }
+@keyframes coach-glow { 50% { box-shadow: 0 0 0 9999px rgba(6, 6, 5, 0.74), 0 0 0 1.5px rgba(236, 231, 222, 1), 0 0 36px 8px rgba(236, 231, 222, 0.28); } }
+@media (prefers-reduced-motion: reduce) { .coach-hole { animation: none; } }
+
+/* blur card: a soft frosted veil with no hard sides, below the pill */
+.bs-who .bs-patch {
+  top: 52px; inset-inline: 6%; bottom: -12px; border-radius: 40px;
+  background: radial-gradient(ellipse 70% 60% at 50% 45%, rgba(236, 231, 222, 0.22), rgba(236, 231, 222, 0.07) 70%, rgba(236, 231, 222, 0) 100%);
+  box-shadow: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 100%);
+}
+.bs-who.on svg.ln { filter: blur(12px); opacity: 0.55; }
+#ob-blur-say { min-height: 2.9em; }
+
+/* Continue sits at the same height on every step: steps without a
+   second link keep its space. */
+.ob-step .actions { min-height: 108px; justify-content: flex-start; }
+
+/* time: avg mark clear of the handle, scale at the true values, short summary */
+.time-avg { top: 36px; }
+.ob-step[data-step="time"] .time-scale { position: relative; display: block; height: 14px; }
+.ob-step[data-step="time"] .time-scale span { position: absolute; transform: translateX(-50%); }
+.ob-step[data-step="time"] .time-scale span:nth-child(1) { left: 0; transform: none; }
+.ob-step[data-step="time"] .time-scale span:nth-child(2) { left: 21.7%; }
+.ob-step[data-step="time"] .time-scale span:nth-child(3) { left: 47.8%; }
+.ob-step[data-step="time"] .time-scale span:nth-child(4) { left: 73.9%; }
+.ob-step[data-step="time"] .time-scale span:nth-child(5) { left: auto; right: 0; transform: none; }
+#ob-time-small { max-width: 300px; margin-left: auto; margin-right: auto; text-wrap: balance; }
+.ob-step .lede { text-wrap: balance; }
+
+/* bar: labels sit over their own icons */
+.sbb-tags { grid-template-columns: 22px 1fr 20px 22px; column-gap: 6px; padding-left: 8px; padding-right: 8px; }
+.sbb-tags span { justify-self: center; white-space: nowrap; }
