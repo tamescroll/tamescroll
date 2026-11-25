@@ -2507,7 +2507,7 @@ function renderObIcon() {
 // anywhere on the dimmed page, to move on.
 
 type Pane = "bringback" | "blur" | "look" | "about";
-type Tip = { el: string; title: string; text: string; icon: string; go?: "home" | "menu" | "settings"; pane?: Pane };
+type Tip = { el: string; title: string; text: string; icon: string; go?: "home" | "menu" | "settings"; pane?: Pane; demo?: boolean };
 // 2026-11-25 (his "the ability to change site settings highlighted in the
 // tour, and shortcuts"): a step on a site itself, and both shortcuts to it
 // (hold a favourite; the menu's first row on a site) are named on the way.
@@ -2538,7 +2538,7 @@ const TIPS: Tip[] = [
     icon: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.3 3.6 5 3.6 8s-1.1 5.7-3.6 8c-2.5-2.3-3.6-5-3.6-8S9.5 6.3 12 4z"/>',
   },
   {
-    el: "#bring-back .platform-settings > summary", title: "Change a site", go: "settings", pane: "bringback",
+    el: "#bring-back .platform-settings > summary", title: "Change a site", go: "settings", pane: "bringback", demo: true,
     text: "Tap a site to switch parts back on, like Shorts or the home feed. You can also put it on your home screen as its own shortcut.",
     icon: '<path d="M3.5 12h3M17.5 12h3"/><rect x="6.5" y="8" width="11" height="8" rx="4"/><circle cx="10.5" cy="12" r="2.2"/>',
   },
@@ -2567,7 +2567,43 @@ function startCoach() {
   placeTip();
 }
 
+function addTourDemo(): HTMLElement {
+  const demo = document.createElement("section");
+  demo.className = "group tour-demo";
+  demo.id = "tour-demo";
+  demo.setAttribute("aria-hidden", "true");
+  const head = document.createElement("div");
+  head.className = "row";
+  const text = document.createElement("span");
+  text.className = "grow";
+  text.innerHTML = '<span class="row-title">Example site</span><span class="row-sub">1 part back on</span>';
+  const tag = document.createElement("span");
+  tag.className = "row-end";
+  tag.textContent = "Example";
+  head.append(siteGlyph("E"), text, tag);
+  demo.append(head);
+  ([["Home feed", false], ["Shorts", false], ["Recommendations", true]] as const).forEach(([name, on]) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    const label = document.createElement("span");
+    label.className = "grow row-title";
+    label.textContent = name;
+    const sw = document.createElement("span");
+    sw.className = "switch";
+    sw.setAttribute("aria-checked", String(on));
+    row.append(label, sw);
+    demo.append(row);
+  });
+  bringBack.prepend(demo);
+  return demo;
+}
+
+function removeTourDemo() {
+  document.querySelector("#tour-demo")?.remove();
+}
+
 function endCoach() {
+  removeTourDemo();
   tipAt = -1;
   document.querySelector<HTMLElement>("#coach")!.hidden = true;
   coachGo("home");
@@ -2589,7 +2625,11 @@ function placeTip() {
   const tip = TIPS[tipAt];
   coachGo(tip.go ?? "home");
   if (tip.pane) showPane(tip.pane);
-  const target = document.querySelector<HTMLElement>(tip.el);
+  let target = document.querySelector<HTMLElement>(tip.el);
+  // No tamed site yet: show a made-up one so the step still teaches (his
+  // 2026-11-25 "can't we have a simple demo one there"). Gone after.
+  removeTourDemo();
+  if (tip.demo && (!target || !target.getClientRects().length)) target = addTourDemo();
   if (!target || !target.getClientRects().length) return tipAt < TIPS.length - 1 ? nextTip() : endCoach();
   target.scrollIntoView({ block: "center", behavior: "instant" as ScrollBehavior });
   const r = target.getBoundingClientRect();

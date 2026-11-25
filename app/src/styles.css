@@ -1703,3 +1703,4 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 .history-keep { margin: var(--s3) 0 var(--s4); }
 .history-keep .row { cursor: pointer; }
 .tile { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.tour-demo { pointer-events: none; margin-bottom: var(--s3); }
