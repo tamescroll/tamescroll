@@ -1165,3 +1165,5 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 @media (prefers-reduced-motion: reduce) { .sbb-bar, .dev.sbb .sb-page, .sbb-tags { animation: none; } }
 .ob-step[data-step="icon"] .ob-icon-ios:not([hidden]) ~ .ob-icon-later { display: none; }
 .sbb-stage::after { display: none; }
+.sbb-tags { padding: 10px 4px 4px; background: linear-gradient(rgba(255,255,255,0), #fff 45%); color: #57534c; }
+.sbb-tags { bottom: 50px; }
