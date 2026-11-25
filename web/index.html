@@ -319,6 +319,14 @@
   }
   section.download .plat { color: var(--paper-muted); margin: 0 0 26px; font-size: 15.5px; max-width: 46ch; }
 
+  /* ---- the extension, for computers ---- */
+  section.desk { max-width: 1080px; margin: 0 auto; padding: 0 24px 96px; }
+  .desk .card { display: grid; grid-template-columns: auto 1fr auto; gap: 22px; align-items: center; padding: 26px 28px; }
+  .desk .card .ic { margin: 0; width: 44px; height: 44px; border-radius: 12px; }
+  .desk .card .ic svg { width: 22px; height: 22px; }
+  .desk h2 { font-family: var(--font-display); font-weight: 500; font-size: 24px; margin-bottom: 4px; }
+  .desk p { color: var(--paper-muted); font-size: 15px; max-width: 60ch; }
+
   /* ---- footer ---- */
   footer {
     border-top: 1px solid var(--paper-line);
@@ -343,6 +351,8 @@
     nav.top a:not(.cta) { display: none; }
     .how .grid, .features .grid, section.pics-sec, section.download, .privacy .top { grid-template-columns: 1fr; }
     section.privacy { margin-top: 88px; }
+    .desk .card { grid-template-columns: 1fr; text-align: center; justify-items: center; gap: 14px; }
+    .desk p { margin: 0 auto; }
     .privacy .top { gap: 26px; }
     .privacy .top .vlog { order: 2; }
     .promises { grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; }
@@ -625,6 +635,17 @@
         </div>
       </div>
       <span class="ground" aria-hidden="true"></span>
+    </div>
+  </section>
+
+  <section class="desk" id="computer">
+    <div class="card reveal">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16.5V20"/></svg></div>
+      <div>
+        <h2>On your computer too</h2>
+        <p>Keep the browser you already use. The tamescroll extension for Chrome and Firefox hides the feeds, Shorts and autoplay on YouTube, Reddit, X and more.</p>
+      </div>
+      <a class="btn" href="extension.html">See the extension</a>
     </div>
   </section>
 </main>
