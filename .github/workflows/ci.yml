@@ -55,3 +55,30 @@ jobs:
       # apps (CLAUDE.md, Rules OTA). Regenerate and fail on any difference.
       - run: node scripts/gen-rules-manifest.mjs
       - run: git diff --exit-code -- rules/manifest.json
+
+  extension:
+    name: Browser extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: extension/compile
+      - run: npm ci
+      - run: npm test
+      # gen/engine.json is what the app's engine produces for these hosts.
+      # A vendor-list or scriptlet change without a recompile ships the
+      # extension stale: recompile and fail on any difference.
+      - run: node build.mjs --compile
+      - run: git diff --exit-code -- gen/engine.json
+      # The store packages: no developer self-reload, no code as text,
+      # only the justified permissions (store/chrome-web-store/README.md).
+      - run: node build.mjs --store
+      - run: node store-check.mjs

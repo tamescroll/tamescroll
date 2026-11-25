@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Browser bar and menu (#73): find on page. Tinted in code to the look. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:pathData="M5,4H14L19,9V20H5Z" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M8.8,13.5a2.7,2.7 0,1 0,5.4 0a2.7,2.7 0,1 0,-5.4 0Z" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M13.5,15.5L16,18" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

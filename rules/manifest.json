@@ -2,16 +2,31 @@
   "version": 1,
   "files": {
     "youtube.txt": {
-      "sha256": "e930209d14029706edce6c0a303f0279c28baae50fdc0c7ce536ab657786f140"
+      "sha256": "e4033229a1f2c254a02f4b2d85d614365d780283acbf25a5e3285f9bde6c9582"
     },
     "reddit.txt": {
-      "sha256": "c5faab3a8bf8ef56ba2a2ac900306c8214db798882b49177949529fa9bdc3d2f"
+      "sha256": "262ea3262f5b86e2e0fc43528fe951c30f376e6ad1dc0e7342d5dd42860612b8"
     },
     "x.txt": {
-      "sha256": "98fadf60738d267179754970bf23948331b77dfd7926e7f30e92992e5dbe514a"
+      "sha256": "4e10da58a7d927204295311efb625b5d59dfea4ffca448a38b008cc6b19cb219"
     },
     "tiktok.txt": {
-      "sha256": "15484d53d0d29762afe2c409545fee535dac2574f3eaa4c6c2a9e07b3ddf7d21"
+      "sha256": "55f5d5a2d915a8556e8f3707d687dc5052cef80577cddbe0218bde3d4c4d4ed7"
+    },
+    "instagram.txt": {
+      "sha256": "94ff1c48112c517fd071dc5e2c84ce7761d3d11d17df9c6b95d0cef92c62f096"
+    },
+    "facebook.txt": {
+      "sha256": "67ab4e1a83c9c9742e37d4b9572f36f50732b4569d2b2cac4a44b7da6716d96f"
+    },
+    "twitch.txt": {
+      "sha256": "ae22ca50e5f28841032cb865ee53a6c2c334282eacc3ca303a4a1e4037db07c1"
+    },
+    "linkedin.txt": {
+      "sha256": "8bd40b374e2f20ec04605d9e761bf7d06bbb6d51021b24f25b0e780f3e9c987e"
+    },
+    "pinterest.txt": {
+      "sha256": "542fa471ee49107efbd6b7898c418e0aefc5db0adfdb568836900e75a8b393b0"
     },
     "scriptlets.txt": {
       "sha256": "e81524a60b99aef425d9a17adac8af9e6d4a325c5787c854076e32f415be6b9e"
@@ -30,6 +45,24 @@
     },
     "blur/tiktok.css": {
       "sha256": "58ec367e2693dad624e1588b784f93aebec6705c1218de79af365cb192c37a11"
+    },
+    "blur/instagram.css": {
+      "sha256": "850a665a2df863c3e09ba778ba7e8b921fad4e4d31d1539b8d973a9dd5a30fe3"
+    },
+    "blur/facebook.css": {
+      "sha256": "9f133d2c237002eab50bcb7449a48ef73bdaec75ce8b12a40b5485306610ecfd"
+    },
+    "blur/twitch.css": {
+      "sha256": "c2e8f06591d3ca05c92c407fce1bf18e921c6de973f38750b0d4375012623436"
+    },
+    "blur/linkedin.css": {
+      "sha256": "813e940901fd77a56ed4fd503be5f041c14067ad10a30c42d4747c6748e45438"
+    },
+    "blur/pinterest.css": {
+      "sha256": "db42c02018f5242a137039847f6aca69567142bf8f621abe1eb09d79a2d298e2"
+    },
+    "kill.json": {
+      "sha256": "aabd1f0e31adbf8ff30672ccac2f6e92f31cfe15c6eb5c4bf972ad0ea3e65491"
     },
     "vendor/easylist.txt": {
       "sha256": "c8092c3b4fa718a72fea8dac1102edb58a77f7ff237f916ee67e999318f39900"
