@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings flow mockups</title>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('look') === 'paper') document.documentElement.dataset.look = 'paper';
+</script>
+<script type="module">
+  import "@fontsource/inter/400.css"; import "@fontsource/inter/500.css"; import "@fontsource/inter/600.css";
+  import "@fontsource/spectral/400.css"; import "@fontsource/spectral/500.css";
+  import "/src/styles.css";
+  const s = new URLSearchParams(location.search).get('s') || 'settings';
+  document.querySelector('#app').innerHTML = document.querySelector('#t-' + s).innerHTML;
+  const place = () => document.querySelectorAll('.seg').forEach((seg) => {
+    const th = seg.querySelector('.seg-thumb'), on = seg.querySelector('.seg-opt.active');
+    if (th && on) { th.style.opacity = 1; th.style.width = on.offsetWidth + 'px'; th.style.transform = `translateX(${on.offsetLeft}px)`; }
+  });
+  requestAnimationFrame(() => requestAnimationFrame(place));
+  setTimeout(place, 400);
+  // tour mock: cut the hole around the real element, put the card beside it
+  const holes = () => document.querySelectorAll('.hole[data-for]').forEach((h) => {
+    const r = document.querySelector(h.dataset.for).getBoundingClientRect(), pad = 4;
+    Object.assign(h.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px', right: 'auto', bottom: 'auto' });
+    const c = h.parentElement.querySelector('.ccard');
+    if (c.dataset.side === 'above') c.style.bottom = innerHeight - r.top + 22 + 'px'; else c.style.top = r.bottom + 22 + 'px';
+  });
+  setTimeout(holes, 300);
+</script>
+<style>
+  body { background: var(--bg); }
+  #app { min-height: 100vh; }
+  .scr { padding: 0 16px 32px; max-width: 600px; margin: 0 auto; }
+  svg.i { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* top bar: round back, centred title */
+  .tb { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; padding: 14px 0 8px; }
+  .tb .rb { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--elev); border: 1px solid var(--hairline); color: var(--ink); }
+  .tb .rb svg { width: 20px; height: 20px; }
+  .tb .tt { text-align: center; font-weight: 600; font-size: var(--t-base); }
+  html[data-look="paper"] .tb .rb { background: #fff; box-shadow: var(--shadow); }
+
+  .big { font-family: var(--font-display); font-weight: 500; font-size: 32px; letter-spacing: -0.3px; line-height: 1.1; margin: 10px 4px 18px; }
+  .lab { font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin: 22px 4px 8px; }
+  .foot { color: var(--faint); font-size: var(--t-sm); line-height: 1.45; margin: 8px 4px 0; }
+  .g { margin: 0; }
+  .g .row { min-height: 62px; }
+  .val { color: var(--muted); }
+  .row .end { color: var(--faint); font-size: var(--t-sm); white-space: nowrap; margin-right: 2px; }
+  .row-ic.solid { background: #141414; }
+  .row-ic.solid .mark { stroke: #f2e8d5; }
+  .glyph { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; flex: none; font-family: var(--font-display); font-size: 18px; background: var(--row-ic); color: var(--ink); }
+
+  /* "finish setup" notice on Settings home */
+  .todo { display: flex; gap: 12px; align-items: center; padding: 14px 14px 14px 16px; border-radius: 16px; background: color-mix(in srgb, var(--gold) 12%, var(--elev)); border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); margin-bottom: 4px; }
+  .todo .ic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--gold) 22%, transparent); color: var(--gold); flex: none; }
+  .todo .ic svg { width: 18px; height: 18px; }
+  .todo b { display: block; font-size: var(--t-md); font-weight: 600; }
+  .todo span { display: block; font-size: var(--t-sm); color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .todo .btn-solid { min-height: 38px; padding: 0 16px; font-size: var(--t-sm); flex: none; }
+
+  /* site page header */
+  .site-head { display: flex; gap: 14px; align-items: center; margin: 8px 4px 6px; }
+  .site-head .glyph { width: 52px; height: 52px; border-radius: 15px; font-size: 26px; }
+  .site-head h2 { font-family: var(--font-display); font-weight: 500; font-size: 28px; line-height: 1.1; }
+  .site-head p { color: var(--muted); font-size: var(--t-sm); margin-top: 3px; }
+  .hint { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--row-ic); color: var(--muted); font-size: var(--t-sm); line-height: 1.4; margin: 14px 0 0; }
+  .hint svg { width: 18px; height: 18px; flex: none; }
+  .g .row.sw { min-height: 54px; }
+  .g .row.sw .row-title { font-weight: 500; }
+  .danger .row-title { color: #d98a7a; }
+  html[data-look="paper"] .danger .row-title { color: #b2442f; }
+
+  /* words, folded into Blur */
+  .chips2 { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px 4px; }
+  .chip2 { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; border-radius: 999px; background: var(--row-ic); font-size: var(--t-md); }
+  .chip2 svg { width: 14px; height: 14px; color: var(--faint); }
+  .addw { display: flex; gap: 8px; padding: 10px 16px 16px; }
+  .addw .f { flex: 1; min-height: 46px; border-radius: 12px; border: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; color: var(--faint); font-size: var(--t-md); }
+  .addw .btn-solid { min-height: 46px; padding: 0 18px; }
+
+  /* home, the bar and the menu sheet */
+  .ntp { min-height: 100vh; display: flex; flex-direction: column; padding: 0 16px; }
+  .ntp .wm { display: flex; align-items: center; gap: 8px; padding: 18px 4px 0; font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+  .ntp .wm svg { width: 22px; height: 17px; }
+  .ntp .wm .mark { stroke: var(--ink); }
+  .ntp h1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; margin: 34px 4px 26px; }
+  .favs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; }
+  .fav { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: var(--t-sm); color: var(--muted); }
+  .fav .glyph { width: 56px; height: 56px; border-radius: 17px; font-size: 24px; background: var(--elev); border: 1px solid var(--hairline); }
+  html[data-look="paper"] .fav .glyph { background: #fff; box-shadow: var(--shadow); }
+  .fav.add .glyph { border-style: dashed; color: var(--faint); font-family: var(--font-ui); font-size: 22px; background: transparent; box-shadow: none; }
+  .nbar { margin-top: auto; display: flex; gap: 8px; align-items: center; padding: 10px 0 14px; }
+  .nbar .addr { flex: 1; min-height: 48px; border-radius: 14px; background: var(--elev); border: 1px solid var(--hairline); display: flex; align-items: center; gap: 10px; padding: 0 14px; color: var(--faint); font-size: var(--t-md); }
+  html[data-look="paper"] .nbar .addr { background: #fff; box-shadow: var(--shadow); }
+  .nbar .addr svg { width: 18px; height: 18px; }
+  .nbar .ib { width: 44px; height: 48px; display: grid; place-items: center; color: var(--ink); }
+  .nbar .ib svg { width: 22px; height: 22px; }
+  .tabsn { width: 22px; height: 22px; border: 1.7px solid currentColor; border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+
+  .dim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 40; }
+  html[data-look="paper"] .dim { background: rgba(30,25,15,.35); }
+  .msheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; background: var(--sheet, var(--surface)); border-radius: 22px 22px 0 0; padding: 10px 14px 18px; }
+  html[data-look="paper"] .msheet { background: #fbfaf7; }
+  .msheet .grab { display: block; width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 12px; }
+  .mtiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .mtile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 4px 12px; border-radius: 14px; background: var(--elev); border: 1px solid var(--hairline); font-size: var(--t-sm); color: var(--ink); }
+  html[data-look="paper"] .mtile { background: #fff; }
+  .mtile svg { width: 22px; height: 22px; }
+  .msheet .group { margin: 0; }
+  .msheet .row { min-height: 54px; }
+  .msheet .row-ic { width: 34px; height: 34px; }
+  .here { display: flex; gap: 12px; align-items: center; padding: 4px 4px 14px; }
+  .here .glyph { width: 44px; height: 44px; font-size: 22px; border-radius: 13px; }
+  .here b { display: block; font-size: var(--t-base); font-weight: 600; }
+  .here span { display: block; font-size: var(--t-sm); color: var(--muted); margin-top: 2px; }
+  .here .btn-ghost { margin-left: auto; min-height: 38px; padding: 0 14px; font-size: var(--t-sm); }
+  .tog { width: 44px; height: 26px; border-radius: 13px; background: var(--line); position: relative; flex: none; }
+  .tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); opacity: .8; }
+
+  .site-page { min-height: 100vh; background: #f3f1ec; padding: 64px 16px 0; }
+  .site-page i { display: block; height: 14px; border-radius: 7px; background: #dedad2; margin-bottom: 12px; }
+  .site-page i.b { height: 180px; border-radius: 12px; margin: 22px 0; }
+  .site-top { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #fff; border-bottom: 1px solid #e6e2da; }
+
+  /* library */
+  .libseg { margin: 6px 0 14px; }
+  .star { width: 22px; height: 22px; color: var(--gold); }
+  .star.off { color: var(--faint); }
+
+  /* tour */
+  .coach2 { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+  .hole { position: absolute; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(0,0,0,.62); }
+  html[data-look="paper"] .hole { box-shadow: 0 0 0 9999px rgba(30,25,15,.45); }
+  .hole::after { content: ""; position: absolute; inset: -6px; border-radius: 22px; border: 1.5px solid rgba(236,231,222,.55); }
+  .ccard { position: absolute; left: 16px; right: 16px; padding: 16px 18px 14px; border-radius: 20px; background: #1f1e1c; border: 1px solid rgba(236,231,222,.1); }
+  html[data-look="paper"] .ccard { background: #fbfaf7; border-color: rgba(0,0,0,.08); }
+  .ccard .top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .ccard .cic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(236,231,222,.08); color: var(--ink); }
+  html[data-look="paper"] .ccard .cic { background: rgba(0,0,0,.05); }
+  .ccard .cic svg { width: 20px; height: 20px; }
+  .ccard .dots { display: flex; gap: 5px; flex: 1; }
+  .ccard .dots i { width: 6px; height: 6px; border-radius: 3px; background: rgba(236,231,222,.2); }
+  html[data-look="paper"] .ccard .dots i { background: rgba(0,0,0,.15); }
+  .ccard .dots i.p { background: rgba(236,231,222,.45); }
+  html[data-look="paper"] .ccard .dots i.p { background: rgba(0,0,0,.35); }
+  .ccard .dots i.n, html[data-look="paper"] .ccard .dots i.n { width: 18px; background: var(--ink); }
+  .ccard .skip { color: var(--faint); font-size: var(--t-sm); }
+  .ccard h3 { font-family: var(--font-display); font-weight: 500; font-size: 22px; margin: 0 0 4px; color: var(--ink); }
+  .ccard p { color: var(--muted); font-size: var(--t-md); line-height: 1.45; margin: 0; }
+  .ccard .act { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: var(--t-sm); }
+  .ccard .act .bk { color: var(--muted); }
+  .ccard .act .nx { color: var(--faint); }
+  .ccard .act .btn-solid { min-height: 40px; padding: 0 18px; font-size: var(--t-sm); }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<!-- shared row bits -->
+<!-- chevron: <svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg> -->
+
+<!-- ===== 1. Settings home: one list, each row says what it's set to ===== -->
+<template id="t-settings">
+  <div class="scr">
+    <div class="tb"><span class="rb"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span><span></span><span></span></div>
+    <h1 class="big">Settings</h1>
+
+    <div class="todo"><span class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span><div class="grow"><b>YouTube links</b><span>Still open in the YouTube app</span></div><button class="btn-solid">Set up</button></div>
+
+    <p class="lab">Your choices</p>
+    <section class="group g">
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.3 3.6 5 3.6 8s-1.1 5.7-3.6 8c-2.5-2.3-3.6-5-3.6-8S9.5 6.3 12 4z"/></svg></span><span class="grow"><span class="row-title">Sites</span><span class="row-sub">YouTube and Reddit are tamed</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></span><span class="grow"><span class="row-title">Blur</span><span class="row-sub">Women, medium</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.3 6.3 0 0 0 10 10z"/></svg></span><span class="grow"><span class="row-title">Look</span><span class="row-sub">Night, normal text</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+
+    <p class="lab">tamescroll</p>
+    <section class="group g">
+      <button class="row row-btn"><span class="row-ic solid"><svg viewBox="0 0 48 36" style="width:22px;height:17px"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg></span><span class="grow"><span class="row-title">About and help</span><span class="row-sub">Version 0.1.145. Tour, privacy, report a problem</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+  </div>
+</template>
+
+<!-- ===== 2. Sites: every site, and what it's doing ===== -->
+<template id="t-sites">
+  <div class="scr">
+    <div class="tb"><span class="rb"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span><span class="tt">Sites</span><span></span></div>
+    <p class="foot" style="margin:6px 4px 14px;font-size:var(--t-base);color:var(--muted)">Feeds and endless videos start hidden. Tap a site to bring back the parts you want.</p>
+    <p class="lab" style="margin-top:8px">Tamed</p>
+    <section class="group g">
+      <button class="row row-btn"><span class="glyph">Y</span><span class="grow"><span class="row-title">YouTube</span><span class="row-sub">All feeds hidden</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      <button class="row row-btn"><span class="glyph">R</span><span class="grow"><span class="row-title">Reddit</span><span class="row-sub">1 part back on</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+    <p class="lab">Coming soon</p>
+    <section class="group g">
+      <div class="row" style="opacity:.6"><span class="glyph">X</span><span class="grow"><span class="row-title">X</span><span class="row-sub">Opens as a normal site for now</span></span></div>
+    </section>
+    <section class="group g" style="margin-top:14px">
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span class="grow"><span class="row-title">Tame another site</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+    <p class="foot">Sign-in and app-install nags are always hidden, on every site.</p>
+  </div>
+</template>
+
+<!-- ===== 3. One site: switches grouped by where you meet them ===== -->
+<template id="t-site">
+  <div class="scr">
+    <div class="tb"><span class="rb"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span><span class="tt">Sites</span><span></span></div>
+    <div class="site-head"><span class="glyph">Y</span><div><h2>YouTube</h2><p>All feeds hidden. Search and your subscriptions work as normal.</p></div></div>
+    <div class="hint"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 12h3M17.5 12h3"/><rect x="6.5" y="8" width="11" height="8" rx="4"/><circle cx="10.5" cy="12" r="2.2"/></svg>Switch something on to bring it back.</div>
+    <p class="lab">On the home page</p>
+    <section class="group g">
+      <label class="row sw"><span class="grow row-title">Home feed</span><button class="switch" role="switch" aria-checked="false"></button></label>
+      <label class="row sw"><span class="grow row-title">Shorts</span><button class="switch" role="switch" aria-checked="false"></button></label>
+      <label class="row sw"><span class="grow row-title">Topic chips</span><button class="switch" role="switch" aria-checked="false"></button></label>
+    </section>
+    <p class="lab">While watching</p>
+    <section class="group g">
+      <label class="row sw"><span class="grow row-title">Recommendations</span><button class="switch" role="switch" aria-checked="false"></button></label>
+      <label class="row sw"><span class="grow row-title">Autoplay next video</span><button class="switch" role="switch" aria-checked="false"></button></label>
+      <label class="row sw"><span class="grow row-title">Next and previous buttons</span><button class="switch" role="switch" aria-checked="false"></button></label>
+      <label class="row sw"><span class="grow row-title">Swiping between videos</span><button class="switch" role="switch" aria-checked="false"></button></label>
+    </section>
+    <section class="group g danger" style="margin-top:22px">
+      <button class="row row-btn"><span class="grow row-title">Stop taming YouTube</span></button>
+    </section>
+  </div>
+</template>
+
+<!-- ===== 4. Blur, with your words folded in (they only work with blur) ===== -->
+<template id="t-blur">
+  <div class="scr">
+    <div class="tb"><span class="rb"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span><span class="tt">Blur</span><span></span></div>
+    <div class="pane-stage bs blur-hero" data-show="women" style="--bpx:9px;margin-top:6px">
+      <div class="bs-scene" role="group">
+        <button type="button" class="bs-who bs-w active chosen on" aria-pressed="true"><svg class="ln" viewBox="0 0 120 150"><path d="M16 150c0-27 19-42 44-42s44 15 44 42"/><path d="M48 109.5c4 5.5 8 8 12 8s8-2.5 12-8"/><path d="M29 100c6-9 8-21 7-34-2-26 9-42 24-42s26 16 24 42c-1 13 1 25 7 34"/><path class="ln-neck" d="M54 86v22M66 86v22"/><ellipse class="ln-fill" cx="60" cy="63" rx="17.5" ry="21"/><path d="M42.5 59c7-1 13.5-6 17.5-14 4 8 10.5 13 17.5 14"/></svg><span class="bs-patch"></span><span class="bs-tag">Women</span></button>
+        <button type="button" class="bs-who bs-m" aria-pressed="false"><svg class="ln" viewBox="0 0 120 150"><path d="M10 150c0-29 22-44 50-44s50 15 50 44"/><path d="M48 106l12 13 12-13"/><path class="ln-neck" d="M53 84v21M67 84v21"/><path d="M41.5 58c-3 0-4.5 2.2-4.5 5s1.5 5.5 4.5 5.5M78.5 58c3 0 4.5 2.2 4.5 5s-1.5 5.5-4.5 5.5"/><ellipse class="ln-fill" cx="60" cy="61" rx="18.5" ry="22"/><path class="ln-fill" d="M41.7 61C39 42 48 31.5 60.5 31.5S81.5 41 78.3 59C76 51 70 45.5 63 44 57 50.5 50 56.5 41.7 61Z"/></svg><span class="bs-patch"></span><span class="bs-tag">Men</span></button>
+      </div>
+    </div>
+    <p class="foot" style="text-align:center;margin-top:12px;font-size:var(--t-md);color:var(--muted)">Tap who to blur. Both for everyone, neither for nobody.</p>
+    <p class="lab">How strong</p>
+    <div class="seg"><span class="seg-thumb"></span><button class="seg-opt"><span class="swatch s8"></span>Light</button><button class="seg-opt active"><span class="swatch s16"></span>Medium</button><button class="seg-opt"><span class="swatch s28"></span>Strong</button></div>
+    <p class="lab">Words that keep a post covered</p>
+    <section class="group g">
+      <div class="row"><span class="row-ic"><svg viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span><span class="grow"><span class="row-title">Built-in list</span><span class="row-sub">460+ words, kept up to date</span></span><span class="end">Always on</span></div>
+      <div class="chips2"><span class="chip2">giveaway<svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></span><span class="chip2">prank<svg class="i" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></span></div>
+      <div class="addw"><span class="f">Add your own word</span><button class="btn-solid">Add</button></div>
+    </section>
+    <p class="foot">Everything here runs on this phone. Nothing you see leaves it.</p>
+  </div>
+</template>
+
+<!-- ===== 5. Menu on a new tab ===== -->
+<template id="t-menu">
+  <div class="ntp">
+    <div class="wm"><svg viewBox="0 0 48 36"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg>tamescroll</div>
+    <h1>Where to?</h1>
+    <div class="favs"><span class="fav"><span class="glyph">Y</span>YouTube</span><span class="fav"><span class="glyph">R</span>Reddit</span><span class="fav"><span class="glyph">W</span>Wikipedia</span><span class="fav add"><span class="glyph">+</span>Add</span></div>
+  </div>
+  <div class="dim"></div>
+  <div class="msheet">
+    <span class="grab"></span>
+    <div class="mtiles">
+      <span class="mtile"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New tab</span>
+      <span class="mtile"><svg class="i" viewBox="0 0 24 24"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg>Bookmarks</span>
+      <span class="mtile"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/></svg>History</span>
+    </div>
+    <section class="group">
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></span><span class="grow"><span class="row-title">Blur</span></span><span class="end">Women</span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/></svg></span><span class="grow"><span class="row-title">Settings</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+  </div>
+</template>
+
+<!-- ===== 6. Menu on a site: the site itself comes first ===== -->
+<template id="t-sitemenu">
+  <div class="site-page"><div class="site-top"></div><i style="width:70%"></i><i style="width:45%"></i><i class="b"></i><i style="width:80%"></i><i style="width:60%"></i></div>
+  <div class="dim"></div>
+  <div class="msheet">
+    <span class="grab"></span>
+    <div class="here"><span class="glyph">Y</span><div><b>YouTube is tamed</b><span>Feeds hidden. Blur: women</span></div><button class="btn-ghost">Change</button></div>
+    <div class="mtiles">
+      <span class="mtile"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New tab</span>
+      <span class="mtile"><svg class="i" viewBox="0 0 24 24"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg>Bookmarks</span>
+      <span class="mtile"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/></svg>History</span>
+    </div>
+    <section class="group">
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg></span><span class="grow row-title">Bookmark this page</span></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></span><span class="grow row-title">Find on page</span></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 8.5L12 4l4.5 4.5M5 14v5h14v-5"/></svg></span><span class="grow row-title">Share</span></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/></svg></span><span class="grow row-title">Settings</span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+  </div>
+</template>
+
+<!-- ===== 7. Bookmarks: a star, not a "Pinned" button ===== -->
+<template id="t-library">
+  <div class="scr">
+    <div class="tb"><span class="rb"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span><span class="tt">Bookmarks</span><span></span></div>
+    <div class="seg libseg"><span class="seg-thumb"></span><button class="seg-opt active">Bookmarks</button><button class="seg-opt">History</button></div>
+    <section class="group g">
+      <div class="row"><span class="glyph">Y</span><span class="grow"><span class="row-title">YouTube</span><span class="row-sub">youtube.com</span></span><svg class="star i" viewBox="0 0 24 24" style="fill:currentColor"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg></div>
+      <div class="row"><span class="glyph">R</span><span class="grow"><span class="row-title">Reddit</span><span class="row-sub">reddit.com</span></span><svg class="star i" viewBox="0 0 24 24" style="fill:currentColor"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg></div>
+      <div class="row"><span class="glyph">W</span><span class="grow"><span class="row-title">Wikipedia</span><span class="row-sub">wikipedia.org</span></span><svg class="star i" viewBox="0 0 24 24" style="fill:currentColor"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg></div>
+      <div class="row"><span class="glyph">B</span><span class="grow"><span class="row-title">BBC</span><span class="row-sub">bbc.co.uk</span></span><svg class="star off i" viewBox="0 0 24 24"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg></div>
+    </section>
+    <p class="foot">Starred sites show on your new tab. Swipe a row left to delete it.</p>
+  </div>
+</template>
+
+<!-- ===== 8. Tour: the menu step ===== -->
+<template id="t-tour1">
+  <div class="ntp">
+    <div class="wm"><svg viewBox="0 0 48 36"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg>tamescroll</div>
+    <h1>Where to?</h1>
+    <div class="favs"><span class="fav"><span class="glyph">Y</span>YouTube</span><span class="fav"><span class="glyph">R</span>Reddit</span><span class="fav"><span class="glyph">W</span>Wikipedia</span><span class="fav add"><span class="glyph">+</span>Add</span></div>
+    <div class="nbar"><span class="addr"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Search or type a site</span><span class="ib"><span class="tabsn">1</span></span><span class="ib" id="tour-menu"><svg viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="18.5" r="1.6" fill="currentColor"/></svg></span></div>
+  </div>
+  <div class="coach2">
+    <div class="hole" data-for="#tour-menu"></div>
+    <div class="ccard" data-side="above">
+      <div class="top"><span class="cic"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="18.5" r="1.3"/></svg></span><span class="dots"><i class="p"></i><i class="p"></i><i class="n"></i><i></i><i></i></span><span class="skip">Skip</span></div>
+      <h3>The menu</h3>
+      <p>Bookmarks, history, blur and Settings. It's the same on every site.</p>
+      <div class="act"><span class="bk">Back</span><span class="nx">Tap anywhere to continue</span></div>
+    </div>
+  </div>
+</template>
+
+<!-- ===== 9. Tour: the Settings step, one card for the whole list ===== -->
+<template id="t-tour2">
+  <div class="scr">
+    <div class="tb"><span class="rb"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span><span></span><span></span></div>
+    <h1 class="big">Settings</h1>
+    <p class="lab">Your choices</p>
+    <section class="group g" id="tour-list">
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.3 3.6 5 3.6 8s-1.1 5.7-3.6 8c-2.5-2.3-3.6-5-3.6-8S9.5 6.3 12 4z"/></svg></span><span class="grow"><span class="row-title">Sites</span><span class="row-sub">YouTube and Reddit are tamed</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></span><span class="grow"><span class="row-title">Blur</span><span class="row-sub">Women, medium</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      <button class="row row-btn"><span class="row-ic"><svg viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.3 6.3 0 0 0 10 10z"/></svg></span><span class="grow"><span class="row-title">Look</span><span class="row-sub">Night, normal text</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+  </div>
+  <div class="coach2">
+    <div class="hole" data-for="#tour-list"></div>
+    <div class="ccard">
+      <div class="top"><span class="cic"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/></svg></span><span class="dots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="n"></i><i></i></span><span class="skip">Skip</span></div>
+      <h3>Everything you chose</h3>
+      <p>Each row shows how it's set right now. Sites is what each site hides, Blur is who gets covered, Look is dark or light.</p>
+      <div class="act"><span class="bk">Back</span><span class="nx">Tap anywhere to continue</span></div>
+    </div>
+  </div>
+</template>
+
+<!-- ===== 10. Tour: the last step ===== -->
+<template id="t-tour3">
+  <div class="scr">
+    <div class="tb"><span class="rb"><svg class="i" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></span><span></span><span></span></div>
+    <h1 class="big">Settings</h1>
+    <p class="lab">Your choices</p>
+    <section class="group g">
+      <div class="row"><span class="grow row-title">Sites</span></div><div class="row"><span class="grow row-title">Blur</span></div><div class="row"><span class="grow row-title">Look</span></div>
+    </section>
+    <p class="lab">tamescroll</p>
+    <section class="group g" id="tour-about">
+      <button class="row row-btn"><span class="row-ic solid"><svg viewBox="0 0 48 36" style="width:22px;height:17px"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg></span><span class="grow"><span class="row-title">About and help</span><span class="row-sub">Version 0.1.145. Tour, privacy, report a problem</span></span><svg class="row-chev" viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+    </section>
+  </div>
+  <div class="coach2">
+    <div class="hole" data-for="#tour-about"></div>
+    <div class="ccard">
+      <div class="top"><span class="cic"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="dots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="n"></i></span><span class="skip"></span></div>
+      <h3>That's it</h3>
+      <p>Lost? The tour and help live in About. Now go somewhere calm.</p>
+      <div class="act"><span class="bk">Back</span><button class="btn-solid">Done</button></div>
+    </div>
+  </div>
+</template>
+
+</body>
+</html>
