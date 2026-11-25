@@ -1,7 +1,7 @@
 {
-  "versionCode": 1147,
-  "versionName": "0.1.147",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.147/tamescroll-1147.apk",
-  "sha256": "a35676a9d66abd6c3b46e9eb5f7c6787b35a6689bed03e4a68280f9c429980d3",
-  "notes": "A smoother first run: the tour stays on screen, never hides what it points at, and tells you what to do when you have no sites yet."
+  "versionCode": 1148,
+  "versionName": "0.1.148",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.148/tamescroll-1148.apk",
+  "sha256": "d1ee8021246d0f7fe913f5fd744064933f7fdae56f80cd5264c205e826362a23",
+  "notes": "The Tame for YouTube icon now shows the welcome tour on a first run, and the blur preview is gentler."
 }
