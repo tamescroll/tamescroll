@@ -11,7 +11,7 @@
       try {
         var tsLook = localStorage.getItem("tamescroll.look");
         if (tsLook === "paper") document.documentElement.dataset.look = "paper";
-        if (localStorage.getItem("tamescroll.textsize") !== "normal") document.documentElement.dataset.text = "large";
+        if (localStorage.getItem("tamescroll.fontsize") === "large") document.documentElement.dataset.text = "large";
       } catch (e) {}
     </script>
     <script type="module" src="/src/main.ts" defer></script>
@@ -305,7 +305,7 @@
                 <span class="ab-ver" id="about-version-pill" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><b id="about-version"></b></span>
               </div>
               <section class="group pad" id="app-update-card" hidden>
-                <div class="row-title">An update is ready</div>
+                <div class="row-title" id="app-update-title">An update is ready</div>
                 <p class="row-sub" id="app-update-notes"></p>
                 <div class="actions"><button type="button" class="btn-solid" id="app-update-btn">Update now</button></div>
                 <p class="row-status" id="app-update-status"></p>

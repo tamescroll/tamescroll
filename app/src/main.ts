@@ -391,6 +391,7 @@ type Offer = { code: number; name: string; notes: string; via: "sideload" | "pla
 
 const updateCard = document.querySelector<HTMLElement>("#app-update-card")!;
 const updateNotes = document.querySelector<HTMLElement>("#app-update-notes")!;
+const updateTitle = document.querySelector<HTMLElement>("#app-update-title")!;
 const updateBtn = document.querySelector<HTMLButtonElement>("#app-update-btn")!;
 const updateStatus = document.querySelector<HTMLElement>("#app-update-status")!;
 const updateSheet = document.querySelector<HTMLElement>("#update-sheet")!;
@@ -476,6 +477,7 @@ function present(o: Offer) {
   sheetTitle.textContent = playReady ? "Update downloaded" : "An update is ready";
   sheetNotes.textContent = describe(o);
   sheetNow.textContent = playReady ? "Restart to finish" : "Update now";
+  updateTitle.textContent = playReady ? "Update downloaded" : "An update is ready";
   updateNotes.textContent = describe(o);
   updateBtn.textContent = sheetNow.textContent;
   updateBtn.hidden = false;
@@ -555,12 +557,16 @@ tsWin.__tsStoreUpdate = (s: StoreUpdate) => {
     // Play says this is the newest build: say so in About, so "no prompt"
     // can be told apart from "the check never ran".
     const v = s.installed && s.installed > 1000 ? ` (0.1.${s.installed - 1000})` : "";
+    // The card's title said "An update is ready" over this line (his report,
+    // 2026-11-25): every state sets its own title now.
+    updateTitle.textContent = "You're up to date";
     updateNotes.textContent = `You have the latest version${v} that Google Play offers you.`;
     updateBtn.textContent = "Check again";
     updateBtn.hidden = false;
     updateStatus.textContent = "";
     updateCard.hidden = false;
   } else if (s.state === "error" && !offer) {
+    updateTitle.textContent = "Updates";
     updateNotes.textContent = s.fromPlay
       ? "Couldn't reach Google Play to check for updates."
       : "This copy wasn't installed from Google Play, so Play can't update it. Install Tame Scroll from the Play Store to get updates there.";
@@ -592,6 +598,7 @@ invoke<UpdateStatus>("app_update_check")
       present({ code: s.versionCode, name: s.versionName, notes: s.notes, via: "sideload" });
     } else {
       // Desktop: no in-app install; the About card just says it exists.
+      updateTitle.textContent = "An update is ready";
       updateNotes.textContent = describe({ code: s.versionCode, name: s.versionName, notes: s.notes, via: "sideload" });
       updateBtn.hidden = true;
       updateStatus.textContent = "Get the new build from the releases page.";
@@ -2084,10 +2091,10 @@ document.querySelector<HTMLButtonElement>("#links-card-btn")!.addEventListener("
 // bars in step after a tap.
 
 const LOOK_KEY = "tamescroll.look";
-// Larger is the default (ZV 2026-11-25: "keep it larger by default, that's
-// how small it is on normal"). A new key, because every launch used to save
-// the size and so every install already holds "normal" under the old one.
-const TEXT_KEY = "tamescroll.textsize";
+// Normal is the default again, one step bigger than it was (his word,
+// 2026-11-25: Larger "was feeling too large"). A new key, because 1149
+// saved "large" on every launch; from now on only a tap saves it.
+const TEXT_KEY = "tamescroll.fontsize";
 type Look = "night" | "paper";
 
 function readLook(): Look {
@@ -2112,8 +2119,8 @@ function applyLook(look: Look) {
   }
 }
 
-function applyText(size: "normal" | "large") {
-  localStorage.setItem(TEXT_KEY, size);
+function applyText(size: "normal" | "large", save = true) {
+  if (save) localStorage.setItem(TEXT_KEY, size);
   if (size === "large") document.documentElement.dataset.text = "large";
   else delete document.documentElement.dataset.text;
   document.querySelectorAll<HTMLButtonElement>("#text-toggle .seg-opt").forEach((btn) => {
@@ -2132,7 +2139,7 @@ document.querySelectorAll<HTMLButtonElement>("#text-toggle .seg-opt").forEach((b
   btn.addEventListener("click", () => applyText(btn.dataset.value === "large" ? "large" : "normal"));
 });
 applyLook(readLook());
-applyText(localStorage.getItem(TEXT_KEY) === "normal" ? "normal" : "large");
+applyText(localStorage.getItem(TEXT_KEY) === "large" ? "large" : "normal", false);
 
 // ---------- settings view ----------
 
