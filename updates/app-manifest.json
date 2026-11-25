@@ -1,7 +1,7 @@
 {
-  "versionCode": 1149,
-  "versionName": "0.1.149",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.149/tamescroll-1149.apk",
-  "sha256": "0b762c70c1e18eef9f97af9b061dacdb2e7ae555500a42cc50e17e7e890728ba",
-  "notes": "The address bar is back at the top, and text is larger by default (Normal is in Settings > Look)."
+  "versionCode": 1150,
+  "versionName": "0.1.150",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.150/tamescroll-1150.apk",
+  "sha256": "da255aa33a15da0a5e18ea4b0bb84680a85e73bc0ba2765fc51ca21997ddb9ec",
+  "notes": "A calmer home with search right under the question, a menu that drops down from the top, and slightly bigger text by default."
 }
