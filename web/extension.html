@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://tamescroll.com/extension.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   /* Same tokens and type as index.html. The window below is the same
      b-roll as the extension's own welcome page (extension/src/welcome.*):
@@ -30,15 +30,36 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--paper); color: var(--paper-ink); font: 400 16px/1.55 var(--font-ui); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
   a { color: inherit; }
+  /* the same paper grain as the home page */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 40; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .09 0 0 0 0 .08 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
   .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
 
-  header.site { display: block; position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--paper) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-  .hrow { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 16px; padding-bottom: 16px; }
-  .brand { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font: 600 17px var(--font-display); }
-  .brand svg { width: 24px; height: 18px; }
-  nav.top { display: flex; gap: 24px; align-items: center; font-size: 14.5px; }
-  nav.top a { white-space: nowrap; text-decoration: none; color: var(--paper-muted); }
-  nav.top a:hover, nav.top a[aria-current] { color: var(--paper-ink); }
+  /* ---- nav ---- */
+  header.site {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 84%, transparent);
+    backdrop-filter: saturate(1.2) blur(10px); -webkit-backdrop-filter: saturate(1.2) blur(10px);
+    border-bottom: 1px solid transparent; transition: border-color .2s;
+  }
+  header.site.scrolled { border-bottom-color: var(--paper-line); }
+  header.site { display: block; padding: 0; } /* the page's .site rows are a grid; the header is not */
+  header .hrow {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1080px; margin: 0 auto; padding: 16px 24px;
+  }
+  .brand { display: flex; align-items: center; text-decoration: none; color: var(--paper-ink); }
+  .brand svg { height: 24px; width: auto; }
+  nav.top { display: flex; gap: 26px; align-items: center; font-size: 14.5px; }
+  nav.top a { text-decoration: none; color: var(--paper-muted); }
+  nav.top a:hover { color: var(--paper-ink); }
+  nav.top a.cta {
+    color: var(--paper); background: var(--paper-ink);
+    padding: 8px 16px; border-radius: 10px; font-weight: 600;
+  }
+  nav.top a[aria-current] { color: var(--paper-ink); }
 
   .hero { text-align: center; padding: 56px 0 0; }
   .kicker { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--paper-faint); font-weight: 600; }
@@ -118,7 +139,7 @@
   footer a { color: var(--paper-muted); }
   @media (prefers-reduced-motion: reduce) { .win, .lbl .dot, .upnext::after { animation: none; } .fold, .removed s, .ext b, .ext svg, .btn, .toast { transition: none; } }
   @media (max-width: 760px) {
-    nav.top a:not(.keep) { display: none; }
+    nav.top a:not(.cta) { display: none; }
     .sites, .three, .devices { grid-template-columns: 1fr; }
     .side { display: none; }
     .site { grid-template-columns: 96px 1fr; }
@@ -127,12 +148,16 @@
 </style>
 </head>
 <body>
-<header class="site"><div class="wrap hrow">
-  <a class="brand" href="index.html" aria-label="tamescroll home"><svg viewBox="0 0 34 24" aria-hidden="true"><path d="M17 11a2.3 2.3 0 0 0-4.6 0a4.6 4.6 0 0 0 9.2 0a6.9 6.9 0 0 0-13.8 0a9.2 9.2 0 0 0 9.2 9.2l13.8 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>tamescroll</a>
+<header class="site" id="site-header"><div class="hrow">
+  <a class="brand" href="index.html" aria-label="tamescroll home">
+    <svg viewBox="46 34 410 66" role="img" aria-hidden="true"><g transform="translate(40 42) scale(1.28)"><path d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></g><text x="146" y="88" font-family="Spectral, Georgia, 'Times New Roman', serif" font-size="58" font-weight="600" letter-spacing="-0.6" fill="currentColor">tamescroll</text></svg>
+  </a>
   <nav class="top">
     <a href="index.html">Phone app</a>
-    <a href="extension.html" aria-current="page" class="keep">Extension</a>
+    <a href="extension.html" aria-current="page">Extension</a>
+    <a href="index.html#privacy">Privacy</a>
     <a href="https://github.com/tamescroll/tamescroll">Source</a>
+    <a class="cta" href="index.html#download">Download</a>
   </nav>
 </div></header>
 
@@ -213,6 +238,12 @@
   <div><a href="index.html">Home</a> &nbsp;·&nbsp; <a href="https://github.com/tamescroll/tamescroll">GitHub</a> &nbsp;·&nbsp; <a href="tools.html">Tools we like</a> &nbsp;·&nbsp; <a href="privacy.html">Privacy</a> &nbsp;·&nbsp; <a href="terms.html">Terms</a></div>
 </footer>
 <script>
+  // A hairline under the sticky header once the page scrolls (same as the home page).
+  var header = document.getElementById("site-header");
+  function onScroll() { header.classList.toggle("scrolled", window.scrollY > 8); }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
   // The b-roll: busy, then calm, on a loop. Held calm for less motion.
   (function () {
     var demo = document.getElementById("demo"), removed = document.getElementById("removed");
