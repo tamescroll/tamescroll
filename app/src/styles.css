@@ -21,7 +21,9 @@
   --font-display: "Spectral", Georgia, "Times New Roman", serif;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
   --r-sm: 10px; --r: 14px; --r-lg: 20px;
-  --t-xs: 11px; --t-sm: 12.5px; --t-md: 14px; --t-base: 15px; --t-lg: 17px; --t-xl: 22px; --t-2xl: 28px;
+  /* Normal grew a step on 2026-11-25 (his word: Larger "too large", the
+     old Normal too small): about halfway between the two. */
+  --t-xs: 12px; --t-sm: 13.5px; --t-md: 15px; --t-base: 16px; --t-lg: 18px; --t-xl: 23px; --t-2xl: 30px;
   --ring: rgba(201, 164, 94, 0.5);
   --tile-bg: linear-gradient(150deg, #262624, #151514);
   --page-bg: #0d0d0d;
@@ -1457,7 +1459,7 @@ html:not([data-look="paper"]), html:not([data-look="paper"]) body { background: 
    A browser's new tab: the wordmark small, the question in Spectral,
    Favourites as letter tiles, the last pages, and the address field in
    a bar at the top. Flat 10-12px corners. */
-#view-launcher { padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
+#view-launcher { padding-bottom: var(--s6); }
 .ntp-head { display: flex; align-items: center; min-height: 40px; padding-top: var(--s1); }
 .ntp-head .wordmark { height: 30px; width: auto; color: var(--ink); }
 .ntp-head .wordmark .mark { stroke: var(--gold); }
@@ -1761,11 +1763,53 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 .sbb-tags { top: 50px; bottom: auto; padding: 4px 4px 10px; background: linear-gradient(#fff 55%, rgba(255,255,255,0)); }
 .dev.sbb .sb-page { top: 50px; }
 @keyframes sbb-fold-up { 0%, 35% { transform: none; } 45%, 78% { transform: translateY(-100%); } 88%, 100% { transform: none; } }
-/* Larger text is the default now: the time step still fits a short phone. */
+/* The time step still fits a short phone at the bigger text sizes. */
 @media (max-height: 700px) {
-  :root[data-text="large"] .tl .time-big b { font-size: 36px; margin-bottom: 2px; }
-  :root[data-text="large"] .ob-stage.tl { height: auto; overflow: visible; padding-top: 0; padding-bottom: 0; margin-bottom: 8px; }
-  :root[data-text="large"] .ob-step[data-step="time"] .display { font-size: 23px; }
-  :root[data-text="large"] .time-life { max-width: 180px; gap: 2px; }
-  :root[data-text="large"] .time-life + .time-months { max-width: 180px; }
+  :root .tl .time-big b { font-size: 36px; margin-bottom: 2px; }
+  :root .ob-stage.tl { height: auto; overflow: visible; padding-top: 0; padding-bottom: 0; margin-bottom: 8px; }
+  :root .ob-step[data-step="time"] .display { font-size: 23px; }
+  :root .time-life { max-width: 180px; gap: 2px; }
+  :root .time-life + .time-months { max-width: 180px; }
 }
+
+/* The three-dot menu drops down from the top bar (2026-11-25): a bottom
+   sheet with a handle looked like it would swipe up into more. */
+#menu-sheet { align-items: flex-start; justify-content: flex-end; padding: calc(60px + env(safe-area-inset-top, 0px)) 8px 0; }
+#menu-sheet .update-scrim { background: rgba(0, 0, 0, 0.25); }
+#menu-sheet .menu-panel {
+  width: min(300px, 100%); max-width: none; text-align: left;
+  border: 1px solid var(--line); border-radius: 16px;
+  padding: var(--s2); gap: var(--s2);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.55);
+  transform-origin: top right; animation: menu-drop 0.16s cubic-bezier(0.2, 0, 0, 1);
+}
+#menu-sheet .menu-panel::before { display: none; }
+@keyframes menu-drop { from { opacity: 0; transform: scale(0.94) translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #menu-sheet .menu-panel { animation: none; } }
+
+/* Home as in the approved mockup (2026-11-25): wordmark and menu on top,
+   the greeting and question left-aligned, the search right under them,
+   then the sites and what was kept out of sight. */
+.ntp-head { justify-content: space-between; padding-top: var(--s2); }
+.ntp-menu {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 50%;
+  color: var(--ink); background: var(--elev); border: 1px solid var(--hairline);
+}
+.ntp-menu svg { width: 20px; height: 20px; }
+.ntp-menu:active { transform: scale(0.95); }
+#view-launcher .greet { margin: var(--s5) 0 var(--s1); font-size: var(--t-md); color: var(--muted); text-align: left; }
+#view-launcher .home-q { text-align: left; margin: 0 0 var(--s4); max-width: none; font-size: 30px; }
+:root[data-text="large"] #view-launcher .home-q { font-size: 33px; }
+#view-launcher .open-link { height: 56px; margin: 0; }
+#view-launcher .open-link-ic { left: 18px; }
+#view-launcher .tiles-head { margin: var(--s6) 0 var(--s3); }
+.tiles-hint { margin: var(--s4) 0 0; text-align: center; font-size: var(--t-sm); color: var(--faint); }
+.kept { margin-top: var(--s6); display: grid; gap: var(--s3); }
+.kept .eyebrow { margin: 0; }
+.kept-row { gap: var(--s3); padding: var(--s3); min-height: 56px; }
+.kept-ic { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--row-ic); color: var(--ink); }
+.kept-ic svg { width: 18px; height: 18px; }
+.kept .t { font-size: var(--t-base); }
+.kept .t b { font-weight: 600; font-variant-numeric: tabular-nums; }
+#jump { margin-top: var(--s6); }
+#view-launcher .tile .dot { width: 58px; height: 58px; border-radius: 18px; font-size: 26px; }

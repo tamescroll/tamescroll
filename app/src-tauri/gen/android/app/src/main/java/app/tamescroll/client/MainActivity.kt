@@ -1688,17 +1688,23 @@ class MainActivity : TauriActivity() {
   // THE MENU (#73, mockup 7): three big actions on top (Private joins
   // them with tabs, step 3), the everyday browser list underneath.
   // Forward and reload live here to keep the bar to five things.
+  // A drop-down under the dots since 2026-11-25 (the bar is on top, and
+  // his word on the bottom sheet: "it feels like you can swipe it up ...
+  // but it's only a few options"): no handle, nothing to drag.
   private fun showMenuSheet() {
     val c = colors()
-    val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
-    val box = sheetBox(c)
+    var popup: android.widget.PopupWindow? = null
+    val box = LinearLayout(this).apply {
+      orientation = LinearLayout.VERTICAL
+      setPadding(dp(8), dp(10), dp(8), dp(8))
+    }
     val ripple = rippleRes()
     fun glyph(res: Int, color: Int, size: Int) = android.widget.ImageView(this).apply {
       setImageResource(res)
       imageTintList = android.content.res.ColorStateList.valueOf(color)
       layoutParams = LinearLayout.LayoutParams(dp(size), dp(size))
     }
-    fun act(run: () -> Unit) { sheet.dismiss(); run() }
+    fun act(run: () -> Unit) { popup?.dismiss(); run() }
 
     val tiles = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
     fun tile(res: Int, label: String, run: () -> Unit) = LinearLayout(this).apply {
@@ -1802,7 +1808,21 @@ class MainActivity : TauriActivity() {
     ) { setDesktopSite(!desktopSite) }
     row(R.drawable.ic_bar_gear, "Settings") { webView.loadUrl("http://tauri.localhost/?view=settings") }
     box.addView(list)
-    showSheet(sheet, box)
+    val frame = android.widget.ScrollView(this).apply {
+      background = rounded(c.bg, 16, c.line)
+      elevation = dp(14).toFloat()
+      clipToOutline = true
+      addView(box)
+    }
+    val anchor = bar ?: return
+    popup = android.widget.PopupWindow(frame, dp(300), ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
+      // A clear background makes a tap outside close it on every API level.
+      setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+      isOutsideTouchable = true
+      elevation = dp(14).toFloat()
+      animationStyle = android.R.style.Animation_Dialog
+      showAsDropDown(anchor, -dp(8), -dp(4), Gravity.END)
+    }
   }
 
   /** How far a disabled menu row is dimmed. */
