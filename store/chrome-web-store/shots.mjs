@@ -119,7 +119,7 @@ function frame({ title, body, popup, popupWidth = 440, page }) {
   </style></head><body>
   ${page || ''}
   <div class="copy"><div class="brand"><img src="data:image/png;base64,${icon}">Tame Scroll</div><h1>${title}</h1><p>${body}</p></div>
-  <div class="shot"><img class="popup" style="width:${popupWidth}px" src="data:image/png;base64,${popup}"></div>
+  <div class="shot"><img class="popup" style="max-width:${popupWidth}px; max-height:740px" src="data:image/png;base64,${popup}"></div>
   </body></html>`;
 }
 
