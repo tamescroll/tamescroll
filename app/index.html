@@ -518,7 +518,7 @@
 
       <!-- Tips over the real home screen, after the steps above (and on a
            replay): a dimmed page with a hole over one thing at a time. -->
-      <div class="coach" id="coach" hidden>
+      <div class="coach" id="coach" role="button" tabindex="0" aria-label="Next tip" hidden>
         <div class="coach-hole" id="coach-hole"></div>
         <div class="coach-card" id="coach-card" role="dialog" aria-live="polite" aria-labelledby="coach-title">
           <span class="coach-arrow" id="coach-arrow" aria-hidden="true"></span>
@@ -531,7 +531,7 @@
           <p class="coach-text" id="coach-text"></p>
           <div class="coach-actions">
             <button type="button" class="link-btn" id="coach-back">Back</button>
-            <button type="button" class="btn-solid small" id="coach-next">Next</button>
+            <span class="coach-next" id="coach-next" aria-hidden="true">Tap anywhere to continue</span>
           </div>
         </div>
       </div>

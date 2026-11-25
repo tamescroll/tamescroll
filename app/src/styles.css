@@ -1209,3 +1209,12 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 :root[data-look="paper"] .coach-dots i { background: rgba(0, 0, 0, 0.15); }
 :root[data-look="paper"] .coach-dots i.past { background: rgba(0, 0, 0, 0.35); }
 @media (prefers-reduced-motion: reduce) { .coach-card.in, .coach-hole::after { animation: none; } }
+/* tap anywhere: the card carries a quiet, breathing hint instead of a button */
+.coach { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.coach-next { display: inline-flex; align-items: center; gap: 8px; font-size: var(--t-sm); font-weight: 600; color: var(--muted); animation: coach-hint 2.2s ease-in-out infinite; }
+.coach-next::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 0 rgba(236, 231, 222, 0.5); animation: coach-tap 2.2s ease-out infinite; }
+@keyframes coach-hint { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }
+@keyframes coach-tap { 0% { box-shadow: 0 0 0 0 rgba(236, 231, 222, 0.5); } 70%, 100% { box-shadow: 0 0 0 9px rgba(236, 231, 222, 0); } }
+.coach-actions { display: flex; justify-content: space-between; align-items: center; min-height: 32px; }
+.coach-card:active { transform: scale(0.99); }
+@media (prefers-reduced-motion: reduce) { .coach-next, .coach-next::before { animation: none; } }

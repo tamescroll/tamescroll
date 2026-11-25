@@ -2295,7 +2295,7 @@ const TIPS: Tip[] = [
   },
   {
     el: '.nav-item[data-pane="about"]', title: "That's the tour", go: "settings",
-    text: "Replay it any time from About. Tap Got it to head home and start browsing.",
+    text: "Replay it any time from About. Now go find somewhere calm.",
     icon: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   },
 ];
@@ -2351,7 +2351,7 @@ function placeTip() {
   });
   document.querySelector<HTMLElement>("#coach-title")!.textContent = tip.title;
   document.querySelector<HTMLElement>("#coach-text")!.textContent = tip.text;
-  document.querySelector<HTMLElement>("#coach-next")!.textContent = tipAt === TIPS.length - 1 ? "Got it" : "Next";
+  document.querySelector<HTMLElement>("#coach-next")!.textContent = tipAt === TIPS.length - 1 ? "Tap anywhere to finish" : "Tap anywhere to continue";
   document.querySelector<HTMLElement>("#coach-back")!.style.visibility = tipAt === 0 ? "hidden" : "";
   // Below the hole when there is room, else above it; the arrow points
   // at the middle of the hole either way.
@@ -2468,11 +2468,12 @@ function bindOnboarding() {
 
   document.querySelector<HTMLButtonElement>("#ob-icon-next")!.addEventListener("click", () => obGoto("end"));
 
-  document.querySelector<HTMLButtonElement>("#coach-next")!.addEventListener("click", nextTip);
   document.querySelector<HTMLButtonElement>("#coach-skip")!.addEventListener("click", endCoach);
   document.querySelector<HTMLButtonElement>("#coach-back")!.addEventListener("click", prevTip);
   document.querySelector<HTMLElement>("#coach")!.addEventListener("click", (e) => {
-    if (e.target === e.currentTarget || e.target === document.querySelector("#coach-hole")) nextTip();
+    // Anywhere moves on, the card included; only Back and Skip do otherwise.
+    if ((e.target as HTMLElement).closest("#coach-back, #coach-skip")) return;
+    nextTip();
   });
   window.addEventListener("resize", placeTip);
 }
