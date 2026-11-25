@@ -1,7 +1,7 @@
 {
-  "versionCode": 1148,
-  "versionName": "0.1.148",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.148/tamescroll-1148.apk",
-  "sha256": "d1ee8021246d0f7fe913f5fd744064933f7fdae56f80cd5264c205e826362a23",
-  "notes": "The Tame for YouTube icon now shows the welcome tour on a first run, and the blur preview is gentler."
+  "versionCode": 1149,
+  "versionName": "0.1.149",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.149/tamescroll-1149.apk",
+  "sha256": "0b762c70c1e18eef9f97af9b061dacdb2e7ae555500a42cc50e17e7e890728ba",
+  "notes": "The address bar is back at the top, and text is larger by default (Normal is in Settings > Look)."
 }
