@@ -90,7 +90,7 @@ No account, no analytics, no tracking, no server of ours. Your settings stay in 
 OPEN SOURCE
 The code is public at https://github.com/tamescroll/tamescroll. Ad and tracker filters come from EasyList, EasyPrivacy and the uBlock Origin filter lists; credits and licences are in the extension's Settings.
 
-Tame Scroll is an independent project, not affiliated with or endorsed by Google, YouTube, Reddit, X, Meta, Instagram, TikTok, Twitch or LinkedIn.
+Tame Scroll is an independent project, not affiliated with or endorsed by any of the sites it works on.
 ```
 
 **Images** (in this folder, regenerate with `node store/chrome-web-store/shots.mjs`
@@ -116,7 +116,7 @@ appears, and no live site was loaded to make them.
 **Single purpose:**
 
 ```
-Tame Scroll makes social media sites less compulsive to use. On the sites it serves (YouTube, Reddit, X, Instagram, Facebook, TikTok, Twitch, LinkedIn) it hides the page elements designed to keep people scrolling, such as algorithmic feeds, Shorts and Reels, autoplay, suggested posts, ads and sign-in pop-ups, and can blur pictures. Every part can be brought back per site.
+Tame Scroll makes social media sites less compulsive to use. On the social media sites it serves it hides the page elements designed to keep people scrolling, such as algorithmic feeds, Shorts and Reels, autoplay, suggested posts, ads and sign-in pop-ups, and can blur pictures. Every part can be brought back per site.
 ```
 
 **Permission justifications:**
