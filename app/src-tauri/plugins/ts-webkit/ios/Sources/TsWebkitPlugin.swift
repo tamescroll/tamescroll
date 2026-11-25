@@ -357,7 +357,7 @@ class TsWebkitPlugin: Plugin {
   /// tao's delegates have no handler for them, so one is added at
   /// runtime. It re-opens the app through its own tamescroll:// address,
   /// which keeps a single, validated way in (launcher_query_for_open in
-  /// lib.rs); the home-screen widgets use that same address.
+  /// lib.rs); the App Shortcuts use that same address.
   ///
   /// tao runs without scenes unless Info.plist declares a scene manifest
   /// (ours does not), so the app delegate is the one UIKit asks. It asks

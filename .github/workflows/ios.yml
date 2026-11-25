@@ -109,17 +109,15 @@ jobs:
           "$RUNNER_TEMP/ct/bin/pip" install -q "coremltools==9.0" "numpy<2.4"
           "$RUNNER_TEMP/ct/bin/python" src-tauri/ios-models/parity.py src-tauri/ios-models
 
-      # Home-screen widgets (our glyphs, added only by the person). The
-      # extension is not in Tauri's project template, so it is appended to
-      # project.yml and the project regenerated.
-      - name: Home-screen widgets
+      # The blur models and the App Shortcuts are not in Tauri's project
+      # template, so they are added to project.yml and the project
+      # regenerated. No widgets: shortcuts only (ZV, 2026-11-24).
+      - name: App Shortcuts and blur models
         run: |
           cd src-tauri/gen/apple
-          python3 ../../ios-widget/add-to-project.py
           python3 ../../ios-models/add-to-project.py
           python3 ../../ios-shortcuts/add-to-project.py
           xcodegen generate
-          grep -q "TameScrollWidget.appex" *.xcodeproj/project.pbxproj
           grep -q "faceres.mlpackage" *.xcodeproj/project.pbxproj
           grep -q "TameShortcuts.swift" *.xcodeproj/project.pbxproj
 
@@ -190,39 +188,7 @@ jobs:
             /usr/libexec/PlistBuddy -c 'Print UIDeviceFamily' "$APP/Info.plist" || true
             echo "--- scene manifest (none means tao's app-delegate mode)"
             /usr/libexec/PlistBuddy -c 'Print UIApplicationSceneManifest' "$APP/Info.plist" || true
-            echo "--- widget extension"
-            ls "$APP/PlugIns" || echo "no PlugIns folder"
-            W="$APP/PlugIns/TameScrollWidget.appex/Info.plist"
-            for k in CFBundleIdentifier CFBundleVersion CFBundleShortVersionString; do
-              echo "$k app=$(/usr/libexec/PlistBuddy -c "Print $k" "$APP/Info.plist") widget=$(/usr/libexec/PlistBuddy -c "Print $k" "$W" 2>&1)"
-            done
-            echo "--- widget Info.plist"
-            /usr/libexec/PlistBuddy -c 'Print' "$W" || true
-            ls -la "$APP/PlugIns/TameScrollWidget.appex" || true
-            echo "--- widget extensions the simulator knows"
-            xcrun simctl spawn "$DEVICE" pluginkit -mAvvv -p com.apple.widgetkit-extension 2>&1 | grep -i -A10 "tamescroll" || echo "Tame Scroll widget NOT registered"
           } | tee ../ios-proof/info-plist.txt
-
-          # Does the widget actually run? iOS's widget service (chronod)
-          # asks every installed widget for its list after install; a
-          # widget that crashes there is silently left out of the gallery
-          # (ZV's iPhone, builds 39-44).
-          {
-            echo "--- widget binary"
-            WB="$APP/PlugIns/TameScrollWidget.appex/TameScrollWidget"
-            file "$WB"; otool -L "$WB" | head -20
-            echo "--- run it directly for 5 s"
-            ( xcrun simctl spawn "$DEVICE" "$WB" & P=$!; sleep 5; kill $P 2>/dev/null; wait $P; echo "exit $?" ) 2>&1 | tail -20
-            echo "--- system log about the widget"
-            xcrun simctl spawn "$DEVICE" log show --last 15m --style compact \
-              --predicate 'eventMessage CONTAINS[c] "tamescroll" OR process == "TameScrollWidget" OR (process == "chronod" AND eventMessage CONTAINS[c] "error")' 2>&1 | tail -80
-            echo "--- crash reports"
-            ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "tamescroll|widget" || echo "none"
-            for f in $(ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i TameScrollWidget | head -1); do
-              python3 ../.github/scripts/ips-summary.py ~/Library/Logs/DiagnosticReports/$f
-            done
-          } > ../ios-proof/widget-log.txt 2>&1 || true
-          head -c 6000 ../ios-proof/widget-log.txt || true
 
           # App Store screenshot: a site with the top bar, on the 6.9-inch
           # iPhone Apple requires (1320 x 2868), clock at 9:41. Kept full
