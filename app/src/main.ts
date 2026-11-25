@@ -1969,7 +1969,6 @@ const soon = (fn: () => void, ms: number) => window.setTimeout(fn, REDUCED_MOTIO
 function runOnboarding(done: () => void, replay = false) {
   obDone = done;
   obReplay = replay;
-  obPinTried = false;
   showView("onboard");
   bindOnboarding();
   obGoto("welcome", false);
@@ -2245,34 +2244,12 @@ function tick() {
 // Same bridge and same words as Settings -> Sites -> YouTube links, so
 // the two places can never disagree about what the launcher did.
 
-let obPinTried = false;
-
-function obIconState(): { supported?: boolean; pinned?: boolean; listed?: boolean } {
-  try {
-    return linksBridge?.pinState ? JSON.parse(linksBridge.pinState("youtube")) : {};
-  } catch {
-    return {};
-  }
-}
-
 function renderObIcon() {
-  // Android without the bridge (a desktop build) shows the drawing only.
-  document.querySelector<HTMLElement>(".ob-icon-android")!.hidden = IOS || !linksBridge;
-  document.querySelector<HTMLElement>(".ob-icon-ios")!.hidden = !IOS;
-  const st = obIconState();
-  const btn = document.querySelector<HTMLButtonElement>("#ob-pin")!;
-  const name = document.querySelector<HTMLInputElement>("#ob-pin-name")!;
-  const note = document.querySelector<HTMLElement>("#ob-pin-note")!;
+  // A picture of a normal site's icon only (his 2026-11-25: stop
+  // advertising YouTube here). Adding icons lives in Settings -> Sites.
   const next = document.querySelector<HTMLButtonElement>("#ob-icon-next")!;
-  name.hidden = !!(st.pinned || st.supported === false);
-  btn.hidden = !!st.pinned;
-  btn.textContent = st.supported === false ? "Add to app list" : "Add to home screen";
-  if (st.pinned) note.textContent = PIN_WORDS.pinned;
-  // After an attempt, or once it is there, the way on is a plain
-  // Continue; before that, the quiet "Not now" declines.
-  const settled = obPinTried || !!st.pinned || (st.listed === true && st.supported === false);
-  next.textContent = settled ? "Continue" : "Not now";
-  next.className = settled ? "btn-solid" : "link-btn center";
+  next.textContent = "Continue";
+  next.className = "btn-solid";
 }
 
 // ---- tips on home ----
@@ -2411,29 +2388,6 @@ function bindOnboarding() {
     obGoto(obNext("bar"));
   });
 
-  document.querySelector<HTMLButtonElement>("#ob-pin")!.addEventListener("click", () => {
-    const note = document.querySelector<HTMLElement>("#ob-pin-note")!;
-    if (!linksBridge) return;
-    try {
-      const name = document.querySelector<HTMLInputElement>("#ob-pin-name")!.value.trim();
-      const r = String(linksBridge.pinNamed ? linksBridge.pinNamed("youtube", name) : linksBridge.pinShortcut("youtube"));
-      obPinTried = true;
-      renderObIcon();
-      note.textContent = PIN_WORDS[r] ?? "";
-    } catch {
-      note.textContent = PIN_WORDS.refused;
-    }
-  });
-  // iPhone: Apple's Shortcuts app opens on a new shortcut through the
-  // iPhone shell's tsShortcuts handler (absent elsewhere, then a no-op).
-  document.querySelector<HTMLButtonElement>("#ob-shortcuts")!.addEventListener("click", () => {
-    const w = window as unknown as {
-      webkit?: { messageHandlers?: { tsShortcuts?: { postMessage(m: string): void } } };
-    };
-    try { w.webkit?.messageHandlers?.tsShortcuts?.postMessage("create"); } catch { /* no Shortcuts bridge */ }
-    obPinTried = true;
-    renderObIcon();
-  });
   document.querySelector<HTMLButtonElement>("#ob-icon-next")!.addEventListener("click", () => obGoto("end"));
 
   document.querySelector<HTMLButtonElement>("#coach-next")!.addEventListener("click", nextTip);
