@@ -1,0 +1,170 @@
+name: Safari extension
+
+# Safari extensions ship inside a Mac/iPhone app, and Apple's converter
+# only runs on macOS. ZV has no Mac, so this builds it on GitHub's.
+#
+# Today: convert extension/dist/safari into an Xcode project and build it
+# UNSIGNED for macOS and the iOS simulator, to prove it compiles. The
+# project is uploaded as an artifact.
+#
+# The testflight job signs and uploads the iPhone app (see below).
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'extension/**'
+      - '.github/workflows/safari.yml'
+  # A commit whose message contains [safari-testflight] also uploads to
+  # TestFlight, from any branch (workflow_dispatch only sees workflows
+  # that are already on main).
+  push:
+    branches: ['**']
+
+jobs:
+  build:
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[safari-testflight]')
+    runs-on: macos-15
+    defaults:
+      run:
+        # Explicit bash means -eo pipefail, so a failed xcodebuild piped
+        # into tail still fails the job.
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the extension
+        working-directory: extension
+        run: |
+          npm ci
+          node build.mjs
+      - name: Convert to an Xcode project
+        run: |
+          xcrun safari-web-extension-converter extension/dist/safari \
+            --project-location safari-app \
+            --app-name "Tame Scroll" \
+            --bundle-identifier app.tamescroll.safari \
+            --swift --copy-resources --no-open --no-prompt --force
+          find safari-app -maxdepth 2 -name '*.xcodeproj'
+      - name: Build for macOS and the iOS simulator (unsigned)
+        run: |
+          proj="$(find safari-app -maxdepth 2 -name '*.xcodeproj' | head -1)"
+          xcodebuild -list -project "$proj"
+          xcodebuild -project "$proj" -scheme "Tame Scroll (macOS)" \
+            -configuration Release -destination 'generic/platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO build | tail -20
+          xcodebuild -project "$proj" -scheme "Tame Scroll (iOS)" \
+            -configuration Release -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -20
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tamescroll-safari-xcode-project
+          path: safari-app
+
+  # Signed iPhone build to TestFlight: a manual run, or a commit message
+  # with [safari-testflight].
+  #
+  # It REUSES the App Store Connect key the iPhone app's own TestFlight
+  # builds use (repository secrets APPLE_API_KEY_ID, APPLE_API_ISSUER,
+  # APPLE_API_KEY_P8, APPLE_DEVELOPMENT_TEAM; see ios-testflight.yml).
+  # That key has the Admin role, which Xcode's cloud signing requires, so
+  # Xcode creates the certificate and profiles itself and no other
+  # signing secret exists. The key is written to the runner only for the
+  # signing steps and deleted at the end; nothing prints it.
+  #
+  # Needs the App Store Connect app record for app.tamescroll.safari
+  # ("Tame Scroll for Safari"), which the API cannot create.
+  testflight:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[safari-testflight]'))
+    needs: build
+    runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secrets present
+        run: |
+          for v in ASC_KEY_ID ASC_ISSUER_ID APPLE_TEAM_ID; do
+            [ -n "${!v}" ] || { echo "::error::missing secret for $v (see the comment above this job)"; exit 1; }
+          done
+      # App Store Connect refuses uploads built with an SDK older than
+      # iOS 26 (the iPhone app learned this on 2026-10-27).
+      - name: Xcode 26
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$X" ] || { echo "no Xcode 26 on this runner:"; ls /Applications | grep -i xcode; exit 1; }
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and convert
+        run: |
+          (cd extension && npm ci && node build.mjs)
+          xcrun safari-web-extension-converter extension/dist/safari \
+            --project-location safari-app \
+            --app-name "Tame Scroll" \
+            --bundle-identifier app.tamescroll.safari \
+            --swift --copy-resources --ios-only --no-open --no-prompt --force
+          # The converter names the app target after the app
+          # (app.tamescroll.Tame-Scroll); the App ID and the App Store
+          # Connect record are app.tamescroll.safari. The extension's
+          # ID (app.tamescroll.safari.Extension) already matches.
+          pbx="$(find safari-app -name project.pbxproj | head -1)"
+          sed -i '' -E '/Extension/!s/PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/PRODUCT_BUNDLE_IDENTIFIER = app.tamescroll.safari;/' "$pbx"
+          grep -n PRODUCT_BUNDLE_IDENTIFIER "$pbx"
+          if grep PRODUCT_BUNDLE_IDENTIFIER "$pbx" | grep -v -q -E 'app\.tamescroll\.safari(\.Extension)?;'; then
+            echo "::error::an unexpected bundle ID is left in the project"; exit 1
+          fi
+      - name: API key on disk
+        env:
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+      - name: Archive, sign and upload
+        run: |
+          proj="$(find safari-app -maxdepth 2 -name '*.xcodeproj' | head -1)"
+          scheme="$(xcodebuild -list -json -project "$proj" | python3 -c 'import json,sys; s=json.load(sys.stdin)["project"]["schemes"]; print(next(x for x in s if "Extension" not in x))')"
+          # Archive UNSIGNED: signing the archive asks for a Development
+          # profile, which needs a registered device the team does not
+          # have (first run, 2026-11-22). The export signs for App Store
+          # distribution with cloud-managed signing instead, the way the
+          # iPhone app's build does.
+          auth=(-allowProvisioningUpdates
+                -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+                -authenticationKeyID "$ASC_KEY_ID"
+                -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -project "$proj" -scheme "$scheme" \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/TameScroll.xcarchive" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO archive | tail -40
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/TameScroll.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -exportPath "$RUNNER_TEMP/export" "${auth[@]}" | tail -40
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc"

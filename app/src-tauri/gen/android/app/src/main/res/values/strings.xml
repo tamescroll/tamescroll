@@ -1,13 +1,28 @@
 <resources>
+    <!-- Home-screen labels are our letter plus "Tamed", never the bare site
+         name: a tile labelled "YouTube" reads as the official app (Play
+         Impersonation). Long labels and the app-list entry name the site in
+         plain text so search still finds them (ZV 2026-11-17). -->
     <string name="app_name">"tamescroll"</string>
     <string name="main_activity_title">"tamescroll"</string>
-    <string name="shortcut_youtube_short">YouTube</string>
-    <string name="shortcut_youtube_long">YouTube, cleaned</string>
+    <string name="shortcut_youtube_short">Y-Tamed</string>
+    <string name="shortcut_youtube_long">Tame for YouTube</string>
     <string name="entry_youtube_label">Tame for YouTube</string>
-    <string name="shortcut_reddit_short">Reddit</string>
-    <string name="shortcut_reddit_long">Reddit, cleaned</string>
-    <string name="shortcut_x_short">X</string>
-    <string name="shortcut_x_long">X, cleaned</string>
-    <string name="shortcut_tiktok_short">TikTok</string>
-    <string name="shortcut_tiktok_long">TikTok, cleaned</string>
+    <string name="shortcut_reddit_short">R-Tamed</string>
+    <string name="shortcut_reddit_long">Tame for Reddit</string>
+    <string name="shortcut_x_short">X-Tamed</string>
+    <string name="shortcut_x_long">Tame for X</string>
+    <string name="shortcut_tiktok_short">T-Tamed</string>
+    <string name="shortcut_tiktok_long">Tame for TikTok</string>
+    <!-- TikTok took T first, so Twitch is "Tw" on its tile and label. -->
+    <string name="shortcut_instagram_short">I-Tamed</string>
+    <string name="shortcut_instagram_long">Tame for Instagram</string>
+    <string name="shortcut_facebook_short">F-Tamed</string>
+    <string name="shortcut_facebook_long">Tame for Facebook</string>
+    <string name="shortcut_twitch_short">Tw-Tamed</string>
+    <string name="shortcut_twitch_long">Tame for Twitch</string>
+    <string name="shortcut_linkedin_short">L-Tamed</string>
+    <string name="shortcut_linkedin_long">Tame for LinkedIn</string>
+    <string name="shortcut_pinterest_short">P-Tamed</string>
+    <string name="shortcut_pinterest_long">Tame for Pinterest</string>
 </resources>

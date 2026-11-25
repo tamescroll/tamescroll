@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "note": "Remote off switches for the browser extension. DATA ONLY: names from a fixed list, never code. adsBlockingOff: site ids whose ad blocking is switched off on every install (ads shown, ad scriptlets unregistered). disabledScripts: page-code script ids from extension/src/sites.js to unregister.",
+  "adsBlockingOff": [],
+  "disabledScripts": []
+}

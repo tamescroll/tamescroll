@@ -19,6 +19,18 @@ It is not legal advice.
 - Our own icon and palette in every build: no red play tile, no brand
   colours. (2026-10-28: the sideloaded build's red tile retired too.)
 
+## Decided 2026-11-17
+
+- Home-screen shortcut labels are our letter plus "Tamed" (Y-Tamed,
+  R-Tamed, X-Tamed, T-Tamed), never the bare site name: a tile labelled
+  "YouTube" next to a Y reads as the official app. Places people search
+  (the Android app-list entry, long-press long labels, the iPhone App
+  Shortcut's title) keep "Tame for YouTube" in plain text, which is the
+  nominative "works with" use the line below allows.
+- 2026-11-24: the same rule for every site: I-Tamed, F-Tamed, L-Tamed,
+  P-Tamed, and Tw-Tamed for Twitch because TikTok took T. Their tiles are
+  the same cream letter on our ink, generated like the first four.
+
 ## Decided 2026-10-28
 
 - Keep our own YouTube request rule (`rules/scriptlets.txt`) built in.

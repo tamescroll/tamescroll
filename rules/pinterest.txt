@@ -1,0 +1,24 @@
+! Title: tamescroll — Pinterest
+! Description: Removes Pinterest's discovery surfaces — Explore/ideas and
+!              the endless home feed of pins picked for you — while
+!              leaving search, boards and pins you open.
+! Version: 1
+! Expires: 1 day
+! License: CC0-1.0 (see rules/LICENSE)
+!
+! VERIFICATION STATUS: Explore checked live 2026-11-23 signed out
+! (www.pinterest.com/ideas/, images blurred). The signed-in home feed
+! and "More to explore" under a pin are NOT verified yet (no signed-in
+! account to check with), so the store build leaves Pinterest out.
+
+!surface: explore Explore
+pinterest.com##[data-test-id="ideas-tab"]
+pinterest.com##[data-test-id="ideas-link"]
+pinterest.com##[data-test-id="ideas-root-category-tabs-scroll"]
+pinterest.com##[data-test-id="tier1-pin-feed"]
+
+!surface: home Home feed
+! Unverified signed in: the home feed and the related pins under a pin.
+pinterest.com##[data-test-id="homefeed-feed"]
+pinterest.com##[data-test-id="relatedPins"]
+pinterest.com##[data-test-id="related-pins"]
