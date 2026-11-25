@@ -138,38 +138,82 @@ function setChoice(c: BlurChoice) {
 }
 
 const CAPTIONS: Record<BlurChoice, string> = {
-  all: "Blurs every picture and preview on the pages you browse.",
+  all: "Both ticked: every picture and preview is blurred.",
   women: "Blurs women in pictures and previews. Faces it can't place stay covered.",
   men: "Blurs men in pictures and previews. Faces it can't place stay covered.",
-  none: "",
+  none: "Nothing ticked: nothing is blurred.",
 };
+
+// A segmented control's thumb slides under the chosen option (2026-11-20).
+// Measured from the button itself, so it fits any label length and the
+// hidden Blur tab on iPhone; a control not on screen yet is skipped and
+// placed again when it shows.
+function placeThumb(seg: Element | null) {
+  if (!seg) return;
+  const thumb = seg.querySelector<HTMLElement>(".seg-thumb");
+  const on = seg.querySelector<HTMLElement>(".seg-opt.active");
+  if (!thumb) return;
+  if (!on || !on.offsetWidth) {
+    thumb.style.opacity = on ? thumb.style.opacity : "0";
+    return;
+  }
+  thumb.style.opacity = "1";
+  thumb.style.width = `${on.offsetWidth}px`;
+  thumb.style.transform = `translateX(${on.offsetLeft}px)`;
+}
+function placeAllThumbs() {
+  document.querySelectorAll(".seg").forEach(placeThumb);
+}
+window.addEventListener("resize", placeAllThumbs);
+
+// The still at the top of Settings -> Blur shows the answer and the
+// strength, the way the tutorial's still shows the answer.
+const blurHero = document.querySelector<HTMLElement>("#blur-hero");
+const HERO_BLUR: Record<number, string> = { 8: "5px", 16: "9px", 28: "14px" };
 
 function renderBlurToggle() {
   const mode = getMode();
   const choice = getChoice();
-  blurToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
-    const active = btn.dataset.value === choice;
+  if (blurHero) {
+    // Smart with no gender (an old skip) still covers every face.
+    blurHero.dataset.show = choice ?? "all";
+    blurHero.style.setProperty("--bpx", HERO_BLUR[getStrength()] ?? "9px");
+  }
+  // Two ticks (his 2026-11-20): Women, Men. Both is everyone, neither is
+  // nobody, so the four stored answers map onto two boxes.
+  blurToggle.querySelectorAll<HTMLButtonElement>("[data-value]").forEach((btn) => {
+    const active = choice === "all" || btn.dataset.value === choice;
     btn.classList.toggle("active", active);
-    btn.setAttribute("aria-checked", String(active));
+    btn.classList.toggle("chosen", active);
+    btn.classList.toggle("on", active);
+    btn.setAttribute("aria-pressed", String(active));
   });
   // The watch player is not blurred (his 2026-10-27 ruling, gaze
   // PLAYER_VIDEO_BLUR); the pane's own line says so.
   blurCaption.textContent = choice
     ? CAPTIONS[choice]
-    : "Every face is blurred until you choose. Pick one above to change it.";
+    : "Every face is blurred until you choose. Tick who to blur.";
   const px = getStrength();
   strengthRow.hidden = mode === "off";
-  strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
+  strengthToggle.querySelectorAll<HTMLButtonElement>(".seg-opt").forEach((btn) => {
     const active = Number(btn.dataset.value) === px;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-checked", String(active));
   });
+  placeThumb(strengthToggle);
 }
 
-blurToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
-  btn.addEventListener("click", () => setChoice(btn.dataset.value as BlurChoice));
+blurToggle.querySelectorAll<HTMLButtonElement>("[data-value]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const c = getChoice();
+    let women = c === "all" || c === "women";
+    let men = c === "all" || c === "men";
+    if (btn.dataset.value === "women") women = !women;
+    else men = !men;
+    setChoice(women && men ? "all" : women ? "women" : men ? "men" : "none");
+  });
 });
-strengthToggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
+strengthToggle.querySelectorAll<HTMLButtonElement>(".seg-opt").forEach((btn) => {
   btn.addEventListener("click", () => setStrength(Number(btn.dataset.value)));
 });
 
@@ -210,7 +254,7 @@ document.querySelector<HTMLButtonElement>("#ios-home-hide")!.addEventListener("c
 document.querySelector<HTMLButtonElement>("#ios-home-added")!.addEventListener("click", () => {
   dismissIosHome();
   const card = document.querySelector<HTMLElement>("#ios-home-card")!;
-  card.querySelector<HTMLElement>(".card-body")!.textContent = "Done. Tap it any time to open YouTube here.";
+  card.querySelector<HTMLElement>(".row-sub")!.textContent = "Done. Tap it any time to open YouTube here.";
 });
 document.querySelector<HTMLButtonElement>("#ios-home-show")!.addEventListener("click", () => {
   siteHere.textContent = "";
@@ -253,7 +297,7 @@ function renderTermChips() {
     const hint = document.createElement("p");
     hint.className = "section-hint";
     hint.style.textAlign = "left";
-    hint.textContent = "No terms of your own yet.";
+    hint.textContent = "No words added yet.";
     host.append(hint);
     return;
   }
@@ -764,45 +808,84 @@ function setShown(platformId: string, shown: string[]) {
   writeShownMap(map);
 }
 
-function surfaceRow(platformId: string, surface: SurfaceInfo): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "setting-row";
+// One switch per surface (2026-11-20, replacing the Hidden | Shown pair):
+// on means shown. Off is the tamed default, so a switch reads as "bring
+// this back".
+// What each part is, in a few plain words, under its name (his
+// 2026-11-25 "easier for people to use"). Ids from rules/*.txt and the
+// kid controls in lib.rs; a part with no line here shows its name alone.
+const SURFACE_WHAT: Record<string, string> = {
+  home: "The endless grid when the site opens",
+  home_shelves: "Rows like Breaking news inside the feed",
+  home_chips: "The row of topics along the top",
+  explore_menu: "Trending and Explore in the menu",
+  shorts: "Short videos you swipe through",
+  watch_recs: "More videos beside and after the one you picked",
+  player_skip: "The skip arrows on the player",
+  player_swipe: "Swipe on a video to get another",
+  autoplay_next: "Starts another video when one ends",
+  previews: "Videos that play as you scroll past",
+  search_inserts: "Extra shelves mixed into your results",
+  search_suggestions: "Ideas offered as you type a search",
+  child_lock: "A button that locks the screen for a child",
+  discovery: "Popular and suggested posts",
+  ads: "Ads and promoted posts on this site",
+};
+
+// Where you meet each part, so a long list reads as a few short ones.
+// Anything not named here lands in the last group.
+const SURFACE_GROUPS: { title: string; ids: string[] }[] = [
+  { title: "On the home page", ids: ["home", "home_shelves", "home_chips", "explore_menu", "shorts", "discovery"] },
+  { title: "While watching", ids: ["watch_recs", "player_skip", "player_swipe", "swipe", "autoplay_next", "child_lock"] },
+  { title: "Searching and browsing", ids: ["previews", "search_inserts", "search_suggestions"] },
+];
+
+function surfaceRow(platformId: string, surface: SurfaceInfo, onChange: () => void): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "row";
 
   const label = document.createElement("span");
-  label.className = "setting-label";
-  label.textContent = surface.label;
+  label.className = "grow";
+  const name = document.createElement("span");
+  name.className = "row-title";
+  name.textContent = surface.label;
+  label.append(name);
+  const what = SURFACE_WHAT[surface.id];
+  if (what) {
+    const sub = document.createElement("span");
+    sub.className = "row-sub";
+    sub.textContent = what;
+    label.append(sub);
+  }
 
-  const toggle = document.createElement("div");
-  toggle.className = "toggle";
-  toggle.setAttribute("role", "radiogroup");
-  toggle.setAttribute("aria-label", surface.label);
+  const sw = document.createElement("button");
+  sw.type = "button";
+  sw.className = "switch";
+  sw.setAttribute("role", "switch");
+  sw.setAttribute("aria-label", `Show ${surface.label}`);
 
   const paint = () => {
     const isShown = getShown(platformId).includes(surface.id);
-    toggle.querySelectorAll<HTMLButtonElement>(".toggle-opt").forEach((btn) => {
-      const active = (btn.dataset.value === "shown") === isShown;
-      btn.classList.toggle("active", active);
-      btn.setAttribute("aria-checked", String(active));
-    });
+    sw.setAttribute("aria-checked", String(isShown));
   };
-
-  (["hidden", "shown"] as const).forEach((value) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "toggle-opt";
-    btn.setAttribute("role", "radio");
-    btn.dataset.value = value;
-    btn.textContent = value === "hidden" ? "Hidden" : "Shown";
-    btn.addEventListener("click", () => {
-      const current = getShown(platformId).filter((id) => id !== surface.id);
-      setShown(platformId, value === "shown" ? [...current, surface.id] : current);
-      paint();
-    });
-    toggle.append(btn);
+  sw.addEventListener("click", (e) => {
+    e.preventDefault();
+    const isShown = getShown(platformId).includes(surface.id);
+    const current = getShown(platformId).filter((id) => id !== surface.id);
+    setShown(platformId, isShown ? current : [...current, surface.id]);
+    paint();
+    onChange();
+  });
+  // The whole row is the target, like a phone's own settings.
+  row.addEventListener("click", (e) => {
+    if (e.target !== sw) {
+      e.preventDefault();
+      sw.click();
+    }
   });
 
   paint();
-  row.append(label, toggle);
+  row.append(label, sw);
   return row;
 }
 
@@ -824,14 +907,18 @@ function homeIconRow(platform: Platform): HTMLElement | null {
   const bridge = (window as unknown as { TsLinks?: LinksBridge }).TsLinks;
   if (!bridge?.pinNamed || !bridge.pinState) return null;
   const row = document.createElement("div");
-  row.className = "setting-row";
+  row.className = "row home-icon-row";
+  const icon = document.createElement("span");
+  icon.className = "row-ic";
+  icon.setAttribute("aria-hidden", "true");
+  icon.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="2.5"/><path d="M12 8.5v6M9 11.5h6"/></svg>';
   const text = document.createElement("div");
   text.className = "grow";
   const label = document.createElement("div");
-  label.className = "setting-label";
-  label.textContent = "Home screen icon";
-  const note = document.createElement("div");
-  note.className = "setting-caption";
+  label.className = "row-title";
+  label.textContent = "Home screen shortcut";
+  const note = document.createElement("p");
+  note.className = "row-sub";
   const add = document.createElement("button");
   add.type = "button";
   add.className = "btn-ghost small";
@@ -863,8 +950,18 @@ function homeIconRow(platform: Platform): HTMLElement | null {
   });
   paint();
   text.append(label, note);
-  row.append(text, add);
+  row.append(icon, text, add);
   return row;
+}
+
+// A site's letter on its own small tile, as on home.
+function siteGlyph(letter: string, tint?: string): HTMLElement {
+  const g = document.createElement("span");
+  g.className = "glyph";
+  g.setAttribute("aria-hidden", "true");
+  if (tint) g.style.color = tint;
+  g.textContent = letter;
+  return g;
 }
 
 async function renderBringBack(readyPlatforms: Platform[]) {
@@ -882,14 +979,59 @@ async function renderBringBack(readyPlatforms: Platform[]) {
       if (surfaces.length === 0) continue;
 
       const details = document.createElement("details");
-      details.className = "platform-settings";
+      details.className = "platform-settings group";
       details.dataset.platform = platform.id;
       const summary = document.createElement("summary");
-      summary.textContent = platform.name;
+      summary.className = "row row-btn";
+      const text = document.createElement("span");
+      text.className = "grow";
+      const title = document.createElement("span");
+      title.className = "row-title";
+      title.textContent = platform.name;
+      const sub = document.createElement("span");
+      sub.className = "row-sub";
+      const count = () => {
+        const n = surfaces.filter((x) => getShown(platform.id).includes(x.id)).length;
+        sub.textContent = n === 0 ? "Everything tamed" : `${n} of ${surfaces.length} switched back on`;
+      };
+      count();
+      text.append(title, sub);
+      const chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      chev.setAttribute("viewBox", "0 0 24 24");
+      chev.setAttribute("class", "row-chev");
+      chev.innerHTML = '<path d="M9.5 5.5L16 12l-6.5 6.5"/>';
+      summary.append(siteGlyph(platform.name.charAt(0), DESIGN_TINTS[platform.id] ?? platform.tint), text, chev);
       details.append(summary);
-      surfaces.forEach((surface) => details.append(surfaceRow(platform.id, surface)));
+      const body = document.createElement("div");
+      body.className = "row-more rows";
+      const hint = document.createElement("p");
+      hint.className = "rows-hint";
+      hint.textContent = "Off means hidden. Switch a part on to bring it back.";
+      body.append(hint);
+      const placed = new Set<string>();
+      const groups = SURFACE_GROUPS.map((g) => ({
+        title: g.title,
+        list: surfaces.filter((x) => g.ids.includes(x.id) && !placed.has(x.id) && placed.add(x.id)),
+      }));
+      groups.push({ title: "Other", list: surfaces.filter((x) => !placed.has(x.id)) });
+      const used = groups.filter((g) => g.list.length);
+      used.forEach((g) => {
+        if (used.length > 1) {
+          const head = document.createElement("p");
+          head.className = "rows-group";
+          head.textContent = g.title;
+          body.append(head);
+        }
+        g.list.forEach((surface) => body.append(surfaceRow(platform.id, surface, count)));
+      });
       const home = homeIconRow(platform);
-      if (home) details.append(home);
+      if (home) {
+        const head = document.createElement("p");
+        head.className = "rows-group";
+        head.textContent = "Shortcut";
+        body.append(head, home);
+      }
+      details.append(body);
       bringBack.append(details);
     } catch {
       // One platform's toggles failing to load must not block the rest.
@@ -1137,7 +1279,7 @@ async function openAddress(raw: string) {
 
 type Bookmark = { u: string; t: string; at: number; pin: boolean };
 type Visit = { u: string; t: string; at: number };
-type LibraryBridge = { read(): string; saveBookmarks(json: string): boolean; clearHistory(): boolean };
+type LibraryBridge = { read(): string; saveBookmarks(json: string): boolean; clearHistory(): boolean; setKeepHistory?(on: boolean): boolean };
 
 const libraryBridge = (window as unknown as { TsLibrary?: LibraryBridge }).TsLibrary;
 const LIBRARY_KEY = "tamescroll.library";
@@ -1151,8 +1293,8 @@ function cleanList<T extends { u: string }>(raw: unknown, make: (o: Record<strin
     .filter((o) => /^https?:\/\//i.test(o.u));
 }
 
-function readLibrary(): { bookmarks: Bookmark[]; history: Visit[] } {
-  let raw: { bookmarks?: unknown; history?: unknown } = {};
+function readLibrary(): { bookmarks: Bookmark[]; history: Visit[]; keep: boolean } {
+  let raw: { bookmarks?: unknown; history?: unknown; keep?: unknown } = {};
   try {
     raw = JSON.parse(libraryBridge ? libraryBridge.read() : localStorage.getItem(LIBRARY_KEY) ?? "{}") ?? {};
   } catch {
@@ -1165,6 +1307,7 @@ function readLibrary(): { bookmarks: Bookmark[]; history: Visit[] } {
     history: cleanList(raw.history, (o) => ({
       u: String(o.u), t: typeof o.t === "string" ? o.t : "", at: Number(o.at) || 0,
     })),
+    keep: raw.keep === true,
   };
 }
 
@@ -1277,8 +1420,43 @@ function favTile(b: Bookmark): HTMLButtonElement {
   const tamed = platformForPage(b.u)?.ready === true;
   el.classList.toggle("is-tamed", tamed);
   el.setAttribute("aria-label", `${labelFor(b)}, ${hostOf(b.u)}${tamed ? ", tamed" : ""}`);
-  el.addEventListener("click", () => openSaved(b.u, el));
+  el.addEventListener("click", (e) => {
+    if (heldOpen) {
+      heldOpen = false;
+      e.preventDefault();
+      return;
+    }
+    openSaved(b.u, el);
+  });
+  holdToSettings(el, b.u);
   return el;
+}
+
+// PRESS AND HOLD A FAVOURITE: that site's settings (his 2026-11-25:
+// changing what a site hides should have shortcuts). The tour says so.
+let heldOpen = false;
+function holdToSettings(el: HTMLElement, url: string) {
+  let timer = 0;
+  let x = 0;
+  let y = 0;
+  const cancel = () => window.clearTimeout(timer);
+  el.addEventListener("pointerdown", (e) => {
+    heldOpen = false;
+    x = e.clientX;
+    y = e.clientY;
+    cancel();
+    timer = window.setTimeout(() => {
+      heldOpen = true;
+      try { navigator.vibrate?.(12); } catch { /* no vibration */ }
+      siteHere.textContent = "";
+      void openSiteSettings(url);
+    }, 550);
+  });
+  el.addEventListener("pointermove", (e) => {
+    if (Math.abs(e.clientX - x) > 10 || Math.abs(e.clientY - y) > 10) cancel();
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach((t) => el.addEventListener(t, cancel));
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
 }
 
 function renderTiles(platforms: Platform[], chosen: string[]) {
@@ -1384,13 +1562,13 @@ function renderBookmarks() {
   bookmarkList.textContent = "";
   bookmarkList.hidden = list.length === 0;
   bookmarkNote.textContent = list.length
-    ? "Pinned bookmarks are your Favourites on a new tab."
+    ? "Starred bookmarks are your Favourites on a new tab."
     : "No bookmarks yet. On any page, open the menu and choose Bookmark this page.";
   [...list].reverse().forEach((b) => {
     const pin = document.createElement("button");
     pin.type = "button";
-    pin.className = `btn-ghost small pin-btn${b.pin ? " on" : ""}`;
-    pin.textContent = b.pin ? "Pinned" : "Pin";
+    pin.className = `star-btn${b.pin ? " on" : ""}`;
+    pin.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></svg>';
     pin.setAttribute("aria-pressed", String(b.pin));
     pin.setAttribute("aria-label", `${b.pin ? "Unpin" : "Pin"} ${labelFor(b)} ${b.pin ? "from" : "to"} Favourites`);
     pin.addEventListener("click", () => {
@@ -1416,9 +1594,31 @@ function dayStart(ms: number): number {
   return d.getTime();
 }
 
+const historyOff = document.querySelector<HTMLElement>("#history-off")!;
+const historyKeep = document.querySelector<HTMLElement>("#history-keep")!;
+const historyKeepSwitch = document.querySelector<HTMLButtonElement>("#history-keep-switch")!;
+
 function renderHistory() {
+  const lib = readLibrary();
+  // Only MainActivity can keep history (it records while a site shows);
+  // an older one without the switch keeps it always, as before.
+  const canChoose = typeof libraryBridge?.setKeepHistory === "function";
+  const keep = canChoose ? lib.keep : !!libraryBridge;
+  historyOff.hidden = keep;
+  historyKeep.hidden = !canChoose;
+  historyKeepSwitch.setAttribute("aria-checked", String(keep));
+  document.querySelector<HTMLElement>("#history-off-text")!.textContent = canChoose
+    ? "tamescroll doesn't remember where you've been. Turn it on if you'd like to find pages again."
+    : "tamescroll doesn't keep history on this device.";
+  historySearch.hidden = !keep;
+  historyGroups.hidden = !keep;
+  historyNote.hidden = !keep;
+  if (!keep) {
+    historyClear.hidden = true;
+    return;
+  }
   const q = historySearch.value.trim().toLowerCase();
-  const all = readLibrary().history;
+  const all = lib.history;
   const visits = [...all]
     .reverse()
     .filter((v) => !q || v.u.toLowerCase().includes(q) || v.t.toLowerCase().includes(q));
@@ -1471,6 +1671,17 @@ document.querySelectorAll<HTMLButtonElement>("#library-seg .toggle-opt").forEach
   btn.addEventListener("click", () => showLibraryTab(btn.dataset.tab as LibTab));
 });
 historySearch.addEventListener("input", renderHistory);
+historyKeep.addEventListener("click", (e) => {
+  e.preventDefault();
+  const on = historyKeepSwitch.getAttribute("aria-checked") !== "true";
+  try {
+    libraryBridge?.setKeepHistory?.(on);
+  } catch {
+    historyNote.textContent = "Couldn't change that.";
+  }
+  historySearch.value = "";
+  renderHistory();
+});
 // Two taps, the first one saying what goes: history only. Bookmarks and
 // the sign-ins sites keep stay.
 historyClear.addEventListener("click", () => {
@@ -1615,27 +1826,34 @@ function renderManage(platforms: Platform[]) {
   if (!chosen.length && !sites.length) return;
 
   const details = document.createElement("details");
-  details.className = "platform-settings";
+  details.className = "platform-settings group";
   const summary = document.createElement("summary");
-  summary.textContent = "Remove a site";
+  summary.className = "row row-btn";
+  summary.innerHTML =
+    '<span class="row-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7.5h14M10 7.5V5.5h4v2M7 7.5l.8 11.5h8.4L17 7.5"/></svg></span>' +
+    '<span class="grow"><span class="row-title">Remove a site</span></span>' +
+    '<svg class="row-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>';
   details.append(summary);
+  const body = document.createElement("div");
+  body.className = "row-more rows";
+  details.append(body);
 
   const row = (text: string, onRemove: () => void) => {
     const el = document.createElement("div");
-    el.className = "setting-row";
+    el.className = "row";
     const label = document.createElement("span");
-    label.className = "setting-label";
+    label.className = "grow row-title";
     label.textContent = text;
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "link-btn";
+    remove.className = "btn-ghost small danger";
     remove.textContent = "Remove";
     remove.addEventListener("click", () => {
       onRemove();
       refreshAll();
     });
-    el.append(label, remove);
-    details.append(el);
+    el.append(siteGlyph(text.charAt(0).toUpperCase()), label, remove);
+    body.append(el);
   };
   platforms
     .filter((p) => chosen.includes(p.id))
@@ -1895,17 +2113,19 @@ function applyText(size: "normal" | "large") {
   localStorage.setItem(TEXT_KEY, size);
   if (size === "large") document.documentElement.dataset.text = "large";
   else delete document.documentElement.dataset.text;
-  document.querySelectorAll<HTMLButtonElement>("#text-toggle .toggle-opt").forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>("#text-toggle .seg-opt").forEach((btn) => {
     const on = btn.dataset.value === size;
     btn.classList.toggle("active", on);
     btn.setAttribute("aria-checked", String(on));
   });
+  // Larger text widens every label: let the new sizes land first.
+  requestAnimationFrame(placeAllThumbs);
 }
 
 document.querySelectorAll<HTMLButtonElement>(".look").forEach((btn) => {
   btn.addEventListener("click", () => applyLook(btn.dataset.look as Look));
 });
-document.querySelectorAll<HTMLButtonElement>("#text-toggle .toggle-opt").forEach((btn) => {
+document.querySelectorAll<HTMLButtonElement>("#text-toggle .seg-opt").forEach((btn) => {
   btn.addEventListener("click", () => applyText(btn.dataset.value === "large" ? "large" : "normal"));
 });
 applyLook(readLook());
@@ -1913,7 +2133,7 @@ applyText(localStorage.getItem(TEXT_KEY) === "large" ? "large" : "normal");
 
 // ---------- settings view ----------
 
-const PANES = ["bringback", "blur", "filters", "look", "about"] as const;
+const PANES: readonly Pane[] = ["bringback", "blur", "look", "about"];
 
 function showPane(name: (typeof PANES)[number]) {
   PANES.forEach((p) => {
@@ -1922,6 +2142,9 @@ function showPane(name: (typeof PANES)[number]) {
   document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.pane === name);
   });
+  // The pane is on screen now, so its own controls can be measured too.
+  placeAllThumbs();
+  window.scrollTo({ top: 0 });
 }
 
 document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((btn) => {
@@ -1935,6 +2158,33 @@ function openSettings() {
   showView("settings");
   showPane("bringback");
 }
+
+// The version under the name in About. Desktop and a shell without the
+// app plugin keep the line empty.
+void import("@tauri-apps/api/app")
+  .then((m) => m.getVersion())
+  .then((v) => {
+    if (!v) return;
+    document.querySelector<HTMLElement>("#about-version")!.textContent = `Version ${v}`;
+    document.querySelector<HTMLElement>("#about-version-pill")!.hidden = false;
+  })
+  .catch(() => {});
+
+// Legal rows open their page like any address typed in the bar.
+document.querySelectorAll<HTMLButtonElement>("#view-settings [data-open]").forEach((btn) => {
+  btn.addEventListener("click", () => void openAddress(btn.dataset.open!));
+});
+
+// "Links and shortcuts" shows only while one of its cards does.
+const setupBlock = document.querySelector<HTMLElement>("#setup-block")!;
+const syncSetupBlock = () => {
+  setupBlock.hidden = ["#links-card", "#ios-home-card"].every((id) => document.querySelector<HTMLElement>(id)!.hidden);
+};
+const setupWatch = new MutationObserver(syncSetupBlock);
+["#links-card", "#ios-home-card"].forEach((id) =>
+  setupWatch.observe(document.querySelector(id)!, { attributes: true, attributeFilter: ["hidden"] }),
+);
+syncSetupBlock();
 
 document.querySelector<HTMLButtonElement>("#settings-back")!.addEventListener("click", () => {
   showView("launcher");
@@ -2256,7 +2506,11 @@ function renderObIcon() {
 // Three things home has, pointed at on the real screen. Tap Next, or
 // anywhere on the dimmed page, to move on.
 
-type Tip = { el: string; title: string; text: string; icon: string; go?: "home" | "menu" | "settings" };
+type Pane = "bringback" | "blur" | "look" | "about";
+type Tip = { el: string; title: string; text: string; icon: string; go?: "home" | "menu" | "settings"; pane?: Pane };
+// 2026-11-25 (his "the ability to change site settings highlighted in the
+// tour, and shortcuts"): a step on a site itself, and both shortcuts to it
+// (hold a favourite; the menu's first row on a site) are named on the way.
 const TIPS: Tip[] = [
   {
     el: "#open-link", title: "Go anywhere, calmly",
@@ -2265,37 +2519,42 @@ const TIPS: Tip[] = [
   },
   {
     el: "#tiles", title: "Your favourites",
-    text: "Keep the sites you use here, one tap away. Tap Add to pin one.",
+    text: "One tap opens a site. Press and hold one to change what it hides.",
     icon: '<path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/>',
   },
   {
     el: "#ntp-menu", title: "The menu", go: "home",
-    text: "Bookmarks, history and Settings are in here. Let's peek inside.",
+    text: "Bookmarks, history and Settings. On a site, its first row changes what that site hides.",
     icon: '<circle cx="12" cy="5.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="18.5" r="1.3"/>',
   },
   {
     el: '#menu-sheet [data-menu="settings"]', title: "Settings", go: "menu",
-    text: "Every switch in the app lives here. Here are the parts worth knowing.",
+    text: "Every choice in the app lives here. Here are the parts worth knowing.",
     icon: '<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/>',
   },
   {
-    el: '.nav-item[data-pane="bringback"]', title: "Sites", go: "settings",
-    text: "What each site shows. Feeds start hidden; bring back only the parts you want, site by site.",
+    el: '.nav-item[data-pane="bringback"]', title: "Sites", go: "settings", pane: "bringback",
+    text: "What each site hides. Feeds and endless videos start hidden.",
     icon: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.3 3.6 5 3.6 8s-1.1 5.7-3.6 8c-2.5-2.3-3.6-5-3.6-8S9.5 6.3 12 4z"/>',
   },
   {
-    el: '.nav-item[data-pane="blur"]', title: "Blur", go: "settings",
-    text: "Who gets blurred in videos and pictures, and how strongly. Change it whenever you like.",
+    el: "#bring-back .platform-settings > summary", title: "Change a site", go: "settings", pane: "bringback",
+    text: "Tap a site to switch parts back on, like Shorts or the home feed. You can also put it on your home screen as its own shortcut.",
+    icon: '<path d="M3.5 12h3M17.5 12h3"/><rect x="6.5" y="8" width="11" height="8" rx="4"/><circle cx="10.5" cy="12" r="2.2"/>',
+  },
+  {
+    el: '.nav-item[data-pane="blur"]', title: "Blur", go: "settings", pane: "blur",
+    text: "Who gets blurred in pictures and previews, how strongly, and words that keep a post covered.",
     icon: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/>',
   },
   {
-    el: '.nav-item[data-pane="look"]', title: "Look", go: "settings",
+    el: '.nav-item[data-pane="look"]', title: "Look", go: "settings", pane: "look",
     text: "Night or Paper, and the text size. Make it easy on your eyes.",
     icon: '<path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.3 6.3 0 0 0 10 10z"/>',
   },
   {
-    el: '.nav-item[data-pane="about"]', title: "That's the tour", go: "settings",
-    text: "Replay it any time from About. Now go find somewhere calm.",
+    el: '.nav-item[data-pane="about"]', title: "That's the tour", go: "settings", pane: "about",
+    text: "Help, privacy and this tour live in About. Now go find somewhere calm.",
     icon: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   },
 ];
@@ -2329,6 +2588,7 @@ function placeTip() {
   if (tipAt < 0) return;
   const tip = TIPS[tipAt];
   coachGo(tip.go ?? "home");
+  if (tip.pane) showPane(tip.pane);
   const target = document.querySelector<HTMLElement>(tip.el);
   if (!target || !target.getClientRects().length) return tipAt < TIPS.length - 1 ? nextTip() : endCoach();
   target.scrollIntoView({ block: "center", behavior: "instant" as ScrollBehavior });
@@ -2599,12 +2859,12 @@ const siteHere = document.querySelector<HTMLElement>("#site-here")!;
 function renderSiteHere(site: Site) {
   siteHere.textContent = "";
   const card = document.createElement("section");
-  card.className = "card";
+  card.className = "group pad";
   const title = document.createElement("div");
-  title.className = "card-title";
+  title.className = "row-title";
   title.textContent = site.host;
   const body = document.createElement("p");
-  body.className = "card-body";
+  body.className = "row-sub";
   body.textContent = "Blur and ad blocking work here. We don't hide this site's feeds.";
   const actions = document.createElement("div");
   actions.className = "actions";
