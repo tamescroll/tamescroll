@@ -520,14 +520,21 @@
            replay): a dimmed page with a hole over one thing at a time. -->
       <div class="coach" id="coach" hidden>
         <div class="coach-hole" id="coach-hole"></div>
-        <div class="coach-card" id="coach-card" role="dialog" aria-live="polite">
-          <p class="coach-n" id="coach-n"></p>
+        <div class="coach-card" id="coach-card" role="dialog" aria-live="polite" aria-labelledby="coach-title">
+          <span class="coach-arrow" id="coach-arrow" aria-hidden="true"></span>
+          <div class="coach-top">
+            <span class="coach-ic" id="coach-ic" aria-hidden="true"></span>
+            <span class="coach-dots" id="coach-dots" aria-hidden="true"></span>
+            <button type="button" class="coach-skip" id="coach-skip">Skip</button>
+          </div>
+          <h3 class="coach-title" id="coach-title"></h3>
           <p class="coach-text" id="coach-text"></p>
           <div class="coach-actions">
-            <button type="button" class="link-btn" id="coach-skip">Skip</button>
+            <button type="button" class="link-btn" id="coach-back">Back</button>
             <button type="button" class="btn-solid small" id="coach-next">Next</button>
           </div>
         </div>
+      </div>
       </div>
     </main>
     <template id="ios-home-steps">

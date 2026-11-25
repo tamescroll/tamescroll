@@ -1167,3 +1167,45 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 .sbb-stage::after { display: none; }
 .sbb-tags { padding: 10px 4px 4px; background: linear-gradient(rgba(255,255,255,0), #fff 45%); color: #57534c; }
 .sbb-tags { bottom: 50px; }
+
+/* ---- tips on home, redone (his 2026-11-25: make it feel solid) ----
+   A soft spotlight that breathes once, and a card with an icon, a title,
+   progress dots and an arrow that points at what it describes. */
+.ntp-head .wordmark .mark { stroke: var(--ink); }
+.coach { background: transparent; }
+.coach-hole {
+  border-radius: 20px;
+  box-shadow: 0 0 0 9999px rgba(6, 6, 5, 0.74), 0 0 0 1.5px rgba(236, 231, 222, 0.85), 0 0 28px 4px rgba(236, 231, 222, 0.18);
+  transition: left 0.42s cubic-bezier(0.2, 0, 0, 1), top 0.42s cubic-bezier(0.2, 0, 0, 1), width 0.42s cubic-bezier(0.2, 0, 0, 1), height 0.42s cubic-bezier(0.2, 0, 0, 1);
+}
+.coach-hole::after { content: ""; position: absolute; inset: -6px; border-radius: 24px; border: 1.5px solid rgba(236, 231, 222, 0.5); animation: coach-breathe 1.6s ease-out 0.4s 2 both; }
+@keyframes coach-breathe { from { opacity: 0.9; transform: scale(0.97); } to { opacity: 0; transform: scale(1.08); } }
+.coach-card {
+  left: 16px; right: 16px; max-width: 400px; padding: 18px 18px 14px; border-radius: 22px;
+  background: #1f1e1c; border: 1px solid rgba(236, 231, 222, 0.1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 2px 0 rgba(255, 255, 255, 0.04) inset; animation: none;
+}
+.coach-card.in { animation: coach-in 0.38s cubic-bezier(0.2, 0, 0, 1) both; }
+.coach-card[data-side="above"].in { animation-name: coach-in-up; }
+@keyframes coach-in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+@keyframes coach-in-up { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+.coach-arrow { position: absolute; width: 14px; height: 14px; background: #1f1e1c; border: 1px solid rgba(236, 231, 222, 0.1); transform: translateX(-50%) rotate(45deg); }
+.coach-card[data-side="below"] .coach-arrow { top: -8px; border-right: 0; border-bottom: 0; }
+.coach-card[data-side="above"] .coach-arrow { bottom: -8px; border-left: 0; border-top: 0; }
+.coach-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.coach-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(236, 231, 222, 0.08); color: var(--ink); flex: none; }
+.coach-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.coach-dots { display: flex; gap: 5px; flex: 1; }
+.coach-dots i { width: 6px; height: 6px; border-radius: 3px; background: rgba(236, 231, 222, 0.2); transition: width 0.3s, background 0.3s; }
+.coach-dots i.past { background: rgba(236, 231, 222, 0.45); }
+.coach-dots i.now { width: 18px; background: var(--ink); }
+.coach-skip { font: inherit; font-size: var(--t-sm); color: var(--faint); background: none; border: 0; padding: 6px 2px; cursor: pointer; }
+.coach-title { font-family: var(--font-display); font-weight: 500; font-size: 22px; line-height: 1.2; color: var(--ink); margin: 0 0 6px; }
+.coach-text { color: var(--muted); font-size: var(--t-md); line-height: 1.45; margin: 0; }
+.coach-actions { margin-top: 16px; }
+.coach-actions .btn-solid.small { min-width: 96px; min-height: 42px; border-radius: 21px; }
+:root[data-look="paper"] .coach-card, :root[data-look="paper"] .coach-arrow { background: #fbfaf7; border-color: rgba(0, 0, 0, 0.08); }
+:root[data-look="paper"] .coach-ic { background: rgba(0, 0, 0, 0.05); }
+:root[data-look="paper"] .coach-dots i { background: rgba(0, 0, 0, 0.15); }
+:root[data-look="paper"] .coach-dots i.past { background: rgba(0, 0, 0, 0.35); }
+@media (prefers-reduced-motion: reduce) { .coach-card.in, .coach-hole::after { animation: none; } }

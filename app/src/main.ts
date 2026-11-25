@@ -2256,11 +2256,48 @@ function renderObIcon() {
 // Three things home has, pointed at on the real screen. Tap Next, or
 // anywhere on the dimmed page, to move on.
 
-type Tip = { el: string; text: string };
+type Tip = { el: string; title: string; text: string; icon: string; go?: "home" | "menu" | "settings" };
 const TIPS: Tip[] = [
-  { el: "#open-link", text: "Search privately, or type any site, like wikipedia.org. It opens calm." },
-  { el: "#tiles", text: "Your favourite sites live here, one tap away." },
-  { el: "#ntp-menu", text: "The menu: bookmarks, history, Settings and this tour again." },
+  {
+    el: "#open-link", title: "Go anywhere, calmly",
+    text: "Search privately, or type a site like wikipedia.org. Every page opens with the feeds folded away.",
+    icon: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
+  },
+  {
+    el: "#tiles", title: "Your favourites",
+    text: "Keep the sites you use here, one tap away. Tap Add to pin one.",
+    icon: '<path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/>',
+  },
+  {
+    el: "#ntp-menu", title: "The menu", go: "home",
+    text: "Bookmarks, history and Settings are in here. Let's peek inside.",
+    icon: '<circle cx="12" cy="5.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="18.5" r="1.3"/>',
+  },
+  {
+    el: '#menu-sheet [data-menu="settings"]', title: "Settings", go: "menu",
+    text: "Every switch in the app lives here. Here are the parts worth knowing.",
+    icon: '<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/>',
+  },
+  {
+    el: '.nav-item[data-pane="bringback"]', title: "Sites", go: "settings",
+    text: "What each site shows. Feeds start hidden; bring back only the parts you want, site by site.",
+    icon: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.3 3.6 5 3.6 8s-1.1 5.7-3.6 8c-2.5-2.3-3.6-5-3.6-8S9.5 6.3 12 4z"/>',
+  },
+  {
+    el: '.nav-item[data-pane="blur"]', title: "Blur", go: "settings",
+    text: "Who gets blurred in videos and pictures, and how strongly. Change it whenever you like.",
+    icon: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/>',
+  },
+  {
+    el: '.nav-item[data-pane="look"]', title: "Look", go: "settings",
+    text: "Night or Paper, and the text size. Make it easy on your eyes.",
+    icon: '<path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.3 6.3 0 0 0 10 10z"/>',
+  },
+  {
+    el: '.nav-item[data-pane="about"]', title: "That's the tour", go: "settings",
+    text: "Replay it any time from About. Tap Got it to head home and start browsing.",
+    icon: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  },
 ];
 let tipAt = -1;
 
@@ -2274,13 +2311,26 @@ function startCoach() {
 function endCoach() {
   tipAt = -1;
   document.querySelector<HTMLElement>("#coach")!.hidden = true;
+  coachGo("home");
+}
+
+// The tour walks the real screens: home, the menu sheet, then Settings.
+function coachGo(where: "home" | "menu" | "settings") {
+  if (where === "settings") {
+    closeMenu();
+    if (views.settings.hidden) openSettings();
+    return;
+  }
+  if (!views.settings.hidden) showView("launcher");
+  menuSheet.hidden = where !== "menu";
 }
 
 function placeTip() {
   if (tipAt < 0) return;
   const tip = TIPS[tipAt];
+  coachGo(tip.go ?? "home");
   const target = document.querySelector<HTMLElement>(tip.el);
-  if (!target || !target.getClientRects().length) return nextTip();
+  if (!target || !target.getClientRects().length) return tipAt < TIPS.length - 1 ? nextTip() : endCoach();
   target.scrollIntoView({ block: "center", behavior: "instant" as ScrollBehavior });
   const r = target.getBoundingClientRect();
   const pad = 8;
@@ -2290,15 +2340,43 @@ function placeTip() {
   hole.style.width = `${r.width + pad * 2}px`;
   hole.style.height = `${r.height + pad * 2}px`;
   const card = document.querySelector<HTMLElement>("#coach-card")!;
-  document.querySelector<HTMLElement>("#coach-n")!.textContent = `Tip ${tipAt + 1} of ${TIPS.length}`;
+  document.querySelector<HTMLElement>("#coach-ic")!.innerHTML = `<svg viewBox="0 0 24 24">${tip.icon}</svg>`;
+  const dots = document.querySelector<HTMLElement>("#coach-dots")!;
+  dots.textContent = "";
+  TIPS.forEach((_, i) => {
+    const d = document.createElement("i");
+    if (i === tipAt) d.className = "now";
+    else if (i < tipAt) d.className = "past";
+    dots.append(d);
+  });
+  document.querySelector<HTMLElement>("#coach-title")!.textContent = tip.title;
   document.querySelector<HTMLElement>("#coach-text")!.textContent = tip.text;
-  document.querySelector<HTMLElement>("#coach-next")!.textContent = tipAt === TIPS.length - 1 ? "Done" : "Next";
-  // Below the hole when there is room, else above it.
-  const below = r.bottom + pad + 12;
+  document.querySelector<HTMLElement>("#coach-next")!.textContent = tipAt === TIPS.length - 1 ? "Got it" : "Next";
+  document.querySelector<HTMLElement>("#coach-back")!.style.visibility = tipAt === 0 ? "hidden" : "";
+  // Below the hole when there is room, else above it; the arrow points
+  // at the middle of the hole either way.
+  const gap = 14;
+  const below = r.bottom + pad + gap;
   card.style.top = "";
   card.style.bottom = "";
-  if (below + 150 < window.innerHeight) card.style.top = `${below}px`;
-  else card.style.bottom = `${window.innerHeight - (r.top - pad - 12)}px`;
+  const under = below + 190 < window.innerHeight;
+  if (under) card.style.top = `${below}px`;
+  else card.style.bottom = `${window.innerHeight - (r.top - pad - gap)}px`;
+  card.dataset.side = under ? "below" : "above";
+  card.classList.remove("in");
+  void card.offsetWidth;
+  card.classList.add("in");
+  requestAnimationFrame(() => {
+    const c = card.getBoundingClientRect();
+    const x = Math.max(24, Math.min(c.width - 24, r.left + r.width / 2 - c.left));
+    document.querySelector<HTMLElement>("#coach-arrow")!.style.left = `${x}px`;
+  });
+}
+
+function prevTip() {
+  if (tipAt <= 0) return;
+  tipAt -= 1;
+  placeTip();
 }
 
 function nextTip() {
@@ -2392,6 +2470,7 @@ function bindOnboarding() {
 
   document.querySelector<HTMLButtonElement>("#coach-next")!.addEventListener("click", nextTip);
   document.querySelector<HTMLButtonElement>("#coach-skip")!.addEventListener("click", endCoach);
+  document.querySelector<HTMLButtonElement>("#coach-back")!.addEventListener("click", prevTip);
   document.querySelector<HTMLElement>("#coach")!.addEventListener("click", (e) => {
     if (e.target === e.currentTarget || e.target === document.querySelector("#coach-hole")) nextTip();
   });
