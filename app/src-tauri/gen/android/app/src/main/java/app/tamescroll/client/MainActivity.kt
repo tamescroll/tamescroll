@@ -95,8 +95,9 @@ class MainActivity : TauriActivity() {
     )
     private const val LINKS_PREFS = "tamescroll.links"
     private const val LINKS_PROBED = "probed"
-    // The browser bar below every site (installBrowserBar), its folded
-    // strip, and how far a drag goes before it folds or comes back.
+    // The browser bar above every site (installBrowserBar; on top again
+    // since 2026-11-25, his word: "i want it on top"), its folded strip,
+    // and how far a drag goes before it folds or comes back.
     private const val BAR_DP = 56
     private const val BAR_STRIP_DP = 26
     private const val BAR_FOLD_DRAG_DP = 24
@@ -1309,7 +1310,7 @@ class MainActivity : TauriActivity() {
   private fun installBrowserBar() {
     val content = findViewById<FrameLayout>(android.R.id.content) ?: return
     // The child of content that holds the WebView (the WebView itself
-    // when wry sets it as the content view): the bar lifts its bottom.
+    // when wry sets it as the content view): the bar pushes its top down.
     var host: View = webView
     while (host.parent != null && host.parent !== content) {
       host = host.parent as? View ?: return
@@ -1326,7 +1327,7 @@ class MainActivity : TauriActivity() {
     val row = LinearLayout(this).apply {
       orientation = LinearLayout.HORIZONTAL
       gravity = Gravity.CENTER_VERTICAL
-      setPadding(dp(4), dp(1), dp(4), 0)
+      setPadding(dp(4), 0, dp(4), dp(1))
       visibility = View.GONE
     }
     val address = TextView(this).apply {
@@ -1393,8 +1394,8 @@ class MainActivity : TauriActivity() {
       visibility = View.GONE
       setOnClickListener { foldBar(true) }
     }
-    content.addView(strip, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_STRIP_DP), Gravity.BOTTOM))
-    content.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_DP), Gravity.BOTTOM))
+    content.addView(strip, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_STRIP_DP), Gravity.TOP))
+    content.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_DP), Gravity.TOP))
     bar = row
     barStrip = strip
     barAddress = address
@@ -1414,7 +1415,7 @@ class MainActivity : TauriActivity() {
     val c = colors()
     bar?.background = android.graphics.drawable.LayerDrawable(
       arrayOf(android.graphics.drawable.ColorDrawable(c.rule), android.graphics.drawable.ColorDrawable(c.bg)),
-    ).apply { setLayerInset(1, 0, maxOf(1, dp(0.7f)), 0, 0) }
+    ).apply { setLayerInset(1, 0, 0, 0, maxOf(1, dp(0.7f))) }
     barStrip?.setBackgroundColor(c.bg)
     barStrip?.setTextColor(c.muted)
     barAddress?.setTextColor(c.ink)
@@ -1915,7 +1916,7 @@ class MainActivity : TauriActivity() {
     val row = LinearLayout(this).apply {
       orientation = LinearLayout.HORIZONTAL
       gravity = Gravity.CENTER_VERTICAL
-      setPadding(dp(4), dp(1), dp(4), 0)
+      setPadding(dp(4), 0, dp(4), dp(1))
       visibility = View.GONE
       isClickable = true
       addView(input)
@@ -1924,7 +1925,7 @@ class MainActivity : TauriActivity() {
       addView(icon(R.drawable.ic_bar_down, "Next match") { webView.findNext(true) })
       addView(icon(R.drawable.ic_bar_close, "Close find") { hideFindBar() })
     }
-    content.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_DP), Gravity.BOTTOM))
+    content.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(BAR_DP), Gravity.TOP))
     findBar = row
     findInput = input
     findCount = count
@@ -2147,15 +2148,15 @@ class MainActivity : TauriActivity() {
     val density = resources.displayMetrics.density
     val h = BAR_DP * density
     val strip = BAR_STRIP_DP * density
-    bar.translationY = (1f - f) * h
+    bar.translationY = -(1f - f) * h
     barStrip?.let {
       it.alpha = 1f - f
       it.visibility = if (bar.visibility == View.VISIBLE && f < 1f) View.VISIBLE else View.GONE
     }
     val lp = host.layoutParams as? ViewGroup.MarginLayoutParams ?: return
     val margin = (strip + f * (h - strip)).toInt()
-    if (lp.bottomMargin == margin) return
-    lp.bottomMargin = margin
+    if (lp.topMargin == margin) return
+    lp.topMargin = margin
     host.layoutParams = lp
   }
 
@@ -2220,7 +2221,7 @@ class MainActivity : TauriActivity() {
       applyBarFraction(0f)
       // Off a site the page gets the whole screen back, strip included.
       (barHost?.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-        it.bottomMargin = 0
+        it.topMargin = 0
         barHost?.layoutParams = it
       }
       bar.translationY = 0f

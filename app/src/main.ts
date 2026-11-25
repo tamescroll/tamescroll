@@ -2254,7 +2254,7 @@ function obGoto(step: string, remember = true) {
   if (step === "time") renderObTime();
   if (step === "why") renderObWhy();
   if (step === "bar") {
-    // Android's bar moved to the bottom (#73); iPhone keeps the top bar.
+    // Both bars are on top (Android moved back 2026-11-25); the pictures differ.
     document.querySelector<HTMLElement>(".sbb-stage")!.hidden = IOS;
     document.querySelector<HTMLElement>(".sbt-stage")!.hidden = !IOS;
     document.querySelector<HTMLElement>("#ob-bar-lede")!.textContent = IOS
