@@ -1,7 +1,7 @@
 {
-  "versionCode": 1145,
-  "versionName": "0.1.145",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.145/tamescroll-1145.apk",
-  "sha256": "6b9a76ab820d2d3fd80cf4983c6511605a5f671f4f4b7e81948c88bb146ea985",
-  "notes": "Twitch, LinkedIn and Pinterest are tamed now. A dot on the shield shows what was hidden on the page, and trackers stay blocked even where you allow a site's ads."
+  "versionCode": 1146,
+  "versionName": "0.1.146",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.146/tamescroll-1146.apk",
+  "sha256": "2df2757772ef78ec260cfbe27b5bb2aef7bb5d48bba3de839b247b34cde80935",
+  "notes": "A new first-run tour: pick who to blur, see your time on feeds, and a tap-through guide to the bar, the menu and Settings."
 }
