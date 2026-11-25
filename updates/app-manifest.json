@@ -1,7 +1,7 @@
 {
-  "versionCode": 1146,
-  "versionName": "0.1.146",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.146/tamescroll-1146.apk",
-  "sha256": "2df2757772ef78ec260cfbe27b5bb2aef7bb5d48bba3de839b247b34cde80935",
-  "notes": "A new first-run tour: pick who to blur, see your time on feeds, and a tap-through guide to the bar, the menu and Settings."
+  "versionCode": 1147,
+  "versionName": "0.1.147",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.147/tamescroll-1147.apk",
+  "sha256": "a35676a9d66abd6c3b46e9eb5f7c6787b35a6689bed03e4a68280f9c429980d3",
+  "notes": "A smoother first run: the tour stays on screen, never hides what it points at, and tells you what to do when you have no sites yet."
 }
