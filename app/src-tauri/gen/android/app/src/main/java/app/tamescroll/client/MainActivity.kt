@@ -104,6 +104,7 @@ class MainActivity : TauriActivity() {
     // Bookmarks and history (#73), kept on this phone only.
     private const val LIBRARY_PREFS = "tamescroll.library"
     private const val HISTORY_MAX = 500
+    private const val KEEP_HISTORY = "keep_history"
     private const val STATS_PREFS = "tamescroll.stats"
     private const val LOOK_PREFS = "tamescroll.look"
     private const val SETTINGS_PREFS = "tamescroll.settings"
@@ -1777,6 +1778,14 @@ class MainActivity : TauriActivity() {
       layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
       setOnClickListener { act { webView.reload() } }
     }
+    // The shortcut to this site's settings (his 2026-11-25: changing what
+    // a site hides should be easy to find), first so it is seen.
+    val siteHost = (Uri.parse(barUrl).host ?: "").removePrefix("www.").removePrefix("m.")
+    if (siteHost.isNotEmpty()) {
+      row(R.drawable.ic_bar_shield, "Change what this site hides", sub = siteHost) {
+        webView.loadUrl("http://tauri.localhost/?settings=" + Uri.encode(barUrl))
+      }
+    }
     row(R.drawable.ic_bar_fwd, "Forward", enabled = webView.canGoForward(), trailing = reload, trailingLive = true) { goForward() }
     val marked = isBookmarked(barUrl)
     row(R.drawable.ic_bar_star, if (marked) "Remove bookmark" else "Bookmark this page") { toggleBookmark() }
@@ -1981,8 +1990,12 @@ class MainActivity : TauriActivity() {
 
   private fun libraryKey(url: String) = url.substringBefore('#').take(2048)
 
+  // History is kept only once the person turns it on in Bookmarks and
+  // history (his 2026-11-25: "enable it if someone wants to").
+  private fun keepHistory() = libraryPrefs().getBoolean(KEEP_HISTORY, false)
+
   private fun recordHistory(url: String) {
-    if (!recordable(url)) return
+    if (!recordable(url) || !keepHistory()) return
     val key = libraryKey(url)
     synchronized(libraryLock) {
       val list = libraryRead("history")
@@ -1999,7 +2012,7 @@ class MainActivity : TauriActivity() {
   }
 
   private fun titleHistory(url: String?, title: String) {
-    if (url == null || !recordable(url)) return
+    if (url == null || !recordable(url) || !keepHistory()) return
     val t = title.trim().take(300)
     if (t.isEmpty() || t == url) return
     val key = libraryKey(url)
@@ -2060,9 +2073,13 @@ class MainActivity : TauriActivity() {
     fun read(): String {
       if (!onLauncher()) return "{}"
       return synchronized(libraryLock) {
+        val keep = keepHistory()
+        // History recorded before the switch existed goes once it is off.
+        if (!keep && libraryRead("history").length() > 0) libraryPrefs().edit().putString("history", "[]").commit()
         JSONObject()
           .put("bookmarks", libraryRead("bookmarks"))
-          .put("history", libraryRead("history"))
+          .put("history", if (keep) libraryRead("history") else org.json.JSONArray())
+          .put("keep", keep)
           .toString()
       }
     }
@@ -2083,6 +2100,17 @@ class MainActivity : TauriActivity() {
       }
       return synchronized(libraryLock) {
         libraryPrefs().edit().putString("bookmarks", clean.toString()).commit()
+      }
+    }
+
+    /** Turning history off clears what was kept. */
+    @JavascriptInterface
+    fun setKeepHistory(on: Boolean): Boolean {
+      if (!onLauncher()) return false
+      return synchronized(libraryLock) {
+        val edit = libraryPrefs().edit().putBoolean(KEEP_HISTORY, on)
+        if (!on) edit.putString("history", "[]")
+        edit.commit()
       }
     }
 
