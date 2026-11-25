@@ -2,7 +2,7 @@
 // Upload a Play bundle (.aab) to a TESTING track through the Play Developer
 // API, using the play-upload service account. No dependencies.
 //
-//   node scripts/play-upload.mjs <bundle.aab> [--track internal|alpha|beta|<closed track id>]
+//   node scripts/play-upload.mjs <bundle.aab> [--track internal|alpha|beta|<closed track id>[,...]]
 //                                [--notes "release notes"] [--status draft|completed]
 //                                [--check]
 //
@@ -38,7 +38,9 @@ function parseArgs(argv) {
     else if (!a.startsWith('--')) out.aab = a;
     else throw new Error(`unknown option ${a}`);
   }
-  if (out.track === 'production') throw new Error('refusing production: testing tracks only');
+  out.tracks = out.track.split(',').map((t) => t.trim()).filter(Boolean);
+  if (!out.tracks.length) throw new Error('--track is empty');
+  if (out.tracks.includes('production')) throw new Error('refusing production: testing tracks only');
   if (!['draft', 'completed'].includes(out.status)) throw new Error('--status must be draft or completed');
   if (!out.check && !out.aab) throw new Error('give a .aab path, or --check');
   return out;
@@ -112,10 +114,14 @@ async function main() {
 
   const release = { versionCodes: [code], status: opt.status, name: code };
   if (opt.notes) release.releaseNotes = [{ language: 'en-US', text: opt.notes }];
-  await call(access, 'PUT', `${API}/edits/${edit.id}/tracks/${opt.track}`,
-    { track: opt.track, releases: [release] });
+  // One upload, every named track in the same edit: Play refuses a
+  // second upload of a versionCode it has seen.
+  for (const track of opt.tracks) {
+    await call(access, 'PUT', `${API}/edits/${edit.id}/tracks/${track}`,
+      { track, releases: [release] });
+  }
   await call(access, 'POST', `${API}/edits/${edit.id}:commit`);
-  console.log(`committed: ${code} on ${opt.track} as ${opt.status}`);
+  console.log(`committed: ${code} on ${opt.tracks.join(', ')} as ${opt.status}`);
 }
 
 main().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
