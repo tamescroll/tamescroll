@@ -65,7 +65,7 @@
   .brand svg { height: 24px; width: auto; }
   nav.top { display: flex; gap: 26px; align-items: center; font-size: 14.5px; }
   nav.top a { text-decoration: none; color: var(--paper-muted); }
-  nav.top a:hover { color: var(--paper-ink); }
+  nav.top a:hover, nav.top a[aria-current] { color: var(--paper-ink); }
   nav.top a.cta {
     color: var(--paper); background: var(--paper-ink);
     padding: 8px 16px; border-radius: 10px; font-weight: 600;
@@ -384,10 +384,9 @@
     <svg viewBox="46 34 410 66" role="img" aria-hidden="true"><g transform="translate(40 42) scale(1.28)"><path d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></g><text x="146" y="88" font-family="Spectral, Georgia, 'Times New Roman', serif" font-size="58" font-weight="600" letter-spacing="-0.6" fill="currentColor">tamescroll</text></svg>
   </a>
   <nav class="top">
-    <a href="#how">How it works</a>
-    <a href="#privacy">Privacy</a>
-    <a href="#features">Features</a>
+    <a href="#top" aria-current="page">Phone app</a>
     <a href="extension.html">Extension</a>
+    <a href="#privacy">Privacy</a>
     <a href="https://github.com/tamescroll/tamescroll">Source</a>
     <a class="cta" href="#download">Download</a>
   </nav>
