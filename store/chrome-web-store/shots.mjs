@@ -158,7 +158,7 @@ const FRAMES = [
   })],
   ['screenshot-4', frame({
     title: 'Every site, its own switch.',
-    body: 'Works on YouTube, Reddit, X, Instagram, TikTok, Twitch, LinkedIn and Facebook. Optional picture blur in three strengths. No account, and nothing about you leaves your browser.',
+    body: 'Turn each site on or off on its own, with more sites as they are added. Optional picture blur in three strengths. No account, and nothing about you leaves your browser.',
     popup: shots.settings, popupWidth: 390, page: CALM_PAGE,
   })],
 ];
