@@ -1459,7 +1459,7 @@ html:not([data-look="paper"]), html:not([data-look="paper"]) body { background: 
    A browser's new tab: the wordmark small, the question in Spectral,
    Favourites as letter tiles, the last pages, and the address field in
    a bar at the top. Flat 10-12px corners. */
-#view-launcher { padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
+#view-launcher { padding-bottom: var(--s6); }
 .ntp-head { display: flex; align-items: center; min-height: 40px; padding-top: var(--s1); }
 .ntp-head .wordmark { height: 30px; width: auto; color: var(--ink); }
 .ntp-head .wordmark .mark { stroke: var(--gold); }
@@ -1786,3 +1786,30 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 #menu-sheet .menu-panel::before { display: none; }
 @keyframes menu-drop { from { opacity: 0; transform: scale(0.94) translateY(-6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { #menu-sheet .menu-panel { animation: none; } }
+
+/* Home as in the approved mockup (2026-11-25): wordmark and menu on top,
+   the greeting and question left-aligned, the search right under them,
+   then the sites and what was kept out of sight. */
+.ntp-head { justify-content: space-between; padding-top: var(--s2); }
+.ntp-menu {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 50%;
+  color: var(--ink); background: var(--elev); border: 1px solid var(--hairline);
+}
+.ntp-menu svg { width: 20px; height: 20px; }
+.ntp-menu:active { transform: scale(0.95); }
+#view-launcher .greet { margin: var(--s5) 0 var(--s1); font-size: var(--t-md); color: var(--muted); text-align: left; }
+#view-launcher .home-q { text-align: left; margin: 0 0 var(--s4); max-width: none; font-size: 30px; }
+:root[data-text="large"] #view-launcher .home-q { font-size: 33px; }
+#view-launcher .open-link { height: 56px; margin: 0; }
+#view-launcher .open-link-ic { left: 18px; }
+#view-launcher .tiles-head { margin: var(--s6) 0 var(--s3); }
+.tiles-hint { margin: var(--s4) 0 0; text-align: center; font-size: var(--t-sm); color: var(--faint); }
+.kept { margin-top: var(--s6); display: grid; gap: var(--s3); }
+.kept .eyebrow { margin: 0; }
+.kept-row { gap: var(--s3); padding: var(--s3); min-height: 56px; }
+.kept-ic { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--row-ic); color: var(--ink); }
+.kept-ic svg { width: 18px; height: 18px; }
+.kept .t { font-size: var(--t-base); }
+.kept .t b { font-weight: 600; font-variant-numeric: tabular-nums; }
+#jump { margin-top: var(--s6); }
+#view-launcher .tile .dot { width: 58px; height: 58px; border-radius: 18px; font-size: 26px; }

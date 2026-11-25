@@ -27,17 +27,28 @@
       <!-- A browser's new tab page (the approved redesign, mockup 2): it
            replaced home's "What are you here for?" grid. Favourites are
            bookmarks the user pinned, seeded once from the old tiles. The
-           address field lives in the bar at the top (#ntp-bar). -->
+           address field sits right under the question (#open-link). -->
       <p id="handoff" class="handoff" hidden></p>
       <section id="view-launcher" hidden>
         <header class="ntp-head">
           <svg class="wordmark" viewBox="0 0 560 140" role="img" aria-label="tamescroll"><g transform="translate(40 42) scale(1.28)"><path class="mark" d="M22 20a3 3 0 0 0-6 0a6 6 0 0 0 12 0a9 9 0 0 0-18 0a12 12 0 0 0 12 12l18 0" fill="none" stroke-width="3.6" stroke-linecap="round"/></g><text x="146" y="88" font-family="Spectral, Georgia, 'Times New Roman', serif" font-size="58" font-weight="600" letter-spacing="-0.6" fill="currentColor">tamescroll</text></svg>
+          <button type="button" class="ntp-menu" id="ntp-menu" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="18.5" r="1.6" fill="currentColor"/></svg></button>
         </header>
 
-        <h1 class="home-q">Where to?</h1>
+        <!-- Home as in the approved mockup (his word, 2026-11-25): greeting,
+             the question, the search right under it, the sites, then what
+             was kept out of sight. -->
+        <p class="greet" id="greet"></p>
+        <h1 class="home-q">What are you here for?</h1>
+        <form class="open-link" id="open-link" autocomplete="off" role="search">
+          <svg class="open-link-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+          <input id="open-link-input" type="search" inputmode="url" enterkeyhint="go" autocapitalize="off" spellcheck="false" placeholder="Search privately or type a site" aria-label="Search privately or type a site" />
+          <button type="submit" class="go-btn" aria-label="Go"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </form>
 
-        <p class="eyebrow tiles-head">Favourites <span class="legend"><i aria-hidden="true"></i>tamed</span></p>
+        <p class="eyebrow tiles-head">Favourites</p>
         <div id="tiles" class="tiles" aria-label="Favourites"></div>
+        <p class="tiles-hint" id="tiles-hint" hidden>Press and hold a site to change what it hides.</p>
         <!-- iPhone only, until the person says it is done or not now. -->
         <section class="card ios-home-nudge" id="ios-home-nudge" hidden aria-label="YouTube on your home screen">
           <div class="links-card-row">
@@ -55,7 +66,10 @@
           <div class="list" id="jump-list"></div>
         </section>
 
-        <p class="week-stat" id="week-stat" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b id="week-num"></b> <span id="week-text"></span></p>
+        <section class="kept" id="week-stat" hidden aria-label="Kept out of sight">
+          <p class="eyebrow">Kept out of sight this week</p>
+          <div class="list"><div class="lrow kept-row"><span class="kept-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="grow"><span class="t"><b id="week-num"></b> <span id="week-text"></span></span></span></div></div>
+        </section>
 
         <p id="status" role="status"></p>
       </section>
@@ -602,19 +616,6 @@
       <button type="button" class="btn-solid small ios-open-shortcuts">Open Shortcuts</button>
     </template>
 
-    <!-- The new tab page's bar (#73, mockup 2): the tall address field at
-         the top (moved there 2026-11-25), then tabs and the menu. Sites get the
-         native bar from MainActivity instead. -->
-    <nav class="ntp-bar" id="ntp-bar" hidden aria-label="Browser">
-      <form class="open-link" id="open-link" autocomplete="off" role="search">
-        <label class="addr">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          <input id="open-link-input" type="search" inputmode="url" enterkeyhint="go" autocapitalize="off" spellcheck="false" placeholder="Search or type a site" aria-label="Search privately or type a site" />
-        </label>
-      </form>
-      <button type="button" class="ib" id="ntp-tabs" aria-label="1 tab"><span class="tabsn">1</span></button>
-      <button type="button" class="ib" id="ntp-menu" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="18.5" r="1.6" fill="currentColor"/></svg></button>
-    </nav>
 
     <!-- The menu on the new tab page (mockup 7, the parts that apply off a
          site). On a site MainActivity shows the native one. -->

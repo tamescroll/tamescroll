@@ -28,16 +28,12 @@ const views = {
 // launcher is on screen (#55).
 let onLauncherShown: () => void = () => {};
 
-// The new tab page's bar sits outside the views (it is fixed to the
-// bottom), so it follows the launcher here.
-const ntpBar = document.querySelector<HTMLElement>("#ntp-bar")!;
 const menuSheet = document.querySelector<HTMLElement>("#menu-sheet")!;
 
 function showView(name: keyof typeof views) {
   (Object.keys(views) as (keyof typeof views)[]).forEach((k) => {
     views[k].hidden = k !== name;
   });
-  ntpBar.hidden = name !== "launcher";
   menuSheet.hidden = true;
   window.scrollTo(0, 0);
   if (name === "launcher") onLauncherShown();
@@ -1490,6 +1486,7 @@ function renderTiles(platforms: Platform[], chosen: string[]) {
     add.replaceWith(addMatchBox(platforms));
   });
   tiles.append(add);
+  document.querySelector<HTMLElement>("#tiles-hint")!.hidden = !tiles.querySelector(".tile:not(.add)");
 }
 
 /** One row of a list: letter, title, address, and whatever trails it. */
@@ -1732,11 +1729,6 @@ function closeMenu() {
 
 document.querySelector<HTMLButtonElement>("#ntp-menu")!.addEventListener("click", () => {
   menuSheet.hidden = false;
-});
-// One page at a time until tabs land (step 3): the square is this new
-// tab, so it goes straight to the address field.
-document.querySelector<HTMLButtonElement>("#ntp-tabs")!.addEventListener("click", () => {
-  openLinkInput.focus();
 });
 document.querySelector<HTMLElement>("#menu-scrim")!.addEventListener("click", closeMenu);
 document.querySelectorAll<HTMLButtonElement>("#menu-sheet [data-menu]").forEach((btn) => {
@@ -2864,8 +2856,14 @@ function renderWeekStat() {
   weekStat.hidden = n <= 0;
   if (n <= 0) return;
   document.querySelector<HTMLElement>("#week-num")!.textContent = n.toLocaleString();
-  document.querySelector<HTMLElement>("#week-text")!.textContent =
-    n === 1 ? "attempt to track you stopped this week" : "attempts to track you stopped this week";
+  document.querySelector<HTMLElement>("#week-text")!.textContent = n === 1 ? "tracker stopped" : "trackers stopped";
+}
+
+// The greeting over the question (the approved home mockup).
+function renderGreeting() {
+  const h = new Date().getHours();
+  document.querySelector<HTMLElement>("#greet")!.textContent =
+    h < 5 ? "Good night." : h < 12 ? "Good morning." : h < 17 ? "Good afternoon." : "Good evening.";
 }
 
 function refreshAll() {
@@ -2873,6 +2871,7 @@ function refreshAll() {
   renderTiles(allPlatforms, chosen);
   renderJumpBack();
   renderWeekStat();
+  renderGreeting();
   renderManage(allPlatforms);
   renderLinksCard();
   bringBackReady = renderBringBack(allPlatforms.filter((p) => p.ready && chosen.includes(p.id)));
