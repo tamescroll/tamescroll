@@ -58,6 +58,9 @@ for g in groups:
     if a.get("publicLinkEnabled") and a.get("publicLink") and os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
             f.write(f"TestFlight public link ({a['name']}): {a['publicLink']}\n")
+    if a.get("publicLinkEnabled") and a.get("publicLink") and os.environ.get("GITHUB_ACTIONS"):
+        # An annotation shows on the run page even to someone signed out.
+        print(f"::notice title=TestFlight public link::{a['publicLink']}")
 
 print("newest builds:")
 for b in builds():
