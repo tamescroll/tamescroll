@@ -100,6 +100,8 @@ class MainActivity : TauriActivity() {
     // and how far a drag goes before it folds or comes back.
     private const val BAR_DP = 56
     private const val BAR_STRIP_DP = 26
+    /** Below this, with all four buttons, the tab square steps aside. */
+    private const val BAR_PILL_MIN_DP = 190
     /** Below this pill width the shield chip drops its count. */
     private const val PILL_COMPACT_DP = 170
     private const val BAR_FOLD_DRAG_DP = 24
@@ -1395,6 +1397,17 @@ class MainActivity : TauriActivity() {
     // settings icon would be better"); the menu keeps the rest.
     row.addView(icon(R.drawable.ic_bar_gear, "Settings") { webView.loadUrl("http://tauri.localhost/?view=settings") })
     row.addView(icon(R.drawable.ic_bar_dots, "Menu") { showMenuSheet() })
+    // A NARROW BAR GIVES UP THE TAB SQUARE, never the address. Measured on
+    // a large display-size setting: four 44dp buttons left the pill ~108dp
+    // and the host read "...om". Judged from the row's own width (which
+    // the children cannot change), so it cannot flip back and forth. The
+    // menu's New tab and Back still lead home.
+    row.addOnLayoutChangeListener { v, l, _, r, _, ol, _, or, _ ->
+      if (r - l == or - ol) return@addOnLayoutChangeListener
+      val spare = (r - l) - v.paddingLeft - v.paddingRight - dp(4 * 44)
+      val wanted = if (spare < dp(BAR_PILL_MIN_DP)) View.GONE else View.VISIBLE
+      if (tabsButton.visibility != wanted) v.post { tabsButton.visibility = wanted }
+    }
     // The folded bar: a slim strip with the site's name, under the full
     // bar so the bar covers it when out. Tapping it brings the bar back.
     val strip = TextView(this).apply {
