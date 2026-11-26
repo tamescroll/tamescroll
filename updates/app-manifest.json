@@ -1,7 +1,7 @@
 {
-  "versionCode": 1150,
-  "versionName": "0.1.150",
-  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.150/tamescroll-1150.apk",
-  "sha256": "da255aa33a15da0a5e18ea4b0bb84680a85e73bc0ba2765fc51ca21997ddb9ec",
-  "notes": "A calmer home with search right under the question, a menu that drops down from the top, and slightly bigger text by default."
+  "versionCode": 1151,
+  "versionName": "0.1.151",
+  "apkUrl": "https://github.com/tamescroll/tamescroll/releases/download/app-v0.1.151/tamescroll-1151.apk",
+  "sha256": "2766362e35b33765e29b5d7e751eb1f20965922c8da33751ff8de89a90d0f8ef",
+  "notes": "The app's own screens can now update without a new build, signed so your phone only takes ours."
 }
