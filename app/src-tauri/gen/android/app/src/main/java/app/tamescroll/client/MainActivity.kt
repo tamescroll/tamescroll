@@ -100,6 +100,8 @@ class MainActivity : TauriActivity() {
     // and how far a drag goes before it folds or comes back.
     private const val BAR_DP = 56
     private const val BAR_STRIP_DP = 26
+    /** Below this pill width the shield chip drops its count. */
+    private const val PILL_COMPACT_DP = 170
     private const val BAR_FOLD_DRAG_DP = 24
     private const val BAR_SHOW_DRAG_DP = 32
     // Bookmarks and history (#73), kept on this phone only.
@@ -1332,8 +1334,10 @@ class MainActivity : TauriActivity() {
     }
     val address = TextView(this).apply {
       setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-      maxLines = 1
-      ellipsize = TextUtils.TruncateAt.END
+      // With the settings cog the pill is ~60dp narrower: cut a long host
+      // from the FRONT, so "...wikipedia.org" stays readable, never "en...".
+      isSingleLine = true
+      ellipsize = TextUtils.TruncateAt.START
       gravity = Gravity.CENTER_VERTICAL
       layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
     }
@@ -1360,6 +1364,11 @@ class MainActivity : TauriActivity() {
       setOnClickListener { webView.loadUrl("http://tauri.localhost/?search=" + Uri.encode(barUrl)) }
       addView(address)
       addView(shield)
+      // A narrow pill (small phone, big text) keeps the shield and its
+      // dot but drops the count, which stays in the chip's description.
+      addOnLayoutChangeListener { _, l, _, r, _, ol, _, or, _ ->
+        if (r - l != or - ol) post { refreshShieldChip() }
+      }
     }
     // One page at a time until tabs land (step 3): the square says 1 and
     // opens the new tab page.
@@ -1452,7 +1461,8 @@ class MainActivity : TauriActivity() {
     val hidden = hiddenHere
     val showing = showingHere
     barShield?.let { chip ->
-      chip.text = "$n"
+      val narrow = (barPill?.width ?: Int.MAX_VALUE) < dp(PILL_COMPACT_DP)
+      chip.text = if (narrow) "" else "$n"
       val c = colors()
       val dotColor = when {
         showing.isNotEmpty() -> c.gold
