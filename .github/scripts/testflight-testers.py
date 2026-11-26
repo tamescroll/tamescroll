@@ -51,7 +51,7 @@ print("groups:")
 for g in groups:
     a = g["attributes"]
     kind = "internal" if a.get("isInternalGroup") else "external"
-    link = " (public link)" if a.get("publicLinkEnabled") else ""
+    link = f" (public link {a.get('publicLink') or '?'})" if a.get("publicLinkEnabled") else ""
     have = [b["attributes"]["version"] for b in call("GET", f"/v1/betaGroups/{g['id']}/builds?limit=5")["data"]]
     print(f"  {a['name']}: {kind}{link}; builds {', '.join(have) or 'none'}")
 
