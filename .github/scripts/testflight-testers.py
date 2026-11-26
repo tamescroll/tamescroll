@@ -18,6 +18,7 @@ Usage: testflight-testers.py <bundle id> [--status] [--wait-minutes N] [--build 
 right after an upload Apple does not list the new build yet, so without
 it the previous build would be taken as the newest (run 42, 2026-11-04).
 """
+import os
 import sys
 import time
 import urllib.parse
@@ -54,6 +55,9 @@ for g in groups:
     link = f" (public link {a.get('publicLink') or '?'})" if a.get("publicLinkEnabled") else ""
     have = [b["attributes"]["version"] for b in call("GET", f"/v1/betaGroups/{g['id']}/builds?limit=5")["data"]]
     print(f"  {a['name']}: {kind}{link}; builds {', '.join(have) or 'none'}")
+    if a.get("publicLinkEnabled") and a.get("publicLink") and os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+            f.write(f"TestFlight public link ({a['name']}): {a['publicLink']}\n")
 
 print("newest builds:")
 for b in builds():
