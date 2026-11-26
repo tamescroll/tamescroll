@@ -340,10 +340,16 @@ refreshForm.addEventListener("submit", (e) => {
   e.preventDefault();
   refreshBtn.disabled = true;
   refreshStatus.textContent = "Checking…";
+  // The app's own screens are checked alongside (screens.rs); a newer
+  // copy shows the next time the home page loads.
+  const screens = invoke<string>("refresh_screens").catch(() => "");
   invoke<string>("refresh_rules")
-    .then((msg) => {
-      refreshStatus.textContent =
-        msg === "rules up to date" ? "Already up to date." : `${msg}. Reopen a site to apply.`;
+    .then(async (msg) => {
+      const newScreens = (await screens).startsWith("screens: updated");
+      const rules = msg === "rules up to date" ? "Already up to date." : `${msg}. Reopen a site to apply.`;
+      refreshStatus.textContent = newScreens
+        ? `${msg === "rules up to date" ? "" : rules + " "}A newer version of these screens is ready. It shows the next time you go home.`
+        : rules;
     })
     .catch(() => {
       refreshStatus.textContent = "Couldn't reach the update server. Current rules stay active.";
@@ -1730,6 +1736,9 @@ function closeMenu() {
 document.querySelector<HTMLButtonElement>("#ntp-menu")!.addEventListener("click", () => {
   menuSheet.hidden = false;
 });
+document.querySelector<HTMLButtonElement>("#ntp-settings")!.addEventListener("click", () => {
+  openSettings();
+});
 document.querySelector<HTMLElement>("#menu-scrim")!.addEventListener("click", closeMenu);
 document.querySelectorAll<HTMLButtonElement>("#menu-sheet [data-menu]").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -2167,8 +2176,18 @@ void import("@tauri-apps/api/app")
   .then((m) => m.getVersion())
   .then((v) => {
     if (!v) return;
-    document.querySelector<HTMLElement>("#about-version")!.textContent = `Version ${v}`;
+    const label = document.querySelector<HTMLElement>("#about-version")!;
+    label.textContent = `Version ${v}`;
     document.querySelector<HTMLElement>("#about-version-pill")!.hidden = false;
+    // Screens that arrived over the air say when they were published.
+    void invoke<string>("screens_status")
+      .then((s) => {
+        const sec = Number(s.startsWith("ota-") ? s.slice(4) : NaN);
+        if (!Number.isFinite(sec)) return;
+        const day = new Date(sec * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+        label.textContent = `Version ${v} · screens ${day}`;
+      })
+      .catch(() => {});
   })
   .catch(() => {});
 
@@ -2529,13 +2548,13 @@ const TIPS: Tip[] = [
   },
   {
     el: "#ntp-menu", title: "The menu", go: "home",
-    text: "Bookmarks, history and Settings. On a site, its first row changes what that site hides.",
+    text: "New tab, bookmarks and history. On a site, its first row changes what that site hides.",
     icon: '<circle cx="12" cy="5.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="18.5" r="1.3"/>',
   },
   {
-    el: "#menu-sheet .menu-panel", title: "Settings and more", go: "menu",
-    text: "New tab, bookmarks and history up top. Settings, at the bottom, holds every choice. Let's look inside.",
-    icon: '<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/>',
+    el: "#ntp-settings", title: "Settings", go: "home",
+    text: "Every choice lives here, one tap from home. Let's look inside.",
+    icon: '<path d="M18.31 10.05 L20.46 10.46 L20.46 13.54 L18.31 13.95 L17.84 15.08 L19.07 16.89 L16.89 19.07 L15.08 17.84 L13.95 18.31 L13.54 20.46 L10.46 20.46 L10.05 18.31 L8.92 17.84 L7.11 19.07 L4.93 16.89 L6.16 15.08 L5.69 13.95 L3.54 13.54 L3.54 10.46 L5.69 10.05 L6.16 8.92 L4.93 7.11 L7.11 4.93 L8.92 6.16 L10.05 5.69 L10.46 3.54 L13.54 3.54 L13.95 5.69 L15.08 6.16 L16.89 4.93 L19.07 7.11 L17.84 8.92Z"/><circle cx="12" cy="12" r="2.8"/>',
   },
   {
     el: '.nav-item[data-pane="bringback"]', title: "Sites", go: "settings", pane: "bringback", dock: "bottom",
@@ -3095,6 +3114,13 @@ async function start() {
     restingStatus = "";
     status.textContent = "";
     void invoke<Record<string, number>>("rules_summary").catch(() => {});
+
+    // THE PROOF THESE SCREENS WORK. A copy of the screens that arrived
+    // over the air (screens.rs) must report in here, after its first
+    // view has painted and native has answered, or the app drops back
+    // to the copy sealed in the build and reloads. Before any handoff
+    // below, so a link or shortcut that leaves this page still counts.
+    void invoke("screens_ready").catch(() => {});
 
     if (pending) {
       history.replaceState(null, "", location.pathname);

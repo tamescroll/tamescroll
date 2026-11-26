@@ -1797,6 +1797,8 @@ button.lrow { padding: var(--s2) var(--s3); gap: var(--s3); }
 }
 .ntp-menu svg { width: 20px; height: 20px; }
 .ntp-menu:active { transform: scale(0.95); }
+.ntp-actions { display: flex; align-items: center; gap: var(--s2); flex: none; }
+.ntp-gear svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 #view-launcher .greet { margin: var(--s5) 0 var(--s1); font-size: var(--t-md); color: var(--muted); text-align: left; }
 #view-launcher .home-q { text-align: left; margin: 0 0 var(--s4); max-width: none; font-size: 30px; }
 :root[data-text="large"] #view-launcher .home-q { font-size: 33px; }
