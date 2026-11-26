@@ -100,3 +100,12 @@ test('siteForHost matches roots and subdomains only', () => {
   assert.equal(siteForHost('notyoutube.com'), null);
   assert.equal(siteForHost('example.com'), null);
 });
+
+test('Facebook home feed is a shared rules surface, hidden by default and scoped to home', async () => {
+  const { readFileSync } = await import('node:fs');
+  const text = readFileSync(new URL('../../rules/facebook.txt', import.meta.url), 'utf8');
+  const home = parseSurfaces(text).find((s) => s.id === 'home');
+  assert.ok(home, 'facebook.txt has a home surface');
+  assert.equal(home.defaultShown, false);
+  assert.ok(home.rules.length > 0 && home.rules.every((r) => r[1].includes('html[data-ts-page="home"]')));
+});

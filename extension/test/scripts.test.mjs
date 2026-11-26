@@ -79,3 +79,20 @@ test('comments: a YouTube switch that ships shown, hidden only by choice', () =>
   assert.match(css([]), /ytd-comments#comments/);
   assert.doesNotMatch(css(['comments']), /ytd-comments/);
 });
+
+test('opt-in switches from the 2026-11-26 gap check ship shown and hide only by choice', () => {
+  const want = { facebook: ['stories', 'right_rail', 'reactions'], instagram: ['home_feed'], linkedin: ['whole_feed'], x: ['home_timeline'] };
+  for (const [id, extra] of Object.entries(want)) {
+    const site = SITES.find((x) => x.id === id);
+    const fresh = seed({}, () => '');
+    const old = seed({ sites: { [id]: { on: true, shown: ['ads'] } } }, () => '');
+    for (const e of extra) {
+      assert.ok(fresh.sites[id].shown.includes(e), `${id}/${e} shown on a fresh install`);
+      assert.ok(old.sites[id].shown.includes(e), `${id}/${e} added as shown on update`);
+      const p = site.pageSurfaces.find((x) => x.id === e);
+      const css = (shown) => pageCss({ site, host: site.hosts[0], engine: null, rulesText: '', blurText: '', prefs: { on: true, shown: ['ads', ...shown] }, blurStrength: 16 });
+      assert.ok(css([]).includes(p.css), `${id}/${e} css applied when hidden`);
+      assert.ok(!css([e]).includes(p.css), `${id}/${e} css absent when shown`);
+    }
+  }
+});

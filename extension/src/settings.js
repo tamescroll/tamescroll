@@ -10,7 +10,13 @@ import { parseSurfaces, defaultShown } from './rules.js';
 // Switches added after launch that ship SHOWN. A site seeded before one
 // existed gets it added to `shown` once, so an update never starts
 // hiding something nobody chose to hide. `added` records what was done.
-const ADDED_SHOWN = { youtube: ['comments'] };
+const ADDED_SHOWN = {
+  youtube: ['comments'],
+  facebook: ['stories', 'right_rail', 'reactions'],
+  instagram: ['home_feed'],
+  linkedin: ['whole_feed'],
+  x: ['home_timeline'],
+};
 
 export function seed(settings, textFor) {
   const s = settings && typeof settings === 'object' ? { ...settings } : {};
