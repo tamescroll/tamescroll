@@ -47,7 +47,7 @@ const DEFAULT_BASE_URL: &str = "https://raw.githubusercontent.com/tamescroll/tam
 /// Public half of the screens signing key (`scripts/screens-keygen.mjs`).
 /// The private half exists only as the `SCREENS_SIGNING_KEY` Actions
 /// secret and in the gitignored `secrets/` folder on his PC.
-const PUBLIC_KEY_HEX: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+const PUBLIC_KEY_HEX: &str = "35b0b858a58ec8d3947d0c5618a11804d4fad48a5764466b9e62ce199c8935c9";
 
 /// How long a not-yet-proven bundle has, from its page being served, to
 /// report that it started. main.ts reports right after its first paint,
