@@ -64,3 +64,18 @@ test('a break empties the page stylesheet', () => {
   const css = pageCss({ site: youtube, host: 'www.youtube.com', engine: null, rulesText: '!surface: home Home feed\nyoutube.com##ytd-rich-grid-renderer', blurText: '', prefs: livePrefs(s, 'youtube'), blurStrength: 16 });
   assert.equal(css, '');
 });
+
+import { seed } from '../src/settings.js';
+
+test('comments: a YouTube switch that ships shown, hidden only by choice', () => {
+  const youtube = SITES.find((x) => x.id === 'youtube');
+  const fresh = seed({}, () => '');
+  assert.ok(fresh.sites.youtube.shown.includes('comments'), 'fresh install shows comments');
+  const old = seed({ sites: { youtube: { on: true, shown: ['ads'] } } }, () => '');
+  assert.ok(old.sites.youtube.shown.includes('comments'), 'an update adds it as shown');
+  const chosen = seed({ sites: { youtube: { on: true, shown: ['ads'], added: ['comments'] } } }, () => '');
+  assert.ok(!chosen.sites.youtube.shown.includes('comments'), 'hiding it later sticks');
+  const css = (shown) => pageCss({ site: youtube, host: 'www.youtube.com', engine: null, rulesText: '', blurText: '', prefs: { on: true, shown: ['ads', ...shown] }, blurStrength: 16 });
+  assert.match(css([]), /ytd-comments#comments/);
+  assert.doesNotMatch(css(['comments']), /ytd-comments/);
+});

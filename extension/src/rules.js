@@ -118,6 +118,8 @@ export function pageCss({ site, host, engine, rulesText, blurText, prefs, blurSt
   let css = shown.includes('ads') ? '' : engineCss(engine, site, host);
   if (site.id === 'youtube') css += CONSENT_CSS;
   css += surfacesCss(parseSurfaces(rulesText), shown);
+  // Extension-only switches that are plain CSS (sites.js pageSurfaces).
+  for (const p of site.pageSurfaces || []) if (p.css && !shown.includes(p.id)) css += p.css;
   if (prefs.blur) {
     css += blurVarsCss(blurStrength);
     css += blurText || '';

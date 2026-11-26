@@ -27,6 +27,13 @@ const ALL_SITES = [
     adsDefaultShown: true,
     pageSurfaces: [
       { id: 'autoplay_next', label: 'Autoplay next video', defaultShown: false },
+      // Extension only, and opt-in: comments ship SHOWN. Not in
+      // rules/youtube.txt, which the phone app shares and which keeps
+      // comments out on purpose (its design rule 5).
+      {
+        id: 'comments', label: 'Comments', defaultShown: true,
+        css: 'ytd-comments#comments, ytm-comment-section-renderer { display: none !important; }\n',
+      },
     ],
     scripts: [
       {

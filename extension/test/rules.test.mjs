@@ -38,8 +38,9 @@ test('YouTube toggles: Ads last and shown by default, autoplay listed, always-on
   assert.ok(t.some((x) => x.id === 'autoplay_next'));
   assert.ok(t.some((x) => x.id === 'shorts'));
   assert.ok(!t.some((x) => x.id === 'mobile_nags' || x.id === 'promoted'));
-  // The app's install defaults: watch recs and chips shown, ads shown, the rest hidden.
-  assert.deepEqual(defaultShown(yt, parseSurfaces(read('rules/youtube.txt'))).sort(), ['ads', 'home_chips', 'watch_recs']);
+  // The app's install defaults: watch recs and chips shown, ads shown, the rest hidden;
+  // plus the extension-only Comments switch, which ships shown.
+  assert.deepEqual(defaultShown(yt, parseSurfaces(read('rules/youtube.txt'))).sort(), ['ads', 'comments', 'home_chips', 'watch_recs']);
 });
 
 test('Reddit ads start hidden', () => {
