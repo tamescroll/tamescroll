@@ -1,0 +1,32 @@
+--- Info.plist URL types and quick actions
+Array {
+    Dict {
+        CFBundleURLName = app.tamescroll.client
+        CFBundleURLSchemes = Array {
+            tamescroll
+        }
+    }
+}
+Array {
+    Dict {
+        UIApplicationShortcutItemType = open.youtube
+        UIApplicationShortcutItemTitle = YouTube
+    }
+    Dict {
+        UIApplicationShortcutItemType = open.reddit
+        UIApplicationShortcutItemTitle = Reddit
+    }
+    Dict {
+        UIApplicationShortcutItemType = open.x
+        UIApplicationShortcutItemTitle = X
+    }
+    Dict {
+        UIApplicationShortcutItemType = open.tiktok
+        UIApplicationShortcutItemTitle = TikTok
+    }
+}
+--- UIDeviceFamily (1 iPhone, 2 iPad)
+Array {
+    1
+}
+--- scene manifest (none means tao's app-delegate mode)
