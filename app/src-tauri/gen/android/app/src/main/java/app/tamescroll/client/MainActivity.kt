@@ -1382,6 +1382,9 @@ class MainActivity : TauriActivity() {
     row.addView(icon(R.drawable.ic_bar_back, "Back") { onBackPressedDispatcher.onBackPressed() })
     row.addView(pill)
     row.addView(tabsButton)
+    // Settings one tap away on every site (his 2026-11-26: "a direct
+    // settings icon would be better"); the menu keeps the rest.
+    row.addView(icon(R.drawable.ic_bar_gear, "Settings") { webView.loadUrl("http://tauri.localhost/?view=settings") })
     row.addView(icon(R.drawable.ic_bar_dots, "Menu") { showMenuSheet() })
     // The folded bar: a slim strip with the site's name, under the full
     // bar so the bar covers it when out. Tapping it brings the bar back.

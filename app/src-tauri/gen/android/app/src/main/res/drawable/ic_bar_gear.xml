@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Browser bar and menu (#73): settings. Tinted in code to the look. -->
+<!-- Browser bar and menu (#73): settings, a cog (the rayed glyph read
+     as a sun, 2026-11-26). Tinted in code to the look. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path android:pathData="M9,12a3,3 0,1 0,6 0a3,3 0,1 0,-6 0Z" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M12,3.5V5.7M12,18.3V20.5M3.5,12H5.7M18.3,12H20.5M6,6L7.6,7.6M16.4,16.4L18,18M6,18L7.6,16.4M16.4,7.6L18,6" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M9.2,12a2.8,2.8 0,1 0,5.6 0a2.8,2.8 0,1 0,-5.6 0Z" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M18.31,10.05L20.46,10.46L20.46,13.54L18.31,13.95L17.84,15.08L19.07,16.89L16.89,19.07L15.08,17.84L13.95,18.31L13.54,20.46L10.46,20.46L10.05,18.31L8.92,17.84L7.11,19.07L4.93,16.89L6.16,15.08L5.69,13.95L3.54,13.54L3.54,10.46L5.69,10.05L6.16,8.92L4.93,7.11L7.11,4.93L8.92,6.16L10.05,5.69L10.46,3.54L13.54,3.54L13.95,5.69L15.08,6.16L16.89,4.93L19.07,7.11L17.84,8.92Z" android:fillColor="#00000000" android:strokeColor="#E7E5E1" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>
