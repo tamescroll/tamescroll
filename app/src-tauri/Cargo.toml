@@ -30,6 +30,9 @@ sha2 = "0.10"
 # The models ship as raw bytes and are base64-encoded on demand for
 # the one delivery that cannot fetch them (see models_script in lib.rs).
 base64 = "0.22"
+# Over-the-air screens (src/screens.rs): the signature over each
+# published screens manifest is checked against a key compiled in.
+ed25519-dalek = "2"
 
 
 # JNI so the Android WebViewClient can ask the adblock engine about a

@@ -340,10 +340,16 @@ refreshForm.addEventListener("submit", (e) => {
   e.preventDefault();
   refreshBtn.disabled = true;
   refreshStatus.textContent = "Checking…";
+  // The app's own screens are checked alongside (screens.rs); a newer
+  // copy shows the next time the home page loads.
+  const screens = invoke<string>("refresh_screens").catch(() => "");
   invoke<string>("refresh_rules")
-    .then((msg) => {
-      refreshStatus.textContent =
-        msg === "rules up to date" ? "Already up to date." : `${msg}. Reopen a site to apply.`;
+    .then(async (msg) => {
+      const newScreens = (await screens).startsWith("screens: updated");
+      const rules = msg === "rules up to date" ? "Already up to date." : `${msg}. Reopen a site to apply.`;
+      refreshStatus.textContent = newScreens
+        ? `${msg === "rules up to date" ? "" : rules + " "}A newer version of these screens is ready. It shows the next time you go home.`
+        : rules;
     })
     .catch(() => {
       refreshStatus.textContent = "Couldn't reach the update server. Current rules stay active.";
@@ -2167,8 +2173,18 @@ void import("@tauri-apps/api/app")
   .then((m) => m.getVersion())
   .then((v) => {
     if (!v) return;
-    document.querySelector<HTMLElement>("#about-version")!.textContent = `Version ${v}`;
+    const label = document.querySelector<HTMLElement>("#about-version")!;
+    label.textContent = `Version ${v}`;
     document.querySelector<HTMLElement>("#about-version-pill")!.hidden = false;
+    // Screens that arrived over the air say when they were published.
+    void invoke<string>("screens_status")
+      .then((s) => {
+        const sec = Number(s.startsWith("ota-") ? s.slice(4) : NaN);
+        if (!Number.isFinite(sec)) return;
+        const day = new Date(sec * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+        label.textContent = `Version ${v} · screens ${day}`;
+      })
+      .catch(() => {});
   })
   .catch(() => {});
 
@@ -3095,6 +3111,13 @@ async function start() {
     restingStatus = "";
     status.textContent = "";
     void invoke<Record<string, number>>("rules_summary").catch(() => {});
+
+    // THE PROOF THESE SCREENS WORK. A copy of the screens that arrived
+    // over the air (screens.rs) must report in here, after its first
+    // view has painted and native has answered, or the app drops back
+    // to the copy sealed in the build and reloads. Before any handoff
+    // below, so a link or shortcut that leaves this page still counts.
+    void invoke("screens_ready").catch(() => {});
 
     if (pending) {
       history.replaceState(null, "", location.pathname);
