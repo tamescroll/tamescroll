@@ -216,6 +216,23 @@ try {
   await sp.close();
   console.log('popup: showing on this page listed, one tap hides it');
 
+  // Take a break: every page shows everything, the icon dims, and ending
+  // it (or the alarm) brings the stylesheet back.
+  const bp = await ctx.newPage();
+  await bp.goto(`chrome-extension://${extId}/popup.html?tab=${ytTab}`);
+  await bp.click('#take-break');
+  await page.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent === '');
+  assert.equal(await bp.evaluate(() => document.getElementById('break-note').hidden), false, 'popup shows the break');
+  assert.match(await bp.$eval('#break-text', (e) => e.textContent), /On a break until/);
+  assert.equal(await iconState(bp, ytTab, 'dim'), 'dim', 'icon dims during a break');
+  await bp.setViewportSize({ width: 320, height: 300 });
+  await bp.waitForTimeout(300); await bp.screenshot({ path: join(here, 'popup-break.png'), fullPage: true });
+  await bp.click('#end-break');
+  await page.waitForFunction(() => document.getElementById('tamescroll-style')?.textContent.length > 0);
+  assert.equal(await bp.evaluate(() => document.getElementById('break-wrap').hidden), false, 'break button back');
+  await bp.close();
+  console.log('popup: a break shows everything, ending it tames the page again');
+
   const rp = await ctx.newPage();
   await rp.goto('https://www.reddit.com/r/popular/');
   await rp.waitForURL('https://www.reddit.com/');

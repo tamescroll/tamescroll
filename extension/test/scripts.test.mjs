@@ -41,3 +41,26 @@ test('HaramBlur links to the store of the browser it is opened in, never on Safa
   assert.equal(companionUrl('Mozilla/5.0 (Windows NT 10.0; rv:133.0) Gecko/20100101 Firefox/133.0'), HARAMBLUR.firefox);
   assert.equal(companionUrl('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'), null);
 });
+
+import { onBreak, livePrefs } from '../src/break.js';
+import { pageCss } from '../src/rules.js';
+import { SITES } from '../src/sites.js';
+
+test('a break pauses every site until breakUntil, then lifts by itself', () => {
+  const now = 1_000_000;
+  const s = { breakUntil: now + 60_000, sites: { youtube: { on: true, shown: [] }, reddit: { on: true, shown: [] } } };
+  assert.equal(onBreak(s, now), true);
+  assert.equal(livePrefs(s, 'youtube', now).on, false);
+  assert.equal(s.sites.youtube.on, true, 'the stored choice is left alone');
+  assert.deepEqual(wantedScripts(s, undefined, now), [], 'no page code during a break');
+  assert.ok(wantedScripts(s, undefined, now + 60_001).length > 0, 'page code back after it');
+  assert.equal(onBreak({ sites: {} }, now), false);
+  assert.equal(onBreak({ breakUntil: 'soon' }, now), false);
+});
+
+test('a break empties the page stylesheet', () => {
+  const youtube = SITES.find((x) => x.id === 'youtube');
+  const s = { breakUntil: Date.now() + 60_000, sites: { youtube: { on: true, shown: [], blur: true } } };
+  const css = pageCss({ site: youtube, host: 'www.youtube.com', engine: null, rulesText: '!surface: home Home feed\nyoutube.com##ytd-rich-grid-renderer', blurText: '', prefs: livePrefs(s, 'youtube'), blurStrength: 16 });
+  assert.equal(css, '');
+});

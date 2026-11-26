@@ -2,9 +2,10 @@
 // Tame Scroll. The redirect is shared with the app:
 // app/gaze/src/page/old-reddit.mjs.
 import { toNewReddit } from '../../app/gaze/src/page/old-reddit.mjs';
+import { livePrefs } from './break.js';
 
 chrome.storage.local.get('settings').then((st) => {
-  const reddit = st.settings && st.settings.sites && st.settings.sites.reddit;
+  const reddit = livePrefs(st.settings, 'reddit');
   if (reddit && reddit.on === false) return;
   toNewReddit();
 });

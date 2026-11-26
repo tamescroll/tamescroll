@@ -12,6 +12,7 @@ import { wantedScripts } from './scripts.js';
 import { parseKill } from './kill.js';
 import { companionUrl } from './companion.js';
 import { checkFromPopup } from './dev-reload.js';
+import { onBreak, BREAK_MINUTES } from './break.js';
 
 const VERSION = chrome.runtime.getManifest().version;
 let settings = null;
@@ -70,7 +71,19 @@ function summary(s) {
   return back === 0 ? 'Everything tamed' : back === 1 ? '1 brought back' : `${back} brought back`;
 }
 
+function breakRows() {
+  const on = onBreak(settings);
+  $('break-wrap').hidden = on;
+  $('break-note').hidden = !on;
+  $('take-break-label').textContent = `Take a ${BREAK_MINUTES}-minute break`;
+  $('break-text').textContent = on
+    ? `On a break until ${new Date(settings.breakUntil).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Tame Scroll comes back on by itself.`
+    : '';
+  return on;
+}
+
 function home() {
+  const resting = breakRows();
   const rows = $('site-rows');
   const count = $('count');
   const tags = $('tags');
@@ -84,10 +97,11 @@ function home() {
     rows.hidden = true;
     return;
   }
-  const prefs = settings.sites[site.id];
+  const stored = settings.sites[site.id];
+  const prefs = resting ? { ...stored, on: false } : stored;
   $('site-chip').textContent = site.label[0];
   $('site-name').textContent = site.label;
-  $('site-switch').replaceChildren(switchEl(prefs.on, `Tame ${site.label}`, (v) => save(() => { prefs.on = v; })));
+  $('site-switch').replaceChildren(resting ? '' : switchEl(prefs.on, `Tame ${site.label}`, (v) => save(() => { stored.on = v; })));
   rows.hidden = !prefs.on;
 
   const status = prefs.on && hiddenHere ? hiddenHere : null;
@@ -98,7 +112,7 @@ function home() {
   $('showing').replaceChildren(...showing.map((h) => {
     const r = el('div', 'row');
     r.append(el('span', 'row-label', h.label), el('span', 'row-state', 'Showing'),
-      switchEl(false, `Hide ${h.label}`, () => save(() => { prefs.shown = prefs.shown.filter((x) => x !== h.id); })));
+      switchEl(false, `Hide ${h.label}`, () => save(() => { stored.shown = stored.shown.filter((x) => x !== h.id); })));
     return r;
   }));
   $('slipped-note').hidden = slipped.length === 0;
@@ -111,13 +125,15 @@ function home() {
   $('count-num').textContent = String(hidden.length);
   $('count-text').textContent = hidden.length === 1 ? 'thing hidden on this page' : 'things hidden on this page';
   tags.replaceChildren(...hidden.map((h) => el('span', '', h.label)));
-  $('site-status').textContent = !prefs.on
+  $('site-status').textContent = resting
+    ? 'Everything shows during your break.'
+    : !prefs.on
     ? 'Paused. This site shows everything. Switch it on above.'
     : hidden.length ? '' : 'Tamed. Nothing to hide on this page right now.';
 
   const { back, total } = backCount(site, prefs);
   $('parts-value').textContent = back ? `${back} of ${total}` : 'None';
-  $('blur-switch').replaceChildren(switchEl(prefs.blur, 'Blur pictures', (v) => save(() => { prefs.blur = v; })));
+  $('blur-switch').replaceChildren(switchEl(prefs.blur, 'Blur pictures', (v) => save(() => { stored.blur = v; })));
 }
 
 function parts() {
@@ -208,6 +224,8 @@ async function main() {
     needsReload = false;
     render();
   });
+  $('take-break').addEventListener('click', () => save(() => { settings.breakUntil = Date.now() + BREAK_MINUTES * 60 * 1000; }));
+  $('end-break').addEventListener('click', () => save(() => { delete settings.breakUntil; }));
   $('credits').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('THIRD-PARTY-NOTICES.txt') }));
   $('check-rules').addEventListener('click', async () => {
     $('rules-status').textContent = 'Checking…';
