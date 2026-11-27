@@ -183,6 +183,8 @@ class TsWebkitPlugin: Plugin {
       icon("house", "Home", #selector(barHome)),
       address,
       icon("shield", "What's hidden on this site", #selector(barShield)),
+      // Settings one tap away on every site (his 2026-11-26).
+      icon("gearshape", "Settings", #selector(barSettings)),
     ])
     row.axis = .horizontal
     row.alignment = .center
@@ -331,6 +333,8 @@ class TsWebkitPlugin: Plugin {
   @objc func barHome() { openLauncher() }
 
   @objc func barSearch() { openLauncher("?search=" + pageParam()) }
+
+  @objc func barSettings() { openLauncher("?view=settings") }
 
   /// The shield's sheet. iPhone's block list runs inside WebKit, which
   /// does not say what it stopped, so unlike Android there is no count:
