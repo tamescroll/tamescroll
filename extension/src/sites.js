@@ -27,6 +27,13 @@ const ALL_SITES = [
     adsDefaultShown: true,
     pageSurfaces: [
       { id: 'autoplay_next', label: 'Autoplay next video', defaultShown: false },
+      // Extension only, and opt-in: comments ship SHOWN. Not in
+      // rules/youtube.txt, which the phone app shares and which keeps
+      // comments out on purpose (its design rule 5).
+      {
+        id: 'comments', label: 'Comments', defaultShown: true,
+        css: 'ytd-comments#comments, ytm-comment-section-renderer { display: none !important; }\n',
+      },
     ],
     scripts: [
       {
@@ -101,6 +108,12 @@ const ALL_SITES = [
     adsDefaultShown: false,
     pageSurfaces: [
       { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
+      // Opt-in, extension only: the Following timeline too (For you is
+      // already hidden by x.txt). Checked live 2026-11-26, signed in.
+      {
+        id: 'home_timeline', label: 'Following timeline', defaultShown: true,
+        css: '[data-testid="primaryColumn"] [aria-label="Timeline: Your Home Timeline"] { display: none !important; }\n',
+      },
     ],
     scripts: [
       {
@@ -124,6 +137,12 @@ const ALL_SITES = [
     pageSurfaces: [
       { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
       { id: 'suggested', label: 'Suggested posts', defaultShown: false },
+      // Opt-in, extension only: the whole home feed, including posts from
+      // people you follow. Checked live 2026-11-26, signed in.
+      {
+        id: 'home_feed', label: 'Home feed', defaultShown: true,
+        css: 'html[data-ts-page="home"] main[role="main"] div:has(> article), html[data-ts-page="home"] main[role="main"] article { display: none !important; }\n',
+      },
     ],
     scripts: [
       {
@@ -153,6 +172,20 @@ const ALL_SITES = [
     adsDefaultShown: false,
     pageSurfaces: [
       { id: 'login_nags', label: 'Sign-in pop-ups', defaultShown: false },
+      // Opt-in, extension only. Checked live 2026-11-26 on the signed-in
+      // home page (English UI; the labels are what screen readers get).
+      {
+        id: 'stories', label: 'Stories', defaultShown: true,
+        css: 'html[data-ts-page="home"] div[role="main"] div[data-virtualized]:has(a[href*="/stories/"]) { display: none !important; }\n',
+      },
+      {
+        id: 'right_rail', label: 'Contacts and chat sidebar', defaultShown: true,
+        css: 'div[role="complementary"] { display: none !important; }\n',
+      },
+      {
+        id: 'reactions', label: 'Likes and comments', defaultShown: true,
+        css: 'span[role="toolbar"][aria-label="See who reacted to this"], div[role="button"][aria-label^="Like: "], div[role="article"][aria-label^="Comment by"], div[role="article"][aria-label^="Reply by"] { display: none !important; }\n',
+      },
     ],
     scripts: [
       {
@@ -204,6 +237,12 @@ const ALL_SITES = [
     adsDefaultShown: false,
     pageSurfaces: [
       { id: 'suggested', label: 'Posts from people you don\'t follow', defaultShown: false },
+      // Opt-in, extension only: the whole feed, posts from people you
+      // follow too. Same anchor linkedin-feed.js uses; checked 2026-11-26.
+      {
+        id: 'whole_feed', label: 'Whole feed', defaultShown: true,
+        css: '[data-testid="mainFeed"], #tamescroll-li-caught-up { display: none !important; }\n',
+      },
     ],
     scripts: [
       {

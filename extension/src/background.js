@@ -8,6 +8,7 @@ import { refresh, rulesText } from './ota.js';
 import { BUNDLED } from './bundled.js';
 import { wantedScripts } from './scripts.js';
 import { parseKill } from './kill.js';
+import { onBreak } from './break.js';
 import { BUILD_ID, isDevBuild, checkForNewBuild, watchBuilds } from './dev-reload.js';
 
 const api = globalThis.browser || globalThis.chrome;
@@ -27,8 +28,26 @@ async function ensureSettings() {
   const st = await state();
   const files = overridesOf(st);
   const settings = seed(st.settings, (name) => rulesText(name, BUNDLED, files));
+  // A break that ended while the browser was closed is over.
+  if (settings.breakUntil && !onBreak(settings)) delete settings.breakUntil;
   await api.storage.local.set({ settings });
+  scheduleBreakEnd(settings);
   return settings;
+}
+
+// When a break is on, an alarm ends it: clearing breakUntil fires the
+// storage change that resyncs the scripts and restyles every open page.
+function scheduleBreakEnd(settings) {
+  if (onBreak(settings)) api.alarms.create('break-end', { when: settings.breakUntil });
+  else api.alarms.clear('break-end');
+}
+
+async function endBreak() {
+  const st = await state();
+  if (!st.settings || !st.settings.breakUntil) return;
+  const settings = { ...st.settings };
+  delete settings.breakUntil;
+  await api.storage.local.set({ settings });
 }
 
 let syncing = Promise.resolve();
@@ -98,11 +117,13 @@ api.runtime.onStartup.addListener(async () => {
 api.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'rules-refresh') refreshRules();
   if (alarm.name === 'dev-update') checkForNewBuild();
+  if (alarm.name === 'break-end') endBreak();
 });
 
 api.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.settings && changes.settings.newValue) {
     syncScripts(changes.settings.newValue);
+    scheduleBreakEnd(changes.settings.newValue);
   } else if (area === 'local' && changes.ota) {
     // A new kill.json can switch page code off: resync with the settings.
     state().then((st) => st.settings && syncScripts(st.settings));

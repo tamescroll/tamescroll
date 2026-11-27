@@ -8,6 +8,7 @@ import { siteForHost } from './sites.js';
 import { pageCss, parseSurfaces } from './rules.js';
 import { rulesText } from './ota.js';
 import { parseKill, effectivePrefs } from './kill.js';
+import { livePrefs } from './break.js';
 import { BUNDLED, ENGINE } from './bundled.js';
 import { pageKind } from '../../app/gaze/src/diag-report.mjs';
 
@@ -39,7 +40,7 @@ function render(state) {
     engine: ENGINE,
     rulesText: rulesText(site.rulesFile, BUNDLED, overrides),
     blurText: rulesText(site.blurFile, BUNDLED, overrides),
-    prefs: effectivePrefs(site, (settings.sites || {})[site.id], parseKill(rulesText('kill.json', BUNDLED, overrides))),
+    prefs: effectivePrefs(site, livePrefs(settings, site.id), parseKill(rulesText('kill.json', BUNDLED, overrides))),
     blurStrength: settings.blurPx || 16,
   });
   lastCss = css;
@@ -67,7 +68,7 @@ if (site) {
     const st = lastState || {};
     const ota = st.ota;
     const overrides = ota && ota.version === chrome.runtime.getManifest().version && ota.files ? ota.files : {};
-    const prefs = ((st.settings || {}).sites || {})[site.id];
+    const prefs = livePrefs(st.settings, site.id);
     if (!prefs || prefs.on === false) return { site: site.id, off: true, hidden: [], showing: [], slipped: [] };
     const shown = prefs.shown || [];
     const out = { site: site.id, off: false, hidden: [], showing: [], slipped: [], styled: !!(lastCss && lastCss.length) };

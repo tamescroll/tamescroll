@@ -6,7 +6,7 @@
 ! Expires: 1 day
 ! License: CC0-1.0 (see rules/LICENSE)
 !
-! STATUS: EVERY RULE [unverified].
+! STATUS: EVERY RULE [unverified] EXCEPT THE HOME FEED ([live] 2026-11-26).
 ! Facebook signed out is a login wall and nothing else — measured
 ! 2026-08-28 in the app on both www.facebook.com and m.facebook.com
 ! (mobile UA): 0 links, 0 articles, 6 images, and aria-labels for
@@ -33,6 +33,26 @@
 !      them (they ARE localised — an English UI is assumed, and a
 !      non-English one degrades to no-op, never to a broken page);
 !   3. role="article", the feed item container.
+
+
+! ============================================================
+! HOME FEED -- the algorithmic News Feed
+! ============================================================
+
+!surface: home Home feed
+
+! Facebook stopped marking the feed with role="feed" (0 on the page,
+! 2026-11-26). What stays is the screen-reader heading "Feed posts"
+! (an h3) whose sibling holds every post, each post carrying
+! aria-posinset. The heading text cannot be matched in CSS, so the hook
+! is structure: the element with an h3 child that holds posinset items.
+! The "Create a post" composer and the stories tray sit outside it and
+! stay. Hiding the container also stops infinite scroll fetching more.
+! [live] 2026-11-26, www.facebook.com/ signed in, desktop Chrome:
+!   posts visible 2 -> 0, composer still visible.
+! test: open facebook.com signed in -> no posts under the composer;
+!   /groups, a profile and a post link still show their posts
+facebook.com##html[data-ts-page="home"] div[role="main"] div:has(> h3):has([aria-posinset]) > div:not([aria-hidden])
 
 
 ! ============================================================

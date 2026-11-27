@@ -38,8 +38,9 @@ test('YouTube toggles: Ads last and shown by default, autoplay listed, always-on
   assert.ok(t.some((x) => x.id === 'autoplay_next'));
   assert.ok(t.some((x) => x.id === 'shorts'));
   assert.ok(!t.some((x) => x.id === 'mobile_nags' || x.id === 'promoted'));
-  // The app's install defaults: watch recs and chips shown, ads shown, the rest hidden.
-  assert.deepEqual(defaultShown(yt, parseSurfaces(read('rules/youtube.txt'))).sort(), ['ads', 'home_chips', 'watch_recs']);
+  // The app's install defaults: watch recs and chips shown, ads shown, the rest hidden;
+  // plus the extension-only Comments switch, which ships shown.
+  assert.deepEqual(defaultShown(yt, parseSurfaces(read('rules/youtube.txt'))).sort(), ['ads', 'comments', 'home_chips', 'watch_recs']);
 });
 
 test('Reddit ads start hidden', () => {
@@ -98,4 +99,13 @@ test('siteForHost matches roots and subdomains only', () => {
   assert.equal(siteForHost('reddit.com').id, 'reddit');
   assert.equal(siteForHost('notyoutube.com'), null);
   assert.equal(siteForHost('example.com'), null);
+});
+
+test('Facebook home feed is a shared rules surface, hidden by default and scoped to home', async () => {
+  const { readFileSync } = await import('node:fs');
+  const text = readFileSync(new URL('../../rules/facebook.txt', import.meta.url), 'utf8');
+  const home = parseSurfaces(text).find((s) => s.id === 'home');
+  assert.ok(home, 'facebook.txt has a home surface');
+  assert.equal(home.defaultShown, false);
+  assert.ok(home.rules.length > 0 && home.rules.every((r) => r[1].includes('html[data-ts-page="home"]')));
 });
